@@ -3,3 +3,8 @@ export * from "./GetClaimableFees";
 export * from "./ClaimFees";
 export * from "./GetTradeQuote";
 export * from "./ExecuteTrade";
+export * from "./LaunchToken";
+export * from "./GetCreators";
+export * from "./GetTokenAnalytics";
+export * from "./GetPartnerStats";
+export * from "./Heartbeat";
