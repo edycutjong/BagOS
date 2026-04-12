@@ -1,114 +1,80 @@
-# 🛡️ BagOS
+# 🖥️ BagOS — The AI Operating System for Creator Finance
 
-[![CI](https://github.com/edycutjong/bagos/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/bagos/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/edycutjong/bagos)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-22%2B-green)](https://nodejs.org)
+> Claude MCP server that turns natural language into Bags token launches, trades, and fee claims.
 
-**Citation-driven prior authorization appeals MCP server for healthcare AI agents.**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Bags SDK](https://img.shields.io/badge/Bags_SDK-v1.3.7-blue.svg)](https://docs.bags.fm/)
+[![MCP](https://img.shields.io/badge/MCP-v1.25-purple.svg)](https://modelcontextprotocol.io/)
 
-BagOS is a [SHARP-on-MCP](https://www.sharponmcp.com/) server that helps clinicians and care coordinators fight denied prior authorizations. It reads patient FHIR records, searches payer policies, and generates appeal letters backed by citations to specific clinical data — no hallucinations, no guesswork.
+## What is BagOS?
 
-## 🎯 What It Does
+BagOS is the first Model Context Protocol (MCP) server for Solana DeFi. It registers 10+ native tools into Claude Desktop, letting you manage your entire Bags creator economy through natural language.
 
-| Tool | Description |
-|---|---|
-| `CheckAuthStatus` | Reads FHIR MedicationRequest + ClaimResponse to find denial details |
-| `GenerateAppeal` | Drafts a citation-driven appeal letter using Gemini AI |
-| `GetAppealPdf` | Returns the appeal text for download/export |
+**No dashboards. No tab-switching. Just type what you want.**
 
-## 🏗️ Architecture
+## Quick Start
 
-```
-Prompt Opinion Platform
-  ↓ POST /mcp (with SHARP headers)
-BagOS MCP Server
-  ├── FHIR Client → reads patient data from workspace FHIR server
-  ├── Gemini AI → generates appeal with inline FHIR citations
-  └── Returns structured appeal text to agent
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 22+
-- [Gemini API key](https://aistudio.google.com/apikey) (free tier)
-- [ngrok](https://ngrok.com/) account (free)
-
-### Setup
+### 1. Install
 ```bash
-# Install dependencies
-npm install
+git clone https://github.com/edycutjong/bagos.git
+cd bagos && npm install
+```
 
-# Configure environment
+### 2. Configure
+```bash
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
-
-# Start the server
-npm run start
+# Add your BAGS_API_KEY and HELIUS_RPC_URL
 ```
 
-The server runs on `http://localhost:3050/mcp`.
-
-### Connect to Prompt Opinion
-```bash
-# 1. Install ngrok
-brew install ngrok
-
-# 2. Add your authtoken (one-time setup — get it from https://dashboard.ngrok.com/get-started/your-authtoken)
-ngrok config add-authtoken YOUR_TOKEN_HERE
-
-# 3. Expose your server
-ngrok http 3050
+### 3. Add to Claude Desktop
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "bagos": {
+      "command": "npx",
+      "args": ["tsx", "/path/to/bagos/src/index.ts"]
+    }
+  }
+}
 ```
 
-4. In Prompt Opinion → Workspace Hub → Add MCP Server
-5. Paste `{ngrok_url}/mcp` → check "Streamable HTTP" → check "FHIR context"
-6. Click Test → verify 3 tools appear → Save
+### 4. Restart Claude Desktop
 
-## 💬 Example Prompts
+## Tools
 
-Try these prompts in Prompt Opinion (select a patient first, e.g. Morgan564 Larson43):
+| Tool | Description | Token-Gated |
+|------|-------------|:-----------:|
+| `bags_authenticate` | V2 wallet authentication | No |
+| `bags_get_claimable_fees` | Discover claimable positions | No |
+| `bags_claim_fees` | Claim pending fees | ✅ |
+| `bags_get_trade_quote` | Get swap quotes | No |
+| `bags_execute_trade` | Execute token swaps | ✅ |
+| `bags_launch_token` | Launch a new token | ✅ |
+| `bags_get_creators` | Top creators leaderboard | No |
+| `bags_get_token_analytics` | Token pool & claim stats | No |
+| `bags_get_partner_stats` | Partner referral earnings | No |
+| `bags_heartbeat` | Health check & summary | No |
 
-**Step 1: Check authorization status**
-```
-Check the prior auth status for adalimumab
-```
+## $BOS Token
 
-**Step 2: Generate appeal letter**
-```
-Generate an appeal letter for adalimumab — it was denied for "step therapy requirement not met"
-```
+$BOS is the access key for BagOS write operations. Hold ≥10,000 $BOS to unlock trades, claims, and token launches.
 
-**Step 3: Format as document**
-```
-Format this as an appeal document: This letter serves as a formal appeal for the prior authorization denial of adalimumab. The denial reason was step therapy requirement not met. We request reconsideration based on clinical evidence.
-```
+- **Mint**: `[CONTRACT_ADDRESS]`
+- **Trade on Bags.fm**: [bags.fm/BOS](https://bags.fm/)
 
-## ☁️ Deployment
+## Tech Stack
 
-BagOS is deployed on Fly.io:
+- **MCP**: `@modelcontextprotocol/sdk` v1.25+
+- **Bags**: `@bagsfm/bags-sdk` v1.3.7+
+- **Solana**: `@solana/web3.js` + `tweetnacl` + `bs58`
+- **Validation**: `zod` v4
+- **Runtime**: Node.js 22 + TypeScript
 
-| Endpoint | URL |
-|---|---|
-| Health | `https://bagos-mcp.fly.dev/health` |
-| MCP | `https://bagos-mcp.fly.dev/mcp` |
-
-## 🔬 SHARP-on-MCP Context
-
-BagOS receives FHIR context via [SHARP](https://www.sharponmcp.com/) HTTP headers:
-
-| Header | Purpose |
-|---|---|
-| `x-fhir-server-url` | FHIR server base URL |
-| `x-fhir-access-token` | Bearer token for FHIR API calls |
-| `x-patient-id` | Patient ID (fallback) |
-
-## 📋 Hackathon
-
-Built for [Agents Assemble — The Healthcare AI Endgame](https://agents-assemble.devpost.com/) (Track 1: MCP Superpower).
-
-## 📄 License
+## License
 
 MIT
 
+## Built for [The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon)
+
+Track: Claude Skills | Token: $BOS | By: [@edycutjong](https://x.com/edycutjong)
