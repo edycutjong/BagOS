@@ -1,0 +1,36 @@
+services:
+  healthcare:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - AGENT_MODULE=healthcare_agent
+      - PORT=8001
+      - GOOGLE_GENAI_USE_VERTEXAI=FALSE
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  general:
+    build: .
+    ports:
+      - "8002:8002"
+    environment:
+      - AGENT_MODULE=general_agent
+      - PORT=8002
+      - GOOGLE_GENAI_USE_VERTEXAI=FALSE
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  orchestrator:
+    build: .
+    ports:
+      - "8003:8003"
+    environment:
+      - AGENT_MODULE=orchestrator
+      - PORT=8003
+      - GOOGLE_GENAI_USE_VERTEXAI=FALSE
+    env_file:
+      - .env
+    restart: unless-stopped

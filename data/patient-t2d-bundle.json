@@ -1,0 +1,431 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-james-martinez",
+        "name": [
+          {
+            "use": "official",
+            "family": "Martinez",
+            "given": ["James", "R"]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1965-11-22",
+        "address": [
+          {
+            "line": ["1200 Cedar Lane"],
+            "city": "Austin",
+            "state": "TX",
+            "postalCode": "78701"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-t2d",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "44054006",
+              "display": "Type 2 diabetes mellitus"
+            }
+          ],
+          "text": "Type 2 diabetes mellitus"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "onsetDateTime": "2018-03-20",
+        "recordedDate": "2018-03-25"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-obesity",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "414916001",
+              "display": "Obesity"
+            }
+          ],
+          "text": "Obesity (BMI 38.2)"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "onsetDateTime": "2015-06-10"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medrx-metformin",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "860975",
+              "display": "Metformin 1000 MG Oral Tablet"
+            }
+          ],
+          "text": "Metformin 1000mg"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "authoredOn": "2018-04-01",
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "44054006",
+                "display": "Type 2 diabetes mellitus"
+              }
+            ],
+            "text": "Type 2 diabetes mellitus"
+          }
+        ],
+        "note": [
+          {
+            "text": "Patient on maximum tolerated dose (2000mg/day) since 2018. HbA1c remains above target at 8.9% despite adherence."
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medrx-glipizide",
+        "status": "stopped",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "310488",
+              "display": "Glipizide 10 MG Oral Tablet"
+            }
+          ],
+          "text": "Glipizide 10mg"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "authoredOn": "2020-01-15",
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "44054006",
+                "display": "Type 2 diabetes mellitus"
+              }
+            ],
+            "text": "Type 2 diabetes mellitus — added as second agent"
+          }
+        ],
+        "note": [
+          {
+            "text": "Discontinued after 24 months. Caused recurrent hypoglycemic episodes (3 ER visits) and 12 lb weight gain. HbA1c only decreased from 9.2% to 8.6%."
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "medrx-ozempic",
+        "status": "active",
+        "intent": "order",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "1991302",
+              "display": "Semaglutide 1 MG/ML Prefilled Pen Injector [Ozempic]"
+            }
+          ],
+          "text": "Ozempic (semaglutide) 1mg"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "authoredOn": "2022-06-10",
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "44054006",
+                "display": "Type 2 diabetes mellitus"
+              }
+            ],
+            "text": "Type 2 diabetes mellitus — inadequate control on oral agents, with comorbid obesity and cardiovascular risk"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "medstmt-glipizide-failed",
+        "status": "stopped",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "310488",
+              "display": "Glipizide 10 MG Oral Tablet"
+            }
+          ],
+          "text": "Glipizide 10mg"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "effectivePeriod": {
+          "start": "2020-01-15",
+          "end": "2022-01-20"
+        },
+        "reasonCode": [
+          {
+            "text": "Discontinued due to recurrent hypoglycemia (3 emergency department visits for blood glucose < 50 mg/dL), weight gain of 12 lbs, and inadequate glycemic control (HbA1c 8.6%)."
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-hba1c-latest",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "4548-4",
+              "display": "Hemoglobin A1c"
+            }
+          ],
+          "text": "HbA1c"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "effectiveDateTime": "2022-05-28",
+        "valueQuantity": {
+          "value": 8.9,
+          "unit": "%"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H",
+                "display": "High"
+              }
+            ],
+            "text": "Above target (>7.0%)"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-bmi",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "39156-5",
+              "display": "Body mass index"
+            }
+          ],
+          "text": "BMI"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "effectiveDateTime": "2022-05-28",
+        "valueQuantity": {
+          "value": 38.2,
+          "unit": "kg/m2"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "H",
+                "display": "High"
+              }
+            ],
+            "text": "Class II Obesity (BMI 35-39.9)"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-egfr",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "laboratory",
+                "display": "Laboratory"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "48642-3",
+              "display": "Glomerular filtration rate/1.73 sq M.predicted"
+            }
+          ],
+          "text": "eGFR"
+        },
+        "subject": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "effectiveDateTime": "2022-05-28",
+        "valueQuantity": {
+          "value": 58,
+          "unit": "mL/min/1.73m2"
+        },
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "L",
+                "display": "Low"
+              }
+            ],
+            "text": "Stage 3a CKD (eGFR 45-59)"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "ClaimResponse",
+        "id": "claimresp-ozempic-denied",
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+              "code": "pharmacy",
+              "display": "Pharmacy"
+            }
+          ]
+        },
+        "use": "preauthorization",
+        "patient": {
+          "reference": "Patient/patient-james-martinez"
+        },
+        "created": "2022-06-25",
+        "outcome": "error",
+        "disposition": "Prior authorization denied: Preferred alternative not tried. Payer formulary requires trial and failure of a preferred GLP-1 receptor agonist (liraglutide/Victoza or dulaglutide/Trulicity) before non-preferred semaglutide (Ozempic). No documentation of preferred agent trial found.",
+        "item": [
+          {
+            "itemSequence": 1,
+            "adjudication": [
+              {
+                "category": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/adjudication",
+                      "code": "benefit"
+                    }
+                  ]
+                },
+                "reason": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/adjudication-reason",
+                      "code": "ar002",
+                      "display": "Preferred alternative available"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

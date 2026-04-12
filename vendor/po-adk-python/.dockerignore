@@ -1,0 +1,26 @@
+# ── .dockerignore — keeps the Docker image lean and secrets out of the image ───
+
+# Virtual environment — never copy into the image; dependencies are installed fresh
+.venv/
+
+# Secret — must never be baked into an image
+.env
+
+# ADK local state
+.adk/
+
+# Python bytecode
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git history — not needed at runtime
+.git/
+.gitignore
+
+# Dev-only files — not needed in production
+requirements-dev.txt
+Procfile
+scripts/

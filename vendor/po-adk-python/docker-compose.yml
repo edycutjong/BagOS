@@ -1,0 +1,55 @@
+# ── Prompt Opinion ADK Agents — Docker Compose (local dev) ─────────────────────
+#
+# Runs all three agents in containers from the same image, without needing Python
+# or a virtual environment installed on your machine.
+#
+# Requirements:
+#   Docker Desktop — https://www.docker.com/products/docker-desktop/
+#
+# Usage:
+#   docker compose up --build    # First time: build the image and start all agents
+#   docker compose up            # Subsequent runs (image already built)
+#   docker compose up healthcare # Start one agent only
+#   docker compose down          # Stop all agents
+#   docker compose down --rmi local  # Stop and remove the built image
+#
+# Prerequisites:
+#   Copy .env.example to .env and set GOOGLE_API_KEY before running.
+#   The .env file is loaded automatically by each service.
+#
+# Agents and their ports (same as the bare-Python setup):
+#   healthcare  → http://localhost:8001
+#   general     → http://localhost:8002
+#   orchestrator → http://localhost:8003
+
+# Shared configuration — all services inherit these settings.
+x-agent-defaults: &agent-defaults
+  build: .
+  env_file: .env        # loads GOOGLE_API_KEY, GOOGLE_GENAI_USE_VERTEXAI, etc.
+  restart: unless-stopped
+
+services:
+
+  healthcare:
+    <<: *agent-defaults
+    environment:
+      AGENT_MODULE: healthcare_agent.app:a2a_app
+      PORT: "8001"
+    ports:
+      - "8001:8001"
+
+  general:
+    <<: *agent-defaults
+    environment:
+      AGENT_MODULE: general_agent.app:a2a_app
+      PORT: "8002"
+    ports:
+      - "8002:8002"
+
+  orchestrator:
+    <<: *agent-defaults
+    environment:
+      AGENT_MODULE: orchestrator.app:a2a_app
+      PORT: "8003"
+    ports:
+      - "8003:8003"

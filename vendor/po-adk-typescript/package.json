@@ -1,0 +1,38 @@
+{
+  "name": "po-adk-typescript",
+  "version": "1.0.0",
+  "description": "Prompt Opinion Agent Examples — Built with Google ADK · A2A Protocol · TypeScript",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "dev": "concurrently -c \"blue,green,yellow\" -n \"healthcare,general,orchestrator\" \"npx tsx healthcare_agent/server.ts\" \"npx tsx general_agent/server.ts\" \"npx tsx orchestrator/server.ts\"",
+    "dev:healthcare": "npx tsx healthcare_agent/server.ts",
+    "dev:general": "npx tsx general_agent/server.ts",
+    "dev:orchestrator": "npx tsx orchestrator/server.ts",
+    "start:healthcare": "node dist/healthcare_agent/server.js",
+    "start:general": "node dist/general_agent/server.js",
+    "start:orchestrator": "node dist/orchestrator/server.js",
+    "adk:web": "npm run build && npx adk web dist",
+    "adk:run": "npm run build && npx adk run dist"
+  },
+  "dependencies": {
+    "@a2a-js/sdk": "^0.3.10",
+    "@google/adk": "^0.3.0",
+    "dotenv": "^16.0.0",
+    "express": "^4.21.0",
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "@google/adk-devtools": "^0.3.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "concurrently": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

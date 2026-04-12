@@ -1,0 +1,25 @@
+# ── Node & build output ──────────────────────────────────────────────────────
+node_modules/
+dist/
+*.js.map
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── OS / editor noise ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── TypeScript incremental cache ─────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── AI assistant files ────────────────────────────────────────────────────────
+.claude/
