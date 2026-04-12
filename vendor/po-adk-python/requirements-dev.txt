@@ -1,7 +1,0 @@
-# Development-only dependencies — not needed in production deployments.
-# Install with: pip install -r requirements-dev.txt
-
-# honcho — run all agents at once with a single command:
-#   honcho start
-# Uses the Procfile in the project root.
-honcho>=2.0.0
