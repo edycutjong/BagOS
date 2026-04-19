@@ -9,6 +9,8 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "ci": "npm run lint && npm run typecheck && npm run test:coverage",
     "demo": "npx tsx scripts/golden-path.ts",
     "demo:ngrok": "npx tsx scripts/golden-path.ts https://inadvertent-unmiasmal-diego.ngrok-free.dev"
   },
