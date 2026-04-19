@@ -23,8 +23,8 @@ export function loadKeypair(filePath: string): Keypair {
     } else {
       throw new Error('Invalid keypair format');
     }
-  } catch (e) {
-    throw new Error(`Failed to parse keypair from ${resolvedPath}: ${e}`);
+  } catch (e: any) {
+    throw new (Error as any)(`Failed to parse keypair from ${resolvedPath}: ${e.message}`, { cause: e });
   }
 
   return Keypair.fromSecretKey(secretKey);
