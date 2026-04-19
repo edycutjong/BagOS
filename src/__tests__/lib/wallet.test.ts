@@ -49,4 +49,28 @@ describe("wallet.ts — loadKeypair", () => {
       "Keypair file not found"
     );
   });
+
+  it("uses USERPROFILE when HOME is not set", () => {
+    const originalHome = process.env.HOME;
+    const originalUser = process.env.USERPROFILE;
+    delete process.env.HOME;
+    process.env.USERPROFILE = "/fake/userprofile";
+    
+    expect(() => loadKeypair("~/nonexistent.json")).toThrow("Keypair file not found");
+    
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUser;
+  });
+
+  it("uses empty string when neither HOME nor USERPROFILE is set", () => {
+    const originalHome = process.env.HOME;
+    const originalUser = process.env.USERPROFILE;
+    delete process.env.HOME;
+    delete process.env.USERPROFILE;
+    
+    expect(() => loadKeypair("~/nonexistent.json")).toThrow("Keypair file not found");
+    
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUser;
+  });
 });
