@@ -4,6 +4,5 @@ COPY package*.json ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY src/ ./src/
-COPY data/ ./data/
 EXPOSE 3050
-CMD ["npx", "tsx", "src/index.ts"]
+CMD ["npx", "tsx", "src/index.ts", "--http"]
