@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1200, height=630">
+  <title>BagOS — OG Image</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: #000000;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .og-canvas {
+      width: 1200px;
+      height: 630px;
+      background: #030712;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 80px;
+    }
+
+    /* ═══ Animated Grid Background ═══ */
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(147, 51, 234, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(147, 51, 234, 0.05) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    /* ═══ Gradient Mesh ═══ */
+    .mesh {
+      position: absolute;
+      inset: -20%;
+      width: 140%;
+      height: 140%;
+      background:
+        radial-gradient(ellipse 40% 50% at 15% 40%, rgba(59, 130, 246, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 35% 40% at 85% 30%, rgba(147, 51, 234, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 50% 90%, rgba(20, 184, 166, 0.1) 0%, transparent 70%);
+    }
+
+    /* ═══ Noise Texture ═══ */
+    .noise {
+      position: absolute;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* ═══ Border Glow ═══ */
+    .border-glow {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(30, 41, 59, 0.8);
+      pointer-events: none;
+    }
+    .border-glow::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5) 30%, rgba(147, 51, 234, 0.5) 70%, transparent);
+    }
+    .border-glow::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.3) 50%, transparent);
+    }
+
+    /* ═══ Icon SVG on right ═══ */
+    .icon-container {
+      position: absolute;
+      right: 60px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.2;
+    }
+
+    /* ═══ Content ═══ */
+    .content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 800px;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(147, 51, 234, 0.1);
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      font-size: 13px;
+      font-weight: 600;
+      color: #d8b4fe;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #a855f7;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.8);
+    }
+
+    /* Title */
+    .title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 68px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      background: linear-gradient(
+        135deg,
+        #60a5fa 0%,
+        #a855f7 40%,
+        #14b8a6 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Brand Name */
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .brand-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
+    }
+    .brand-name .accent {
+      color: #a855f7;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #3b82f6, #9333ea);
+    }
+
+    /* Subtitle */
+    .subtitle {
+      font-family: 'Inter', sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: #cbd5e1;
+      line-height: 1.6;
+      max-width: 680px;
+    }
+    .subtitle .highlight-blue {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    .subtitle .highlight-purple {
+      color: #c084fc;
+      font-weight: 600;
+    }
+
+    /* Bottom bar */
+    .bottom-bar {
+      position: absolute;
+      bottom: 45px;
+      left: 80px;
+      right: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .tech-pills {
+      display: flex;
+      gap: 12px;
+    }
+    .tech-pill {
+      padding: 6px 16px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+      letter-spacing: 0.04em;
+    }
+    .tech-pill.active {
+      color: #c084fc;
+      border-color: rgba(147, 51, 234, 0.4);
+      background: rgba(147, 51, 234, 0.1);
+    }
+
+    .hackathon-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: #64748b;
+      letter-spacing: 0.03em;
+    }
+    .hackathon-tag .dh {
+      color: #a855f7;
+    }
+
+    /* Floating code rain words */
+    .code-word {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #a855f7;
+      opacity: 0.08;
+      writing-mode: vertical-lr;
+      letter-spacing: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="og-canvas">
+    <!-- BG Layers -->
+    <div class="mesh"></div>
+    <div class="grid-bg"></div>
+    <div class="noise"></div>
+    <div class="border-glow"></div>
+
+    <!-- Code rain words (decorative) -->
+    <span class="code-word" style="left: 85%; top: 5%;">MCP_PROTOCOL</span>
+    <span class="code-word" style="left: 90%; top: 15%;">TRADE_EXEC</span>
+    <span class="code-word" style="left: 78%; top: 10%;">LIQUIDITY</span>
+    <span class="code-word" style="left: 95%; top: 30%;">SOLANA</span>
+    <span class="code-word" style="left: 82%; top: 55%;">TOKEN_CLAIM</span>
+    <span class="code-word" style="left: 75%; top: 70%;">BAGS_SDK</span>
+    <span class="code-word" style="left: 92%; top: 60%;">AGENT_OS</span>
+
+    <!-- Logo geometry as watermark -->
+    <div class="icon-container">
+      <svg width="400" height="400" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="12" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <g filter="url(#glow)">
+          <rect x="120" y="160" width="272" height="220" rx="40" fill="none" stroke="#3b82f6" stroke-width="40" />
+          <path d="M180 160 v-40 a 76 76 0 0 1 152 0 v40" fill="none" stroke="#a855f7" stroke-width="40" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <div class="badge">
+        <div class="badge-dot"></div>
+        <span>Model Context Protocol (MCP) Server</span>
+      </div>
+
+      <div class="title">
+        The AI Operating System<br>
+        for Creator Finance.
+      </div>
+
+      <div class="brand-row">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="8" width="14" height="12" rx="2" />
+            <path d="M8 8V6a4 4 0 0 1 8 0v2" />
+          </svg>
+        </div>
+        <span class="brand-name">Bag<span class="accent">OS</span></span>
+      </div>
+
+      <p class="subtitle">
+        Trade, claim, and launch tokens through <span class="highlight-blue">natural language</span>.<br>
+        Bridging <span class="highlight-purple">Claude Desktop</span> with <span class="highlight-purple">Solana DeFi</span> via Bags SDK.
+      </p>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+      <div class="tech-pills">
+        <span class="tech-pill active">MCP v1.25</span>
+        <span class="tech-pill">Bags SDK</span>
+        <span class="tech-pill">Solana</span>
+        <span class="tech-pill">TypeScript</span>
+      </div>
+      <span class="hackathon-tag">
+        Built for <span class="dh">DoraHacks</span> BAGS Hackathon
+      </span>
+    </div>
+  </div>
+</body>
+</html>
