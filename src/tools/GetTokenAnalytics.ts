@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { getBagsClient } from "../lib/bags-client";
+import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool";
 
 export const GetTokenAnalyticsTool: IMcpTool = {
@@ -15,7 +16,9 @@ export const GetTokenAnalyticsTool: IMcpTool = {
         try {
           const client = getBagsClient();
 
-          const analytics = await client.state.getTokenAnalytics?.(args.tokenMint) || { message: "Mocked analytics data for hackathon API placeholder" };
+          const pubkey = new PublicKey(args.tokenMint);
+          const fees = await client.state.getTokenLifetimeFees(pubkey);
+          const analytics = { tokenLifetimeFees: fees, status: "Active" };
 
           return {
             content: [

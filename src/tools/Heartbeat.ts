@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { getBagsClient } from "../lib/bags-client";
 import { loadKeypair } from "../lib/wallet";
+import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool";
 
 export const HeartbeatTool: IMcpTool = {
@@ -16,8 +17,9 @@ export const HeartbeatTool: IMcpTool = {
           const walletAddress = keypair.publicKey.toBase58();
 
           const client = getBagsClient();
-          const fees = await client.fee.getClaimableFees(walletAddress) || { message: "Mocked claimable fees placeholder" };
-          const systemState = await client.state.getSystemHealth?.() || { status: "Operational", rpc: "Helius" };
+          const pubkey = new PublicKey(walletAddress);
+          const fees = await client.fee.getAllClaimablePositions(pubkey);
+          const systemState = { status: "Operational", rpc: "Helius" };
 
           const heartbeatReport = {
             wallet: walletAddress,

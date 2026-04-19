@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { getBagsClient } from "../lib/bags-client";
+import { PublicKey } from '@solana/web3.js';
 import { loadKeypair } from "../lib/wallet";
 import { IMcpTool } from "../types/IMcpTool";
 
@@ -24,15 +25,14 @@ export const GetClaimableFeesTool: IMcpTool = {
           }
 
           const client = getBagsClient();
-          // SDK call representation
-          // Assuming the sdk.fee namespace or similar from bags-sdk
-          const fees = await client.fee.getClaimableFees(targetWallet);
+          const pubkey = new PublicKey(targetWallet);
+          const claimable = await client.fee.getAllClaimablePositions(pubkey);
 
           return {
             content: [
               {
                 type: "text",
-                text: `Claimable Fees for ${targetWallet}:\n\n${JSON.stringify(fees, null, 2)}`
+                text: `Claimable Fees for ${targetWallet}:\n\n${JSON.stringify(claimable, null, 2)}`
               }
             ]
           };

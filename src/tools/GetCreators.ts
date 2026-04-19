@@ -19,8 +19,7 @@ export const GetCreatorsTool: IMcpTool = {
           const reqLimit = args.limit || 10;
           const reqOffset = args.offset || 0;
 
-          // Replace with exact SDK method when typed out:
-          const creators = await client.state.getCreators?.(reqLimit, reqOffset) || [];
+          const creators = await client.state.getTopTokensByLifetimeFees();
 
           return {
             content: [

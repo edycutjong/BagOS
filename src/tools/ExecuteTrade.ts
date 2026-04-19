@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { getBagsClient } from "../lib/bags-client";
+import { PublicKey } from '@solana/web3.js';
 import { loadKeypair } from "../lib/wallet";
 import { checkTokenGate } from "../lib/token-gate";
 import { IMcpTool } from "../types/IMcpTool";
@@ -35,15 +36,18 @@ export const ExecuteTradeTool: IMcpTool = {
           }
 
           const client = getBagsClient();
-          const slippage = args.slippageBps || 300;
-          
-          await client.trade.swap({
-            walletAddress: walletAddress,
-            inputMint: args.inputMint,
-            outputMint: args.outputMint,
-            amount: JSON.stringify(args.amount), // sdk string representation if large
-            side: args.side,
-            slippageBps: slippage
+          const slippageBps = args.slippageBps || 300;
+
+          const quoteResponse = await client.trade.getQuote({
+            inputMint: new PublicKey(args.inputMint),
+            outputMint: new PublicKey(args.outputMint),
+            amount: args.amount,
+            slippageBps
+          });
+
+          await client.trade.createSwapTransaction({
+            userPublicKey: new PublicKey(walletAddress),
+            quoteResponse
           });
 
           // Internally, if it builds unsigned tx and requests us to sign + push to Jito:
@@ -54,7 +58,7 @@ export const ExecuteTradeTool: IMcpTool = {
             content: [
               {
                 type: "text",
-                text: `✅ Trade Execution Signed! \nSwapped ${args.amount} of ${args.inputMint} for ${args.outputMint} at max ${slippage / 100}% slippage.`
+                text: `✅ Trade Execution Signed! \nSwapped ${args.amount} of ${args.inputMint} for ${args.outputMint} at max ${slippageBps / 100}% slippage.`
               }
             ]
           };

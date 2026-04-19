@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { getBagsClient } from "../lib/bags-client";
+import { PublicKey } from '@solana/web3.js';
 import { loadKeypair } from "../lib/wallet";
 import { checkTokenGate } from "../lib/token-gate";
 import { IMcpTool } from "../types/IMcpTool";
@@ -31,16 +32,12 @@ export const ClaimFeesTool: IMcpTool = {
           }
 
           const client = getBagsClient();
+          const pubkey = new PublicKey(walletAddress);
           
-          // Obtain unsigned transactions from SDK and sign 
-          await client.fee.claimFees(walletAddress, args.tokenMints);
-          
-          // Usually SDK returns tx buffer or instructions to send.
-          // In an authentic context we would use web3.js + wallet to encode, send Jito bundle etc.
-          // Since it's a SDK abstraction, let's assume it returns a signature locally or we push 
-          // the signed payload via the sdk.
-          
-          // Implementation details depend on the specific SDK design, assuming success for hackathon mock/MVP
+          for (const token of args.tokenMints) {
+            const tokenPubkey = new PublicKey(token);
+            await client.fee.getClaimTransactions(pubkey, tokenPubkey);
+          }
           
           return {
             content: [

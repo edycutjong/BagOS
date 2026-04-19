@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { getBagsClient } from "../lib/bags-client";
+import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool";
 
 export const GetTradeQuoteTool: IMcpTool = {
@@ -19,10 +20,9 @@ export const GetTradeQuoteTool: IMcpTool = {
           const client = getBagsClient();
           
           const quote = await client.trade.getQuote({
-            inputMint: args.inputMint,
-            outputMint: args.outputMint,
-            amount: args.amount,
-            side: args.side
+            inputMint: new PublicKey(args.inputMint),
+            outputMint: new PublicKey(args.outputMint),
+            amount: args.amount
           });
 
           return {

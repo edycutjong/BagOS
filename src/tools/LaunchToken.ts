@@ -36,20 +36,18 @@ export const LaunchTokenTool: IMcpTool = {
 
           const client = getBagsClient();
           
-          await client.tokenLaunch.create({
-            walletAddress: walletAddress,
+          const response = await client.tokenLaunch.createTokenInfoAndMetadata({
             name: args.name,
             symbol: args.symbol,
             description: args.description,
-            imageUrl: args.imageUrl,
-            initialBuySOL: args.initialBuySOL
+            imageUrl: args.imageUrl || "https://pump.fun/logo.png"
           });
-
+          
           return {
             content: [
               {
                 type: "text",
-                text: `✅ Success! Token Launch execution initiated for $${args.symbol} (${args.name}).`
+                text: `✅ Token metadata created for ${args.symbol}.\nMint: ${response.tokenMint}`
               }
             ]
           };
