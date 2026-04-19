@@ -111,4 +111,61 @@ describe("AuthenticateTool", () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("expected message and nonce");
   });
+
+  it("handles fs.writeFileSync error gracefully", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiKey: "test-api-key", keyId: "test-key-id" }),
+    });
+
+    const fs = require("fs");
+    const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {
+        throw new Error("EACCES");
+    });
+    const logSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const result = await getHandler("bags_authenticate")({});
+    
+    expect(result.isError).toBeUndefined();
+    expect(logSpy).toHaveBeenCalledWith("Could not save credentials", expect.any(Error));
+
+    existsSpy.mockRestore();
+    writeSpy.mockRestore();
+    logSpy.mockRestore();
+  });
+
+  it("handles fs.writeFileSync success", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiKey: "test-api-key", keyId: "test-key-id" }),
+    });
+
+    const fs = require("fs");
+    const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const result = await getHandler("bags_authenticate")({});
+    
+    expect(result.content[0].text).toContain("Credentials saved to");
+
+    existsSpy.mockRestore();
+    writeSpy.mockRestore();
+  });
 });
