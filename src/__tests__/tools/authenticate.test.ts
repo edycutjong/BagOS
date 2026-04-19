@@ -168,4 +168,32 @@ describe("AuthenticateTool", () => {
     existsSpy.mockRestore();
     writeSpy.mockRestore();
   });
+
+  it("handles HOME environment variable fallback", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiKey: "test-key", keyId: "test-id" }),
+    });
+
+    const originalHome = process.env.HOME;
+    delete process.env.HOME;
+    
+    // We expect it to save to /credentials.json or something
+    const fs = require("fs");
+    const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+    await getHandler("bags_authenticate")({});
+
+    process.env.HOME = originalHome;
+    existsSpy.mockRestore();
+    writeSpy.mockRestore();
+  });
 });
