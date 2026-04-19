@@ -1,9 +1,0 @@
-[submodule "vendor/po-community-mcp"]
-	path = vendor/po-community-mcp
-	url = https://github.com/prompt-opinion/po-community-mcp.git
-[submodule "vendor/po-adk-python"]
-	path = vendor/po-adk-python
-	url = https://github.com/prompt-opinion/po-adk-python.git
-[submodule "vendor/po-adk-typescript"]
-	path = vendor/po-adk-typescript
-	url = https://github.com/prompt-opinion/po-adk-typescript.git
