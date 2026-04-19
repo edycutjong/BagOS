@@ -113,6 +113,14 @@ describe("Read-only MCP Tools", () => {
       expect(result.content[0].text).toContain("Top");
       expect(result.content[0].text).toContain("Alice");
     });
+
+    it("returns error on SDK failure", async () => {
+      mockBagsClient.state.getTopTokensByLifetimeFees.mockRejectedValueOnce(new Error("API Error"));
+      const { server, getHandler } = createMockServer();
+      GetCreatorsTool.registerTool(server);
+      const result = await getHandler("bags_get_creators")({});
+      expect(result.isError).toBe(true);
+    });
   });
 
   describe("GetTokenAnalytics", () => {
@@ -126,6 +134,14 @@ describe("Read-only MCP Tools", () => {
       expect(result.content[0].text).toContain("Analytics");
       expect(result.content[0].text).toContain("42");
     });
+
+    it("returns error on SDK failure", async () => {
+      mockBagsClient.state.getTokenLifetimeFees.mockRejectedValueOnce(new Error("API Error"));
+      const { server, getHandler } = createMockServer();
+      GetTokenAnalyticsTool.registerTool(server);
+      const result = await getHandler("bags_get_token_analytics")({ tokenMint: SOL_MINT });
+      expect(result.isError).toBe(true);
+    });
   });
 
   describe("GetPartnerStats", () => {
@@ -138,6 +154,14 @@ describe("Read-only MCP Tools", () => {
       });
       expect(result.content[0].text).toContain("Partner Referral Stats");
     });
+
+    it("returns error on SDK failure", async () => {
+      mockBagsClient.partner.getPartnerConfigClaimStats.mockRejectedValueOnce(new Error("API Error"));
+      const { server, getHandler } = createMockServer();
+      GetPartnerStatsTool.registerTool(server);
+      const result = await getHandler("bags_get_partner_stats")({ partnerId: SOL_MINT });
+      expect(result.isError).toBe(true);
+    });
   });
 
   describe("Heartbeat", () => {
@@ -148,6 +172,14 @@ describe("Read-only MCP Tools", () => {
       const result = await getHandler("bags_heartbeat")({});
       expect(result.content[0].text).toContain("Heartbeat");
       expect(result.content[0].text).toContain("Operational");
+    });
+
+    it("returns error on SDK failure", async () => {
+      mockBagsClient.fee.getAllClaimablePositions.mockRejectedValueOnce(new Error("API Error"));
+      const { server, getHandler } = createMockServer();
+      HeartbeatTool.registerTool(server);
+      const result = await getHandler("bags_heartbeat")({});
+      expect(result.isError).toBe(true);
     });
   });
 });
