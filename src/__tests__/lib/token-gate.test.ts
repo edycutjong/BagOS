@@ -100,4 +100,44 @@ describe("token-gate.ts — checkTokenGate", () => {
       "BOS_TOKEN_MINT is not defined"
     );
   });
+
+  it("uses default required balance and RPC URL when env vars are missing", async () => {
+    delete process.env.BOS_REQUIRED_BALANCE;
+    delete process.env.HELIUS_RPC_URL;
+    mockGetParsed.mockResolvedValue({
+      value: [
+        {
+          account: {
+            data: {
+              parsed: {
+                info: { tokenAmount: { uiAmount: 20000 } },
+              },
+            },
+          },
+        },
+      ],
+    });
+    const { checkTokenGate } = require("../../lib/token-gate");
+    const result = await checkTokenGate(VALID_WALLET);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("handles token amount fallback when amount is falsy", async () => {
+    mockGetParsed.mockResolvedValue({
+      value: [
+        {
+          account: {
+            data: {
+              parsed: {
+                info: { tokenAmount: { uiAmount: null } },
+              },
+            },
+          },
+        },
+      ],
+    });
+    const { checkTokenGate } = require("../../lib/token-gate");
+    const result = await checkTokenGate(VALID_WALLET);
+    expect(result.balance).toBe(0);
+  });
 });
