@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/edycutjong/bagos">
-    <img src="docs/screenshots/BagOS_Thumbnail_16_9.png" alt="BagOS Project Banner" width="800" />
+    <img src="docs/assets/BagOS_Thumbnail_16_9.png" alt="BagOS Project Banner" width="800" />
   </a>
   <h1>🖥️ BagOS</h1>
   <p><em>The AI Operating System for Creator Finance — trade, claim, and launch tokens through natural language.</em></p>
@@ -25,7 +25,7 @@
 ## 📸 See it in Action
 
 <p align="center">
-  <img src="docs/screenshots/claude-desktop-tools.png" alt="Claude Desktop with BagOS MCP tools" width="700" />
+  <img src="docs/assets/claude-desktop-tools.png" alt="Claude Desktop with BagOS MCP tools" width="700" />
   <br/>
   <em>Claude Desktop — BagOS MCP tools enabling natural language DeFi operations</em>
 </p>

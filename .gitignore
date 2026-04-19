@@ -18,6 +18,3 @@ Thumbs.db
 # Logs
 *.log
 coverage/
-
-# Assets
-docs/assets
