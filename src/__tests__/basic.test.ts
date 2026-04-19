@@ -10,3 +10,11 @@ describe("BagOS Core utilities", () => {
     expect(err.isError).toBe(true);
   });
 });
+
+import { createMockServer } from "./helpers";
+describe("helpers.ts", () => {
+  it("getHandler throws on unregistered tool", () => {
+    const { getHandler } = createMockServer();
+    expect(() => getHandler("unknown")).toThrow('Tool "unknown" was not registered');
+  });
+});
