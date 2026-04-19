@@ -87,6 +87,21 @@ describe("Write (token-gated) MCP Tools", () => {
       expect(result.content[0].text).toContain("100");
     });
 
+    it("blocks trade when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
+      process.env.BOS_REQUIRED_BALANCE = "500";
+      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+      const { server, getHandler } = createMockServer();
+      ExecuteTradeTool.registerTool(server);
+
+      const result = await getHandler("bags_execute_trade")({
+        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("500 $BOS");
+      delete process.env.BOS_REQUIRED_BALANCE;
+    });
+
     it("uses custom slippage when provided", async () => {
       const { server, getHandler } = createMockServer();
       ExecuteTradeTool.registerTool(server);
@@ -100,6 +115,16 @@ describe("Write (token-gated) MCP Tools", () => {
       });
 
       expect(result.content[0].text).toContain("5%");
+    });
+
+    it("returns error on SDK failure", async () => {
+      mockBagsClient.trade.createSwapTransaction.mockRejectedValueOnce(new Error("API Error"));
+      const { server, getHandler } = createMockServer();
+      ExecuteTradeTool.registerTool(server);
+      const result = await getHandler("bags_execute_trade")({
+        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
+      });
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -127,6 +152,14 @@ describe("Write (token-gated) MCP Tools", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Access Denied");
+    });
+
+    it("returns error on SDK failure", async () => {
+      mockBagsClient.fee.getClaimTransactions.mockRejectedValueOnce(new Error("API Error"));
+      const { server, getHandler } = createMockServer();
+      ClaimFeesTool.registerTool(server);
+      const result = await getHandler("bags_claim_fees")({ tokenMints: [SOL_MINT] });
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -158,6 +191,21 @@ describe("Write (token-gated) MCP Tools", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Access Denied");
+    });
+
+    it("blocks launch when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
+      process.env.BOS_REQUIRED_BALANCE = "500";
+      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+      const { server, getHandler } = createMockServer();
+      LaunchTokenTool.registerTool(server);
+
+      const result = await getHandler("bags_launch_token")({
+        name: "TestToken", symbol: "TT", description: "Test"
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("500 $BOS");
+      delete process.env.BOS_REQUIRED_BALANCE;
     });
 
     it("returns error on SDK failure", async () => {
