@@ -84,7 +84,22 @@ describe("Write (token-gated) MCP Tools", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Access Denied");
-      expect(result.content[0].text).toContain("100");
+    });
+
+    it("blocks trade when gate fails with default balance", async () => {
+      const original = process.env.BOS_REQUIRED_BALANCE;
+      delete process.env.BOS_REQUIRED_BALANCE;
+      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+      const { server, getHandler } = createMockServer();
+      ExecuteTradeTool.registerTool(server);
+
+      const result = await getHandler("bags_execute_trade")({
+        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("10000 $BOS");
+      process.env.BOS_REQUIRED_BALANCE = original;
     });
 
     it("blocks trade when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
@@ -154,6 +169,37 @@ describe("Write (token-gated) MCP Tools", () => {
       expect(result.content[0].text).toContain("Access Denied");
     });
 
+    it("blocks claim when gate fails with default balance", async () => {
+      const original = process.env.BOS_REQUIRED_BALANCE;
+      delete process.env.BOS_REQUIRED_BALANCE;
+      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+      const { server, getHandler } = createMockServer();
+      ClaimFeesTool.registerTool(server);
+
+      const result = await getHandler("bags_claim_fees")({
+        tokenMints: [SOL_MINT],
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("10000 $BOS");
+      process.env.BOS_REQUIRED_BALANCE = original;
+    });
+
+    it("blocks claim when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
+      process.env.BOS_REQUIRED_BALANCE = "500";
+      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+      const { server, getHandler } = createMockServer();
+      ClaimFeesTool.registerTool(server);
+
+      const result = await getHandler("bags_claim_fees")({
+        tokenMints: [SOL_MINT],
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("500 $BOS");
+      delete process.env.BOS_REQUIRED_BALANCE;
+    });
+
     it("returns error on SDK failure", async () => {
       mockBagsClient.fee.getClaimTransactions.mockRejectedValueOnce(new Error("API Error"));
       const { server, getHandler } = createMockServer();
@@ -191,6 +237,22 @@ describe("Write (token-gated) MCP Tools", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Access Denied");
+    });
+
+    it("blocks launch when gate fails with default balance", async () => {
+      const original = process.env.BOS_REQUIRED_BALANCE;
+      delete process.env.BOS_REQUIRED_BALANCE;
+      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+      const { server, getHandler } = createMockServer();
+      LaunchTokenTool.registerTool(server);
+
+      const result = await getHandler("bags_launch_token")({
+        name: "TestToken", symbol: "TT", description: "Test"
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("10000 $BOS");
+      process.env.BOS_REQUIRED_BALANCE = original;
     });
 
     it("blocks launch when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
