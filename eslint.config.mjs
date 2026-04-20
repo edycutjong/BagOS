@@ -12,7 +12,6 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-require-imports": "off",
-      "preserve-caught-error": "off",
     },
   },
 );
