@@ -58,6 +58,17 @@ describe("Write (token-gated) MCP Tools", () => {
       expect(mockCheckTokenGate).toHaveBeenCalled();
     });
 
+    it("uses default args when optional args are omitted", async () => {
+      delete process.env.BOS_TOKEN_MINT; // Force fallback checking
+      const { server, getHandler } = createMockServer();
+      ExecuteTradeTool.registerTool(server);
+
+      const result = await getHandler("bags_execute_trade")({});
+
+      expect(result.content[0].text).toContain("Trade Execution Signed");
+      expect(mockCheckTokenGate).toHaveBeenCalled();
+    });
+
     it("blocks trade when token gate fails", async () => {
       mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 100 });
       const { server, getHandler } = createMockServer();

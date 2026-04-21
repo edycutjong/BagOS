@@ -30,6 +30,8 @@ import { HeartbeatTool } from "../../tools/Heartbeat";
 describe("Read-only MCP Tools", () => {
   beforeEach(() => {
     delete process.env.BAGS_KEYPAIR_PATH;
+    delete process.env.USE_MOCK_DATA;
+    delete process.env.BOS_TOKEN_MINT;
   });
 
   describe("GetClaimableFees", () => {
@@ -55,6 +57,16 @@ describe("Read-only MCP Tools", () => {
       GetClaimableFeesTool.registerTool(server);
       const result = await getHandler("bags_get_claimable_fees")({});
       expect(result.content[0].text).toContain(SYSTEM_PROGRAM);
+    });
+
+    it("returns mock data when USE_MOCK_DATA is true", async () => {
+      process.env.USE_MOCK_DATA = 'true';
+      const { server, getHandler } = createMockServer();
+      GetClaimableFeesTool.registerTool(server);
+      const result = await getHandler("bags_get_claimable_fees")({});
+      expect(result.content[0].text).toContain("MOCK DATA ENABLED");
+      expect(result.isError).toBeUndefined();
+      delete process.env.USE_MOCK_DATA;
     });
 
     it("returns error on SDK failure", async () => {
@@ -84,6 +96,18 @@ describe("Read-only MCP Tools", () => {
       const result = await getHandler("bags_get_trade_quote")({
         inputMint: SOL_MINT,
         outputMint: SYSTEM_PROGRAM,
+        amount: 1,
+        side: "buy",
+      });
+      expect(result.content[0].text).toContain("Trade Quote");
+      expect(result.isError).toBeUndefined();
+    });
+
+    it("uses default mints when inputMint and outputMint are omitted", async () => {
+      const { server, getHandler } = createMockServer();
+      GetTradeQuoteTool.registerTool(server);
+
+      const result = await getHandler("bags_get_trade_quote")({
         amount: 1,
         side: "buy",
       });
