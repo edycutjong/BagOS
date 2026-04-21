@@ -14,7 +14,7 @@ export const ExecuteTradeTool: IMcpTool = {
 
     server.tool(
       "bags_execute_trade",
-      `Check if wallet holds enough $BOS tokens to access gated trade features. This is a token gate verification tool — it checks your token balance and shows whether access is granted or denied. Safe to call: no funds are moved without explicit wallet signing. SOL mint: ${SOL_MINT}. Default BOS token: ${bosMint}.`,
+      `GATED: Requires $BOS. Execute a token swap on Bags pools. Verifies token gate, fetches a quote, builds and signs the swap transaction. SOL mint: ${SOL_MINT}. Default BOS token: ${bosMint}.`,
       {
         inputMint: z.string().optional().describe(`Input token mint. Defaults to SOL: ${SOL_MINT}`),
         outputMint: z.string().optional().describe(`Output token mint. Defaults to BOS: ${bosMint}`),

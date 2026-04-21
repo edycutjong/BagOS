@@ -40,7 +40,7 @@ export const LaunchTokenTool: IMcpTool = {
             name: args.name,
             symbol: args.symbol,
             description: args.description,
-            imageUrl: args.imageUrl || "https://pump.fun/logo.png"
+            imageUrl: args.imageUrl || "https://bags.fm/logo.png"
           });
           
           return {
