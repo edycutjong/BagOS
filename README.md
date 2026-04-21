@@ -19,6 +19,7 @@
   <br/>
 
   <a href="https://youtu.be/tJC7rYnksdY"><img src="https://img.shields.io/badge/Demo_Video-▶_Watch_Now-red?logo=youtube" alt="Demo Video" /></a>
+  <a href="https://dorahacks.io/buidl/43312"><img src="https://img.shields.io/badge/DoraHacks-BUIDL-orange?logo=dorahacks&logoColor=white" alt="DoraHacks BUIDL" /></a>
 </div>
 
 ---
@@ -219,5 +220,7 @@ $BOS is the access key for BagOS write operations. Hold ≥10,000 $BOS to unlock
 MIT © 2026 [Edy Cu](https://github.com/edycutjong)
 
 ## Built for [The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon)
+
+**🚀 BUIDL Link:** [https://dorahacks.io/buidl/43312](https://dorahacks.io/buidl/43312)
 
 Track: Claude Skills | Token: $BOS | By: [@edycutjong](https://x.com/edycutjong)
