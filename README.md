@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/Coverage-100%25-brightgreen" alt="Coverage" />
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" />
 
-  <br/><br/>
+  <br/>
 
   <a href="https://youtu.be/REPLACE_WITH_DEMO_VIDEO"><img src="https://img.shields.io/badge/Demo_Video-▶_Watch_Now-red?logo=youtube" alt="Demo Video" /></a>
 </div>
