@@ -20,4 +20,4 @@ Thumbs.db
 coverage/
 
 # Assets
-docs/assets 
+docs/assets/*
