@@ -21,3 +21,4 @@ coverage/
 
 # Assets
 docs/assets/*
+build/
