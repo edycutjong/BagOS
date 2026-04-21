@@ -1,5 +1,4 @@
 import { BagsSDK } from "@bagsfm/bags-sdk";
-import { jest } from "@jest/globals";
 
 import { BagsClient } from "../../../src/lib/bags-client.js";
 
