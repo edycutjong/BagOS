@@ -1,6 +1,6 @@
 {
   "name": "@edycutjong/bagos-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Claude MCP server for the Bags ecosystem, enabling wallet auth and Sol/Token trades via Bags SDK.",
   "type": "module",
   "main": "build/index.js",
