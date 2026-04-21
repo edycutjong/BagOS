@@ -61,6 +61,15 @@ describe("Read-only MCP Tools", () => {
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("RPC down");
     });
+
+    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
+      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
+      const { server, getHandler } = createMockServer();
+      GetClaimableFeesTool.registerTool(server);
+      const result = await getHandler("bags_get_claimable_fees")({});
+      expect(result.isError).toBeUndefined();
+      delete process.env.BAGS_KEYPAIR_PATH;
+    });
   });
 
   describe("GetTradeQuote", () => {
@@ -168,6 +177,15 @@ describe("Read-only MCP Tools", () => {
       HeartbeatTool.registerTool(server);
       const result = await getHandler("bags_heartbeat")({});
       expect(result.isError).toBe(true);
+    });
+
+    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
+      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
+      const { server, getHandler } = createMockServer();
+      HeartbeatTool.registerTool(server);
+      const result = await getHandler("bags_heartbeat")({});
+      expect(result.isError).toBeUndefined();
+      delete process.env.BAGS_KEYPAIR_PATH;
     });
   });
 });

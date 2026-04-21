@@ -128,6 +128,18 @@ describe("Write (token-gated) MCP Tools", () => {
       });
       expect(result.isError).toBe(true);
     });
+
+    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
+      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
+      const { server, getHandler } = createMockServer();
+      ExecuteTradeTool.registerTool(server);
+
+      const result = await getHandler("bags_execute_trade")({
+        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
+      });
+      expect(result.isError).toBeUndefined();
+      delete process.env.BAGS_KEYPAIR_PATH;
+    });
   });
 
   describe("ClaimFees", () => {
@@ -193,6 +205,16 @@ describe("Write (token-gated) MCP Tools", () => {
       ClaimFeesTool.registerTool(server);
       const result = await getHandler("bags_claim_fees")({ tokenMints: [SOL_MINT] });
       expect(result.isError).toBe(true);
+    });
+
+    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
+      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
+      const { server, getHandler } = createMockServer();
+      ClaimFeesTool.registerTool(server);
+
+      const result = await getHandler("bags_claim_fees")({ tokenMints: [SOL_MINT] });
+      expect(result.isError).toBeUndefined();
+      delete process.env.BAGS_KEYPAIR_PATH;
     });
   });
 
@@ -272,6 +294,20 @@ describe("Write (token-gated) MCP Tools", () => {
 
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain("Network error");
+    });
+
+    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
+      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
+      const { server, getHandler } = createMockServer();
+      LaunchTokenTool.registerTool(server);
+
+      const result = await getHandler("bags_launch_token")({
+        name: "TestToken",
+        symbol: "TT",
+        description: "A test token",
+      });
+      expect(result.isError).toBeUndefined();
+      delete process.env.BAGS_KEYPAIR_PATH;
     });
   });
 });

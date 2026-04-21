@@ -238,8 +238,12 @@ async function scenarioTokenGateCheck(): Promise<boolean> {
   try {
     // Attempt a gated operation without the required $BOS balance
     // This should fail gracefully with an access denied message
-    await step("bags_get_claimable_fees — Fee discovery (read-only)", () =>
-      mcpCallTool("bags_get_claimable_fees", {})
+    await step("bags_execute_trade — Write tool (token gated)", () =>
+      mcpCallTool("bags_execute_trade", {
+        inputMint: SOL_MINT,
+        outputMint: process.env.BOS_TOKEN_MINT || SOL_MINT,
+        amount: 0.1,
+      })
     );
     return true;
   } catch {
