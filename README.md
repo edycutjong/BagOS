@@ -100,15 +100,20 @@ cp .env.example .env
 # Add your BAGS_API_KEY and HELIUS_RPC_URL
 ```
 
-### 3. Add to Claude Desktop
+### 3. Build & Add to Claude Desktop
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+First, compile the server from TypeScript to JavaScript:
+```bash
+npm run build
+```
+
+Then edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "bagos": {
-      "command": "npx",
-      "args": ["tsx", "/absolute/path/to/bagos/src/index.ts"]
+      "command": "node",
+      "args": ["/absolute/path/to/bagos/build/index.js"]
     }
   }
 }
@@ -124,6 +129,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```
 bagos/
+├── build/                # Compiled JavaScript output
 ├── src/
 │   ├── index.ts              # MCP server entry point
 │   ├── tools/                # 10 MCP tool implementations
