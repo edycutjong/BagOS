@@ -25,7 +25,7 @@
 ## 📸 See it in Action
 
 <p align="center">
-  <img src="docs/claude-desktop-tools.png" alt="Claude Desktop with BagOS MCP tools" width="700" />
+  <img src="docs/assets/claude-desktop-tools.png" alt="Claude Desktop with BagOS MCP tools" width="700" />
   <br/>
   <em>Claude Desktop — BagOS MCP tools enabling natural language DeFi operations</em>
 </p>
@@ -160,6 +160,7 @@ bagos/
 
 $BOS is the access key for BagOS write operations. Hold ≥10,000 $BOS to unlock trades, claims, and token launches.
 
+- **Contract Address**: `BagOS11111111111111111111111111111111111111`
 - **Trade on Bags.fm**: [bags.fm/BOS](https://bags.fm/)
 
 ---
