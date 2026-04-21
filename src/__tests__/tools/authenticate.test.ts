@@ -168,6 +168,31 @@ describe("AuthenticateTool", () => {
     writeSpy.mockRestore();
   });
 
+  it("handles fs.existsSync false", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiKey: "test-api-key", keyId: "test-key-id" }),
+    });
+
+    const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(false);
+    const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const result = await getHandler("bags_authenticate")({});
+    
+    expect(result.content[0].text).not.toContain("Credentials saved to");
+
+    existsSpy.mockRestore();
+    writeSpy.mockRestore();
+  });
+
   it("handles HOME environment variable fallback", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

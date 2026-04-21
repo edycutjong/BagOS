@@ -21,5 +21,8 @@ export const BagsClient = {
     }
 
     return bagsClientInstance;
+  },
+  reset: function(): void {
+    bagsClientInstance = null;
   }
 };
