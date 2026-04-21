@@ -1,7 +1,11 @@
 import type { Config } from "jest";
 
 const config: Config = {
-  preset: "ts-jest",
+  preset: "ts-jest/presets/default-esm",
+  extensionsToTreatAsEsm: [".ts"],
+  moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
+  },
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
   testMatch: ["**/__tests__/**/*.test.ts"],
@@ -9,7 +13,7 @@ const config: Config = {
     "node_modules/(?!(jose|@bagsfm)/)",
   ],
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { useESM: true }],
+    "^.+\\.tsx?$": ["ts-jest", { useESM: true, tsconfig: { isolatedModules: true } }],
     "node_modules/(jose|@bagsfm)/.+\\.js$": ["ts-jest", { useESM: true }],
   },
   coverageThreshold: {
