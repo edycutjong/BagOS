@@ -1,8 +1,8 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
-import { getBagsClient } from "../lib/bags-client";
-import { loadKeypair } from "../lib/wallet";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { BagsClient } from "../lib/bags-client.js";
+import { Wallet } from "../lib/wallet.js";
 import { PublicKey } from '@solana/web3.js';
-import { IMcpTool } from "../types/IMcpTool";
+import { IMcpTool } from "../types/IMcpTool.js";
 
 export const HeartbeatTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -13,10 +13,10 @@ export const HeartbeatTool: IMcpTool = {
       async () => {
         try {
           const keyPath = process.env.BAGS_KEYPAIR_PATH || "~/.config/bags/keypair.json";
-          const keypair = loadKeypair(keyPath);
+          const keypair = Wallet.loadKeypair(keyPath);
           const walletAddress = keypair.publicKey.toBase58();
 
-          const client = getBagsClient();
+          const client = BagsClient.getBagsClient();
           const pubkey = new PublicKey(walletAddress);
           const fees = await client.fee.getAllClaimablePositions(pubkey);
           const systemState = { status: "Operational", rpc: "Helius" };

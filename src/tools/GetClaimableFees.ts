@@ -1,9 +1,9 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getBagsClient } from "../lib/bags-client";
+import { BagsClient } from "../lib/bags-client.js";
 import { PublicKey } from '@solana/web3.js';
-import { loadKeypair } from "../lib/wallet";
-import { IMcpTool } from "../types/IMcpTool";
+import { Wallet } from "../lib/wallet.js";
+import { IMcpTool } from "../types/IMcpTool.js";
 
 export const GetClaimableFeesTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -20,11 +20,11 @@ export const GetClaimableFeesTool: IMcpTool = {
           // If no wallet specified, default to our local keypair
           if (!targetWallet) {
             const keyPath = process.env.BAGS_KEYPAIR_PATH || "~/.config/bags/keypair.json";
-            const keypair = loadKeypair(keyPath);
+            const keypair = Wallet.loadKeypair(keyPath);
             targetWallet = keypair.publicKey.toBase58();
           }
 
-          const client = getBagsClient();
+          const client = BagsClient.getBagsClient();
           const pubkey = new PublicKey(targetWallet);
           const claimable = await client.fee.getAllClaimablePositions(pubkey);
 

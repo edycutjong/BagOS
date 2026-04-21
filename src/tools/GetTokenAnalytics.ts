@@ -1,8 +1,8 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getBagsClient } from "../lib/bags-client";
+import { BagsClient } from "../lib/bags-client.js";
 import { PublicKey } from '@solana/web3.js';
-import { IMcpTool } from "../types/IMcpTool";
+import { IMcpTool } from "../types/IMcpTool.js";
 
 export const GetTokenAnalyticsTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -14,7 +14,7 @@ export const GetTokenAnalyticsTool: IMcpTool = {
       },
       async (args) => {
         try {
-          const client = getBagsClient();
+          const client = BagsClient.getBagsClient();
 
           const pubkey = new PublicKey(args.tokenMint);
           const fees = await client.state.getTokenLifetimeFees(pubkey);

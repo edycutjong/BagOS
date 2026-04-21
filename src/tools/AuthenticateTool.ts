@@ -1,10 +1,10 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { loadKeypair } from "../lib/wallet";
+import { Wallet } from "../lib/wallet.js";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import { IMcpTool } from "../types/IMcpTool";
-import * as fs from "fs";
+import { IMcpTool } from "../types/IMcpTool.js";
+import fs from "fs";
 import * as path from "path";
 
 export const AuthenticateTool: IMcpTool = {
@@ -18,7 +18,7 @@ export const AuthenticateTool: IMcpTool = {
       async (args) => {
         try {
           const keyPath = args.privateKeyPath || process.env.BAGS_KEYPAIR_PATH || "~/.config/bags/keypair.json";
-          const keypair = loadKeypair(keyPath);
+          const keypair = Wallet.loadKeypair(keyPath);
           const walletAddress = keypair.publicKey.toBase58();
 
           // Standard API client to hit auth endpoints manually because Bags SDK init requires the API key

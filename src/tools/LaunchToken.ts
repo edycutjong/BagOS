@@ -1,9 +1,9 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getBagsClient } from "../lib/bags-client";
-import { loadKeypair } from "../lib/wallet";
-import { checkTokenGate } from "../lib/token-gate";
-import { IMcpTool } from "../types/IMcpTool";
+import { BagsClient } from "../lib/bags-client.js";
+import { Wallet } from "../lib/wallet.js";
+import { TokenGate } from "../lib/token-gate.js";
+import { IMcpTool } from "../types/IMcpTool.js";
 
 export const LaunchTokenTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -20,11 +20,11 @@ export const LaunchTokenTool: IMcpTool = {
       async (args) => {
         try {
           const keyPath = process.env.BAGS_KEYPAIR_PATH || "~/.config/bags/keypair.json";
-          const keypair = loadKeypair(keyPath);
+          const keypair = Wallet.loadKeypair(keyPath);
           const walletAddress = keypair.publicKey.toBase58();
 
           // Gate check
-          const gate = await checkTokenGate(walletAddress);
+          const gate = await TokenGate.checkTokenGate(walletAddress);
           if (!gate.allowed) {
             return {
               content: [
@@ -34,7 +34,7 @@ export const LaunchTokenTool: IMcpTool = {
             };
           }
 
-          const client = getBagsClient();
+          const client = BagsClient.getBagsClient();
           
           const response = await client.tokenLaunch.createTokenInfoAndMetadata({
             name: args.name,

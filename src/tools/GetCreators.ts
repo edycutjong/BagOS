@@ -1,7 +1,7 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getBagsClient } from "../lib/bags-client";
-import { IMcpTool } from "../types/IMcpTool";
+import { BagsClient } from "../lib/bags-client.js";
+import { IMcpTool } from "../types/IMcpTool.js";
 
 export const GetCreatorsTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -14,7 +14,7 @@ export const GetCreatorsTool: IMcpTool = {
       },
       async (args) => {
         try {
-          const client = getBagsClient();
+          const client = BagsClient.getBagsClient();
           
           const reqLimit = args.limit || 10;
           const reqOffset = args.offset || 0;
