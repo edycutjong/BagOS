@@ -23,7 +23,7 @@ export const AuthenticateTool: IMcpTool = {
 
           // Standard API client to hit auth endpoints manually because Bags SDK init requires the API key
           // and we might be fetching the API key here
-          const baseUrl = process.env.BAGS_API_URL || "https://public-api-v2.bags.fm";
+          const baseUrl = process.env.BAGS_API_URL || "https://public-api-v2.bags.fm/api/v1";
 
           // Step 1: Init auth challenge
           const initRes = await fetch(`${baseUrl}/agent/v2/auth/init`, {
@@ -37,7 +37,8 @@ export const AuthenticateTool: IMcpTool = {
             throw new Error(`Init auth failed: ${initRes.status} ${errBody}`);
           }
 
-          const initData = await initRes.json();
+          const initRaw = await initRes.json();
+          const initData = initRaw.response || initRaw;
           if (!initData.message || !initData.nonce) {
              throw new Error("Invalid response from auth/init, expected message and nonce.");
           }
@@ -63,7 +64,8 @@ export const AuthenticateTool: IMcpTool = {
              throw new Error(`Auth callback failed: ${callbackRes.status} ${errBody}`);
           }
 
-          const callbackData = await callbackRes.json();
+          const callbackRaw = await callbackRes.json();
+          const callbackData = callbackRaw.response || callbackRaw;
 
           // Store the obtained keys if desired or just return them
           const credentials = {

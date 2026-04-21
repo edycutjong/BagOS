@@ -35,6 +35,8 @@ const magenta = (s: string) => `\x1b[35m${s}\x1b[0m`;
 
 // ─── Well-known Solana addresses ─────────────────────────────────────────────
 const SOL_MINT = "So11111111111111111111111111111111111111112";
+// Top Bags ecosystem token (Pepe by Matt Furie) — used as default for quote tests
+const DEFAULT_BAGS_TOKEN = "EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS";
 
 // ─── MCP Call Helper ─────────────────────────────────────────────────────────
 let mcpRequestId = 0;
@@ -202,12 +204,12 @@ async function scenarioTradeQuote(): Promise<boolean> {
 
   try {
     // Use the BOS_TOKEN_MINT from env if available, otherwise use SOL self-quote as test
-    const bosMint = process.env.BOS_TOKEN_MINT || SOL_MINT;
+    const targetMint = process.env.BOS_TOKEN_MINT || DEFAULT_BAGS_TOKEN;
 
-    await step(`bags_get_trade_quote — 0.1 SOL → $BOS`, () =>
+    await step(`bags_get_trade_quote — 0.1 SOL → token`, () =>
       mcpCallTool("bags_get_trade_quote", {
         inputMint: SOL_MINT,
-        outputMint: bosMint,
+        outputMint: targetMint,
         amount: 0.1,
         side: "buy",
       })
@@ -225,6 +227,19 @@ async function scenarioPartnerStats(): Promise<boolean> {
     // Use a well-known SOL address as a demo partner ID
     await step("bags_get_partner_stats — Referral earnings", () =>
       mcpCallTool("bags_get_partner_stats", { partnerId: SOL_MINT })
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function scenarioAuthenticate(): Promise<boolean> {
+  console.log(`\n${magenta(`═══ 🔐 Authentication — V2 Signature Challenge ═══`)}`);
+
+  try {
+    await step("bags_authenticate — Wallet keypair auth flow", () =>
+      mcpCallTool("bags_authenticate", {})
     );
     return true;
   } catch {
@@ -255,7 +270,7 @@ async function scenarioTokenGateCheck(): Promise<boolean> {
 async function main() {
   console.log(bold("\n🖥️  BagOS — Golden Path Demo\n"));
   console.log(`  Target:     ${cyan(BAGOS_URL)}`);
-  console.log(`  Scenarios:  ${yellow("6")}`);
+  console.log(`  Scenarios:  ${yellow("7")}`);
   console.log(`  BOS Mint:   ${dim(process.env.BOS_TOKEN_MINT || "(placeholder)")}`);
 
   const scenarios = [
@@ -264,6 +279,7 @@ async function main() {
     { name: "Creator Leaderboard", fn: scenarioCreatorLeaderboard },
     { name: "Trade Quote", fn: scenarioTradeQuote },
     { name: "Partner Stats", fn: scenarioPartnerStats },
+    { name: "Authentication", fn: scenarioAuthenticate },
     { name: "Token Gate Check", fn: scenarioTokenGateCheck },
   ];
 
