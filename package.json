@@ -28,7 +28,9 @@
     "typecheck": "tsc --noEmit",
     "ci": "npm run lint && npm run typecheck && npm run test:coverage",
     "demo": "tsx scripts/golden-path.ts",
-    "demo:ngrok": "tsx scripts/golden-path.ts https://inadvertent-unmiasmal-diego.ngrok-free.dev"
+    "demo:ngrok": "tsx scripts/golden-path.ts https://inadvertent-unmiasmal-diego.ngrok-free.dev",
+    "github:meta": "bash scripts/github-meta.sh",
+    "github:release": "bash scripts/github-release.sh"
   },
   "repository": {
     "type": "git",
