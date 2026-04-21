@@ -2,7 +2,8 @@ import { Keypair } from '@solana/web3.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export function loadKeypair(filePath: string): Keypair {
+export const Wallet = {
+  loadKeypair(filePath: string): Keypair {
   let resolvedPath = filePath;
   if (filePath.startsWith('~/')) {
     const homedir = process.env.HOME || process.env.USERPROFILE || '';
@@ -28,4 +29,5 @@ export function loadKeypair(filePath: string): Keypair {
   }
 
   return Keypair.fromSecretKey(secretKey);
-}
+  }
+};
