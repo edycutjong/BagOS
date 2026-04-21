@@ -1,35 +1,21 @@
 /**
  * Tests for src/lib/token-gate.ts
  *
- * We mock @solana/web3.js at module level. Because token-gate.ts uses
- * `jest.resetModules()` and dynamic `require()`, each test gets a fresh
- * copy of the module with its own Connection mock binding.
+ * We mock @solana/web3.js at module level.
  */
+import { jest } from "@jest/globals";
+import { TokenGate } from "../../lib/token-gate.js";
 
 const VALID_WALLET = "11111111111111111111111111111111";
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
 const ORIGINAL_ENV = process.env;
 
-// Shared mock for getParsedTokenAccountsByOwner
-const mockGetParsed = jest.fn();
-
-jest.mock("@solana/web3.js", () => {
-  const actual = jest.requireActual("@solana/web3.js");
-  return {
-    ...actual,
-    Connection: jest.fn().mockImplementation(() => ({
-      getParsedTokenAccountsByOwner: mockGetParsed,
-    })),
-    PublicKey: jest.fn().mockImplementation((key: string) => ({
-      toBase58: () => key,
-      toString: () => key,
-    })),
-  };
-});
+import { Connection } from "@solana/web3.js";
+const mockGetParsed = jest.spyOn(Connection.prototype, "getParsedTokenAccountsByOwner") as unknown as jest.Mock;
 
 beforeEach(() => {
-  jest.resetModules();
+  jest.clearAllMocks();
   mockGetParsed.mockReset();
   process.env = { ...ORIGINAL_ENV };
   process.env.BOS_TOKEN_MINT = SOL_MINT;
@@ -57,8 +43,7 @@ describe("token-gate.ts — checkTokenGate", () => {
       ],
     });
 
-    const { checkTokenGate } = require("../../lib/token-gate");
-    const result = await checkTokenGate(VALID_WALLET);
+    const result = await TokenGate.checkTokenGate(VALID_WALLET);
     expect(result.allowed).toBe(true);
     expect(result.balance).toBe(15000);
   });
@@ -78,8 +63,7 @@ describe("token-gate.ts — checkTokenGate", () => {
       ],
     });
 
-    const { checkTokenGate } = require("../../lib/token-gate");
-    const result = await checkTokenGate(VALID_WALLET);
+    const result = await TokenGate.checkTokenGate(VALID_WALLET);
     expect(result.allowed).toBe(false);
     expect(result.balance).toBe(500);
   });
@@ -87,16 +71,14 @@ describe("token-gate.ts — checkTokenGate", () => {
   it("returns 0 balance when no token accounts exist", async () => {
     mockGetParsed.mockResolvedValue({ value: [] });
 
-    const { checkTokenGate } = require("../../lib/token-gate");
-    const result = await checkTokenGate(VALID_WALLET);
+    const result = await TokenGate.checkTokenGate(VALID_WALLET);
     expect(result.allowed).toBe(false);
     expect(result.balance).toBe(0);
   });
 
   it("throws when BOS_TOKEN_MINT is undefined", async () => {
     delete process.env.BOS_TOKEN_MINT;
-    const { checkTokenGate } = require("../../lib/token-gate");
-    await expect(checkTokenGate(VALID_WALLET)).rejects.toThrow(
+    await expect(TokenGate.checkTokenGate(VALID_WALLET)).rejects.toThrow(
       "BOS_TOKEN_MINT is not defined"
     );
   });
@@ -117,8 +99,7 @@ describe("token-gate.ts — checkTokenGate", () => {
         },
       ],
     });
-    const { checkTokenGate } = require("../../lib/token-gate");
-    const result = await checkTokenGate(VALID_WALLET);
+    const result = await TokenGate.checkTokenGate(VALID_WALLET);
     expect(result.allowed).toBe(true);
   });
 
@@ -136,8 +117,7 @@ describe("token-gate.ts — checkTokenGate", () => {
         },
       ],
     });
-    const { checkTokenGate } = require("../../lib/token-gate");
-    const result = await checkTokenGate(VALID_WALLET);
+    const result = await TokenGate.checkTokenGate(VALID_WALLET);
     expect(result.balance).toBe(0);
   });
 });

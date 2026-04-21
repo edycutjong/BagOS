@@ -1,13 +1,14 @@
-import { createMockServer } from "../helpers";
+import { createMockServer } from "../helpers.js";
+import { jest } from "@jest/globals";
+import fs from "fs";
 
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 
-jest.mock("../../lib/wallet", () => ({
-  loadKeypair: () => ({
-    publicKey: { toBase58: () => SYSTEM_PROGRAM },
-    secretKey: new Uint8Array(64),
-  }),
-}));
+import { Wallet } from "../../lib/wallet.js";
+jest.spyOn(Wallet, "loadKeypair").mockReturnValue({
+  publicKey: { toBase58: () => SYSTEM_PROGRAM },
+  secretKey: new Uint8Array(64),
+} as any);
 
 // Mock global fetch for API calls
 const mockFetch = jest.fn();
@@ -123,7 +124,6 @@ describe("AuthenticateTool", () => {
       json: async () => ({ apiKey: "test-api-key", keyId: "test-key-id" }),
     });
 
-    const fs = require("fs");
     const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
     const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {
         throw new Error("EACCES");
@@ -154,7 +154,6 @@ describe("AuthenticateTool", () => {
       json: async () => ({ apiKey: "test-api-key", keyId: "test-key-id" }),
     });
 
-    const fs = require("fs");
     const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
     const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
 
@@ -184,7 +183,6 @@ describe("AuthenticateTool", () => {
     delete process.env.HOME;
     
     // We expect it to save to /credentials.json or something
-    const fs = require("fs");
     const existsSpy = jest.spyOn(fs, "existsSync").mockReturnValue(true);
     const writeSpy = jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
 

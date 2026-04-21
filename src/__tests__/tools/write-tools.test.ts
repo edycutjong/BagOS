@@ -1,36 +1,23 @@
-import { createMockServer, createMockBagsClient } from "../helpers";
+import { createMockServer, createMockBagsClient } from "../helpers.js";
+import { jest } from "@jest/globals";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
 
 const mockBagsClient = createMockBagsClient();
-jest.mock("../../lib/bags-client", () => ({
-  getBagsClient: () => mockBagsClient,
-}));
+import { BagsClient } from "../../lib/bags-client.js";
+jest.spyOn(BagsClient, "getBagsClient").mockReturnValue(mockBagsClient as any);
 
-jest.mock("../../lib/wallet", () => ({
-  loadKeypair: () => ({
-    publicKey: { toBase58: () => SYSTEM_PROGRAM },
-    secretKey: new Uint8Array(64),
-  }),
-}));
+import { Wallet } from "../../lib/wallet.js";
+jest.spyOn(Wallet, "loadKeypair").mockReturnValue({
+  publicKey: { toBase58: () => SYSTEM_PROGRAM },
+  secretKey: new Uint8Array(64),
+} as any);
 
-const mockCheckTokenGate = jest.fn().mockResolvedValue({ allowed: true, balance: 50000 });
-jest.mock("../../lib/token-gate", () => ({
-  checkTokenGate: (...args: any[]) => mockCheckTokenGate(...args),
-}));
+import { TokenGate } from "../../lib/token-gate.js";
+const mockCheckTokenGate = jest.spyOn(TokenGate, "checkTokenGate").mockResolvedValue({ allowed: true, balance: 50000 });
 
-// Mock PublicKey so tools don't do real base58 validation
-jest.mock("@solana/web3.js", () => {
-  const actual = jest.requireActual("@solana/web3.js");
-  return {
-    ...actual,
-    PublicKey: jest.fn().mockImplementation((key: string) => ({
-      toBase58: () => key,
-      toString: () => key,
-    })),
-  };
-});
+
 
 import { ExecuteTradeTool } from "../../tools/ExecuteTrade";
 import { ClaimFeesTool } from "../../tools/ClaimFees";

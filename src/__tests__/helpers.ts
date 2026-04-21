@@ -5,7 +5,8 @@
  * We capture that handler reference so we can invoke it directly in tests.
  */
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { jest } from "@jest/globals";
 
 /** Creates a mock McpServer that records registered tool handlers. */
 export function createMockServer() {
