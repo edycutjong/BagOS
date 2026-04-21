@@ -21,6 +21,7 @@
 
   <a href="https://youtu.be/tJC7rYnksdY"><img src="https://img.shields.io/badge/Demo_Video-▶_Watch_Now-red?logo=youtube" alt="Demo Video" /></a>
   <a href="https://dorahacks.io/buidl/43312"><img src="https://img.shields.io/badge/DoraHacks-BUIDL-orange?logo=dorahacks&logoColor=white" alt="DoraHacks BUIDL" /></a>
+  <a href="https://www.npmjs.com/package/bagos-mcp-server"><img src="https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm&label=npmjs" alt="npmjs"></a>
 </div>
 
 ---
