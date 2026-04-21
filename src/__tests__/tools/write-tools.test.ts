@@ -28,6 +28,7 @@ describe("Write (token-gated) MCP Tools", () => {
     mockCheckTokenGate.mockResolvedValue({ allowed: true, balance: 50000 });
     process.env.BOS_TOKEN_MINT = SOL_MINT;
     process.env.BOS_REQUIRED_BALANCE = "10000";
+    delete process.env.BAGS_KEYPAIR_PATH;
   });
 
   describe("ExecuteTrade", () => {

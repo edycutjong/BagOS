@@ -28,6 +28,10 @@ import { GetPartnerStatsTool } from "../../tools/GetPartnerStats";
 import { HeartbeatTool } from "../../tools/Heartbeat";
 
 describe("Read-only MCP Tools", () => {
+  beforeEach(() => {
+    delete process.env.BAGS_KEYPAIR_PATH;
+  });
+
   describe("GetClaimableFees", () => {
     it("registers and returns fee data", async () => {
       const { server, getHandler } = createMockServer();
