@@ -85,16 +85,25 @@ beep() {
 countdown() {
   local secs=$1
   local label="${2:-Next clip in}"
-  for ((i=secs; i>0; i--)); do
-    printf "\r  ⏳ $label %ds...  " "$i"
+  local c
+  for ((c=secs; c>0; c--)); do
+    printf "\r  ⏳ $label %ds...  " "$c"
     sleep 1
   done
   printf "\r                              \r"
 }
 
 # ─── Parse clip range ────────────────────────────────────────────────────────
-START_CLIP="${1:-1}"
-END_CLIP="${2:-${#PROMPTS[@]}}"
+if [ -z "$1" ]; then
+  START_CLIP=1
+  END_CLIP=${#PROMPTS[@]}
+elif [ -z "$2" ]; then
+  START_CLIP=$1
+  END_CLIP=$1
+else
+  START_CLIP=$1
+  END_CLIP=$2
+fi
 
 # Validate range
 if [ "$START_CLIP" -lt 1 ] || [ "$START_CLIP" -gt "${#PROMPTS[@]}" ]; then

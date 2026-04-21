@@ -26,13 +26,25 @@ export const GetClaimableFeesTool: IMcpTool = {
 
           const client = BagsClient.getBagsClient();
           const pubkey = new PublicKey(targetWallet);
-          const claimable = await client.fee.getAllClaimablePositions(pubkey);
+          
+          let claimable: any;
+          let isMock = false;
+
+          if (process.env.USE_MOCK_DATA === 'true') {
+            isMock = true;
+            claimable = [
+              { mint: "EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS", symbol: "PEPE", amount: "1500.50", usdValue: "$125.40", type: "creator_fee" },
+              { mint: "So11111111111111111111111111111111111111112", symbol: "SOL", amount: "0.45", usdValue: "$67.50", type: "lp_fee" }
+            ];
+          } else {
+            claimable = await client.fee.getAllClaimablePositions(pubkey);
+          }
 
           return {
             content: [
               {
                 type: "text",
-                text: `Claimable Fees for ${targetWallet}:\n\n${JSON.stringify(claimable, null, 2)}`
+                text: `${isMock ? '⚠️ [MOCK DATA ENABLED]\n' : ''}Claimable Fees for ${targetWallet}:\n\n${JSON.stringify(claimable, null, 2)}`
               }
             ]
           };
