@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="solGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background (removed for transparency) -->
+
+  <!-- SOL-style Hexagon -->
+  <path d="M 256 70 L 417.4 163.2 L 417.4 349.6 L 256 442 L 94.6 349.6 L 94.6 163.2 Z" 
+        fill="none" 
+        stroke="url(#solGrad)" 
+        stroke-width="28" 
+        stroke-linejoin="round" />
+
+  <!-- Inner Subtle Hexagon for structure -->
+  <path d="M 256 120 L 374 188 L 374 324 L 256 392 L 138 324 L 138 188 Z" 
+        fill="url(#solGrad)" 
+        opacity="0.1" />
+
+  <g filter="url(#glow)">
+    <!-- Prompt Arrow '>' -->
+    <path d="M 170 216 L 220 256 L 170 296" 
+          fill="none" 
+          stroke="url(#solGrad)" 
+          stroke-width="28" 
+          stroke-linecap="round" 
+          stroke-linejoin="round" />
+          
+    <!-- Block Cursor '▊' -->
+    <rect x="250" y="210" width="48" height="92" fill="url(#solGrad)" rx="4"/>
+  </g>
+</svg>
