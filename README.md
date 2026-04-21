@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/CI-passing-brightgreen" alt="CI" />
   <img src="https://img.shields.io/badge/Coverage-100%25-brightgreen" alt="Coverage" />
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" />
+  <a href="https://github.com/edycutjong/bagos/pkgs/npm/bagos-mcp-server"><img src="https://img.shields.io/github/package-json/v/edycutjong/bagos?color=CB3837&logo=npm" alt="npm version"></a>
 
   <br/>
 
