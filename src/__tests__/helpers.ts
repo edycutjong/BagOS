@@ -32,22 +32,22 @@ export function createMockServer() {
 export function createMockBagsClient() {
   return {
     fee: {
-      getAllClaimablePositions: jest.fn().mockResolvedValue([{ token: "SOL", amount: 1.5 }]),
-      getClaimTransactions: jest.fn().mockResolvedValue({ signature: "mock-tx-sig" }),
+      getAllClaimablePositions: jest.fn<any>().mockResolvedValue([{ token: "SOL", amount: 1.5 }]),
+      getClaimTransactions: jest.fn<any>().mockResolvedValue({ signature: "mock-tx-sig" }),
     },
     trade: {
-      getQuote: jest.fn().mockResolvedValue({ inputAmount: 1, outputAmount: 500, priceImpact: 0.01 }),
-      createSwapTransaction: jest.fn().mockResolvedValue({ signature: "mock-swap-sig" }),
+      getQuote: jest.fn<any>().mockResolvedValue({ inputAmount: 1, outputAmount: 500, priceImpact: 0.01 }),
+      createSwapTransaction: jest.fn<any>().mockResolvedValue({ signature: "mock-swap-sig" }),
     },
     state: {
-      getTopTokensByLifetimeFees: jest.fn().mockResolvedValue([{ creator: "Alice", fees: 100 }]),
-      getTokenLifetimeFees: jest.fn().mockResolvedValue({ totalFees: 42 }),
+      getTopTokensByLifetimeFees: jest.fn<any>().mockResolvedValue([{ creator: "Alice", fees: 100 }]),
+      getTokenLifetimeFees: jest.fn<any>().mockResolvedValue({ totalFees: 42 }),
     },
     partner: {
-      getPartnerConfigClaimStats: jest.fn().mockResolvedValue({ earnings: 10 }),
+      getPartnerConfigClaimStats: jest.fn<any>().mockResolvedValue({ earnings: 10 }),
     },
     tokenLaunch: {
-      createTokenInfoAndMetadata: jest.fn().mockResolvedValue({ tokenMint: "MockMint111" }),
+      createTokenInfoAndMetadata: jest.fn<any>().mockResolvedValue({ tokenMint: "MockMint111" }),
     },
   };
 }
