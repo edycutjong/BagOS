@@ -1,18 +1,19 @@
 {
-  "name": "@edycutjong/bagos-mcp-server",
-  "version": "1.0.1",
-  "description": "Claude MCP server for the Bags ecosystem, enabling wallet auth and Sol/Token trades via Bags SDK.",
+  "name": "bagos-mcp-server",
+  "version": "2.0.0",
+  "description": "MCP server for Bags on Solana: token analytics, trade quotes, and gated write operations.",
+  "mcpName": "io.github.edycutjong/bagos",
   "type": "module",
   "main": "build/index.js",
   "bin": {
     "bagos-mcp-server": "./build/index.js"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "files": [
     "build",
-    "README.md"
+    "server.json",
+    "README.md",
+    "SECURITY.md",
+    "CHANGELOG.md"
   ],
   "engines": {
     "node": ">=20"

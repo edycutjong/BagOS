@@ -20,7 +20,7 @@ beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
   process.env.BOS_TOKEN_MINT = SOL_MINT;
   process.env.BOS_REQUIRED_BALANCE = "10000";
-  process.env.HELIUS_RPC_URL = "https://api.mainnet-beta.solana.com";
+  process.env.HELIUS_RPC_URL = "https://api.devnet.solana.com";
 });
 
 afterAll(() => {
@@ -79,7 +79,7 @@ describe("token-gate.ts — checkTokenGate", () => {
   it("throws when BOS_TOKEN_MINT is undefined", async () => {
     delete process.env.BOS_TOKEN_MINT;
     await expect(TokenGate.checkTokenGate(VALID_WALLET)).rejects.toThrow(
-      "BOS_TOKEN_MINT is not defined"
+      "BOS_TOKEN_MINT is not set"
     );
   });
 

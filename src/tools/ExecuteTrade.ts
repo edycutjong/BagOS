@@ -5,7 +5,7 @@ import { PublicKey } from '@solana/web3.js';
 import { Wallet } from "../lib/wallet.js";
 import { TokenGate } from "../lib/token-gate.js";
 import { IMcpTool } from "../types/IMcpTool.js";
-import { executeTransaction } from "../lib/execute.js";
+import { Executor } from "../lib/execute.js";
 import { networkBanner } from "../lib/network.js";
 import {
   assertWithinCaps,
@@ -99,7 +99,7 @@ export const ExecuteTradeTool: IMcpTool = {
             quoteResponse
           });
 
-          const result = await executeTransaction(transaction, keypair);
+          const result = await Executor.executeTransaction(transaction, keypair);
           recordSpend(solSpend);
 
           return {

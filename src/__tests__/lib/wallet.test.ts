@@ -37,13 +37,13 @@ describe("wallet.ts — loadKeypair", () => {
   it("throws on invalid JSON content", () => {
     const badPath = path.join(tmpDir, "bad.json");
     fs.writeFileSync(badPath, "not-json");
-    expect(() => Wallet.loadKeypair(badPath)).toThrow("Failed to parse keypair");
+    expect(() => Wallet.loadKeypair(badPath)).toThrow("is not valid JSON");
   });
 
   it("throws on non-array JSON content", () => {
     const objPath = path.join(tmpDir, "obj.json");
     fs.writeFileSync(objPath, JSON.stringify({ key: "value" }));
-    expect(() => Wallet.loadKeypair(objPath)).toThrow("Failed to parse keypair");
+    expect(() => Wallet.loadKeypair(objPath)).toThrow("must contain a JSON array of 64 bytes");
   });
 
   it("resolves ~ to home directory", () => {

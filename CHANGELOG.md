@@ -1,0 +1,85 @@
+# Changelog
+
+All notable changes to this project are documented here.
+This project follows [Semantic Versioning](https://semver.org/).
+
+## [2.0.0] — unreleased
+
+### Fixed — the write tools never wrote
+
+In 1.x, all three write tools built a transaction, discarded it, and reported
+success. No transaction was ever signed or submitted. The keypair was read from
+disk and used only to derive a public key.
+
+| Tool | 1.x behaviour |
+|---|---|
+| `bags_execute_trade` | `createSwapTransaction()` result discarded; returned `"✅ Trade Execution Signed!"` regardless |
+| `bags_claim_fees` | `getClaimTransactions()` result discarded; returned `"✅ Action execution signed successfully."` |
+| `bags_launch_token` | Called only `createTokenInfoAndMetadata()`; `initialBuySOL` accepted and silently ignored; never launched anything |
+
+If you used 1.x and believed a trade or claim executed, **it did not**. Check
+your wallet history. No funds moved, in either direction.
+
+This survived a 100%-coverage test suite because the SDK mocks returned shapes
+the real SDK never produces (`createSwapTransaction` was mocked as resolving to
+`{ signature }`). Mocks are now written against the SDK's `.d.ts` files.
+
+### Fixed — mainnet was the silent default
+
+`bags-client.ts` and `token-gate.ts` both fell back to
+`https://api.mainnet-beta.solana.com` when `HELIUS_RPC_URL` was unset. An
+unconfigured install pointed at mainnet.
+
+### Fixed — key material could reach error messages
+
+`wallet.ts` interpolated `JSON.parse` errors into the thrown message. V8 parse
+errors can quote the offending input, which for a keypair file is the secret
+key. Parse failures now produce a generic message.
+
+### Added
+
+- **Real execution path** (`lib/execute.ts`) — simulate → sign → send → confirm.
+  Returns a confirmed signature and explorer link, or throws. Cannot report
+  success for a transaction that did not land.
+- **Spend caps** (`lib/guards.ts`) — `BAGS_MAX_SOL_PER_TX` (default 0.1) and
+  `BAGS_MAX_SOL_PER_SESSION` (default 1.0), enforced before the SDK is called.
+  The session counter increments only on confirmed transactions.
+- **Two-step confirmation** — write tools return a preview and a single-use
+  token fingerprinted to the exact arguments. Tokens expire after 5 minutes and
+  are consumed on every outcome, so they cannot be replayed or reused against
+  different arguments. Disable with `BAGS_ALLOW_UNCONFIRMED=true`; caps still apply.
+- **Network/RPC agreement check** — the server refuses to start if the RPC
+  endpoint's cluster disagrees with `BAGS_NETWORK`.
+- **Startup configuration report** on stderr, with RPC credentials redacted.
+- **`server.json`** — MCP registry manifest (schema `2025-12-11`).
+- **`SECURITY.md`** — threat model and key-handling policy.
+- Structured tool errors (`toolError`) — no stack traces to the model; keypair
+  byte arrays, long base58 strings, and long base64 blobs redacted.
+
+### Changed — breaking
+
+- **`bags_launch_token` → `bags_prepare_token_metadata`.** The tool prepares
+  metadata; it does not launch. A real launch requires a Meteora fee-share
+  config whose fee-claimer split must be the user's decision, so it is left
+  unimplemented rather than faked. The ignored `initialBuySOL` parameter is gone.
+- **Writes require confirmation by default.** Existing automation that called
+  `bags_execute_trade` or `bags_claim_fees` in one shot must either pass a
+  confirmation token or set `BAGS_ALLOW_UNCONFIRMED=true`.
+- **Default cluster is devnet.** Set `BAGS_NETWORK=mainnet` for the old behaviour.
+- **Package renamed** from `@edycutjong/bagos-mcp-server` (GitHub Packages) to
+  **`bagos-mcp-server` on public npm**. The official MCP registry accepts only
+  `registry.npmjs.org`, and GitHub Packages requires auth even for public
+  packages — so `npx` never worked for a stranger.
+- `bags_execute_trade` drops the `side` parameter, which was declared but never
+  read. `inputMint`/`outputMint` fully determine the direction.
+- `.env` is now loaded from the working directory, not from a path relative to
+  the installed package (which under `npx` resolved inside `node_modules`).
+
+### Notes
+
+- 143 tests. Bypass resistance for the caps and the confirmation step is covered
+  explicitly and should be treated as non-negotiable in review.
+
+## [1.0.0] — 2026-04-21
+
+Initial release. See the note above before relying on any 1.x write operation.

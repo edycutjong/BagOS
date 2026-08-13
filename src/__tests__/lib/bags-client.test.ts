@@ -20,7 +20,7 @@ describe("BagsClient", () => {
 
   it("throws error if BAGS_API_KEY is missing", () => {
     delete process.env.BAGS_API_KEY;
-    expect(() => BagsClient.getBagsClient()).toThrow("BAGS_API_KEY environment variable is missing");
+    expect(() => BagsClient.getBagsClient()).toThrow("BAGS_API_KEY is not set");
   });
 
   it("initializes client successfully with default RPC", () => {

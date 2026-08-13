@@ -1,4 +1,4 @@
-import { createMockServer, createMockBagsClient } from "../helpers.js";
+import { createMockServer, createMockBagsClient, setWriteToolEnv, tokenFrom } from "../helpers.js";
 import { jest } from "@jest/globals";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
@@ -15,311 +15,275 @@ jest.spyOn(Wallet, "loadKeypair").mockReturnValue({
 } as any);
 
 import { TokenGate } from "../../lib/token-gate.js";
-const mockCheckTokenGate = jest.spyOn(TokenGate, "checkTokenGate").mockResolvedValue({ allowed: true, balance: 50000 });
+const mockCheckTokenGate = jest.spyOn(TokenGate, "checkTokenGate");
 
+import { Executor } from "../../lib/execute.js";
+const mockExecute = jest.spyOn(Executor, "executeTransaction");
+const mockExecuteAll = jest.spyOn(Executor, "executeAll");
 
+import { resetGuards } from "../../lib/guards.js";
 
 import { ExecuteTradeTool } from "../../tools/ExecuteTrade";
 import { ClaimFeesTool } from "../../tools/ClaimFees";
 import { LaunchTokenTool } from "../../tools/LaunchToken";
 
-describe("Write (token-gated) MCP Tools", () => {
-  beforeEach(() => {
-    mockCheckTokenGate.mockResolvedValue({ allowed: true, balance: 50000 });
-    process.env.BOS_TOKEN_MINT = SOL_MINT;
-    process.env.BOS_REQUIRED_BALANCE = "10000";
-    delete process.env.BAGS_KEYPAIR_PATH;
+const okResult = {
+  signature: "5xSig",
+  explorer: "https://explorer.solana.com/tx/5xSig?cluster=devnet",
+  slot: 123,
+};
+
+/** Drive a write tool through preview -> confirm and return both responses. */
+async function previewThenConfirm(handler: any, args: any) {
+  const preview = await handler(args);
+  const token = tokenFrom(preview);
+  const confirmed = await handler({ ...args, confirm: token });
+  return { preview, token, confirmed };
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  resetGuards();
+  setWriteToolEnv();
+  mockCheckTokenGate.mockResolvedValue({ allowed: true, balance: 50000 });
+  mockExecute.mockResolvedValue(okResult);
+  mockExecuteAll.mockResolvedValue({ executed: [okResult], failedAt: null, error: null });
+});
+
+describe("ExecuteTrade", () => {
+  const call = () => {
+    const { server, getHandler } = createMockServer();
+    ExecuteTradeTool.registerTool(server);
+    return getHandler("bags_execute_trade");
+  };
+
+  it("registers the tool", () => {
+    const { server } = createMockServer();
+    ExecuteTradeTool.registerTool(server);
+    expect(server.tool).toHaveBeenCalledWith(
+      "bags_execute_trade",
+      expect.any(String),
+      expect.any(Object),
+      expect.any(Function)
+    );
   });
 
-  describe("ExecuteTrade", () => {
-    it("registers the tool", () => {
-      const { server } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-      expect(server.tool).toHaveBeenCalledWith(
-        "bags_execute_trade",
-        expect.any(String),
-        expect.any(Object),
-        expect.any(Function)
-      );
-    });
+  it("first call previews and does NOT execute", async () => {
+    const result = await call()({ inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 0.05 });
 
-    it("executes trade when token gate passes", async () => {
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT,
-        outputMint: SYSTEM_PROGRAM,
-        amount: 1,
-        side: "buy",
-      });
-
-      expect(result.content[0].text).toContain("Trade Execution Signed");
-      expect(mockCheckTokenGate).toHaveBeenCalled();
-    });
-
-    it("uses default args when optional args are omitted", async () => {
-      delete process.env.BOS_TOKEN_MINT; // Force fallback checking
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({});
-
-      expect(result.content[0].text).toContain("Trade Execution Signed");
-      expect(mockCheckTokenGate).toHaveBeenCalled();
-    });
-
-    it("blocks trade when token gate fails", async () => {
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 100 });
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT,
-        outputMint: SYSTEM_PROGRAM,
-        amount: 1,
-        side: "buy",
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Access Denied");
-    });
-
-    it("blocks trade when gate fails with default balance", async () => {
-      const original = process.env.BOS_REQUIRED_BALANCE;
-      delete process.env.BOS_REQUIRED_BALANCE;
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("10000 $BOS");
-      process.env.BOS_REQUIRED_BALANCE = original;
-    });
-
-    it("blocks trade when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
-      process.env.BOS_REQUIRED_BALANCE = "500";
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("500 $BOS");
-      delete process.env.BOS_REQUIRED_BALANCE;
-    });
-
-    it("uses custom slippage when provided", async () => {
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT,
-        outputMint: SYSTEM_PROGRAM,
-        amount: 1,
-        side: "buy",
-        slippageBps: 500,
-      });
-
-      expect(result.content[0].text).toContain("5%");
-    });
-
-    it("returns error on SDK failure", async () => {
-      mockBagsClient.trade.createSwapTransaction.mockRejectedValueOnce(new Error("API Error"));
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
-      });
-      expect(result.isError).toBe(true);
-    });
-
-    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
-      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
-      const { server, getHandler } = createMockServer();
-      ExecuteTradeTool.registerTool(server);
-
-      const result = await getHandler("bags_execute_trade")({
-        inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy"
-      });
-      expect(result.isError).toBeUndefined();
-      delete process.env.BAGS_KEYPAIR_PATH;
-    });
+    expect(result.content[0].text).toContain("CONFIRMATION REQUIRED");
+    expect(result.content[0].text).toContain("nothing has been signed or sent");
+    expect(mockExecute).not.toHaveBeenCalled();
   });
 
-  describe("ClaimFees", () => {
-    it("claims fees when gate passes", async () => {
-      const { server, getHandler } = createMockServer();
-      ClaimFeesTool.registerTool(server);
-
-      const result = await getHandler("bags_claim_fees")({
-        tokenMints: [SOL_MINT],
-      });
-
-      expect(result.content[0].text).toContain("✅");
-      expect(mockBagsClient.fee.getClaimTransactions).toHaveBeenCalled();
+  it("executes and reports a real signature once confirmed", async () => {
+    const { confirmed } = await previewThenConfirm(call(), {
+      inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 0.05,
     });
 
-    it("blocks claim when gate fails", async () => {
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      ClaimFeesTool.registerTool(server);
-
-      const result = await getHandler("bags_claim_fees")({
-        tokenMints: [SOL_MINT],
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Access Denied");
-    });
-
-    it("blocks claim when gate fails with default balance", async () => {
-      const original = process.env.BOS_REQUIRED_BALANCE;
-      delete process.env.BOS_REQUIRED_BALANCE;
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      ClaimFeesTool.registerTool(server);
-
-      const result = await getHandler("bags_claim_fees")({
-        tokenMints: [SOL_MINT],
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("10000 $BOS");
-      process.env.BOS_REQUIRED_BALANCE = original;
-    });
-
-    it("blocks claim when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
-      process.env.BOS_REQUIRED_BALANCE = "500";
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      ClaimFeesTool.registerTool(server);
-
-      const result = await getHandler("bags_claim_fees")({
-        tokenMints: [SOL_MINT],
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("500 $BOS");
-      delete process.env.BOS_REQUIRED_BALANCE;
-    });
-
-    it("returns error on SDK failure", async () => {
-      mockBagsClient.fee.getClaimTransactions.mockRejectedValueOnce(new Error("API Error"));
-      const { server, getHandler } = createMockServer();
-      ClaimFeesTool.registerTool(server);
-      const result = await getHandler("bags_claim_fees")({ tokenMints: [SOL_MINT] });
-      expect(result.isError).toBe(true);
-    });
-
-    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
-      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
-      const { server, getHandler } = createMockServer();
-      ClaimFeesTool.registerTool(server);
-
-      const result = await getHandler("bags_claim_fees")({ tokenMints: [SOL_MINT] });
-      expect(result.isError).toBeUndefined();
-      delete process.env.BAGS_KEYPAIR_PATH;
-    });
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(confirmed.content[0].text).toContain("confirmed on chain");
+    expect(confirmed.content[0].text).toContain(okResult.signature);
+    expect(confirmed.content[0].text).toContain(okResult.explorer);
   });
 
-  describe("LaunchToken", () => {
-    it("launches token when gate passes", async () => {
-      const { server, getHandler } = createMockServer();
-      LaunchTokenTool.registerTool(server);
+  it("never claims success when execution throws", async () => {
+    mockExecute.mockRejectedValue(new Error("blockhash not found"));
+    const handler = call();
+    const preview = await handler({ amount: 0.05 });
+    const result = await handler({ amount: 0.05, confirm: tokenFrom(preview) });
 
-      const result = await getHandler("bags_launch_token")({
-        name: "TestToken",
-        symbol: "TT",
-        description: "A test token",
-      });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).not.toContain("confirmed on chain");
+  });
 
-      expect(result.content[0].text).toContain("✅");
-      expect(result.content[0].text).toContain("MockMint111");
+  /* --- bypass resistance: these are the tests that must never regress --- */
+
+  it("rejects a replayed confirmation token", async () => {
+    const handler = call();
+    const args = { inputMint: SOL_MINT, amount: 0.05 };
+    const token = tokenFrom(await handler(args));
+
+    await handler({ ...args, confirm: token });
+    const replay = await handler({ ...args, confirm: token });
+
+    expect(replay.isError).toBe(true);
+    expect(replay.content[0].text).toContain("Unknown or already-used");
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a token issued for different arguments", async () => {
+    const handler = call();
+    const token = tokenFrom(await handler({ inputMint: SOL_MINT, amount: 0.01 }));
+
+    // Same token, larger trade.
+    const result = await handler({ inputMint: SOL_MINT, amount: 0.09, confirm: token });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("does not match these arguments");
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("rejects a fabricated token", async () => {
+    const result = await call()({ inputMint: SOL_MINT, amount: 0.05, confirm: "not-a-real-token" });
+
+    expect(result.isError).toBe(true);
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("enforces the per-transaction cap before touching the SDK", async () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '0.1';
+    const result = await call()({ inputMint: SOL_MINT, amount: 5 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Per-transaction cap exceeded");
+    expect(mockBagsClient.trade.getQuote).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("enforces the session cap across successive trades", async () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+    const handler = call();
+
+    await previewThenConfirm(handler, { inputMint: SOL_MINT, amount: 0.6 });
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+
+    // 0.6 + 0.6 exceeds the 1.0 session cap.
+    const second = await handler({ inputMint: SOL_MINT, amount: 0.6 });
+    expect(second.isError).toBe(true);
+    expect(second.content[0].text).toContain("Session cap exceeded");
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not count a failed trade against the session cap", async () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+    mockExecute.mockRejectedValue(new Error("send failed"));
+    const handler = call();
+
+    const preview = await handler({ inputMint: SOL_MINT, amount: 0.9 });
+    await handler({ inputMint: SOL_MINT, amount: 0.9, confirm: tokenFrom(preview) });
+
+    mockExecute.mockResolvedValue(okResult);
+    const retry = await handler({ inputMint: SOL_MINT, amount: 0.9 });
+    expect(retry.content[0].text).toContain("CONFIRMATION REQUIRED");
+  });
+
+  it("blocks entirely when the token gate fails", async () => {
+    mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 12 });
+    const result = await call()({ inputMint: SOL_MINT, amount: 0.05 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Access denied");
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("skips the preview only when BAGS_ALLOW_UNCONFIRMED is true", async () => {
+    process.env['BAGS_ALLOW_UNCONFIRMED'] = 'true';
+    const result = await call()({ inputMint: SOL_MINT, amount: 0.05 });
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(result.content[0].text).toContain("confirmed on chain");
+  });
+
+  it("still enforces caps when confirmation is disabled", async () => {
+    process.env['BAGS_ALLOW_UNCONFIRMED'] = 'true';
+    process.env['BAGS_MAX_SOL_PER_TX'] = '0.1';
+    const result = await call()({ inputMint: SOL_MINT, amount: 5 });
+
+    expect(result.isError).toBe(true);
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+});
+
+describe("ClaimFees", () => {
+  const call = () => {
+    const { server, getHandler } = createMockServer();
+    ClaimFeesTool.registerTool(server);
+    return getHandler("bags_claim_fees");
+  };
+
+  it("registers the tool", () => {
+    const { server } = createMockServer();
+    ClaimFeesTool.registerTool(server);
+    expect(server.tool).toHaveBeenCalledWith(
+      "bags_claim_fees", expect.any(String), expect.any(Object), expect.any(Function)
+    );
+  });
+
+  it("previews before claiming", async () => {
+    const result = await call()({ tokenMints: [SOL_MINT] });
+    expect(result.content[0].text).toContain("CONFIRMATION REQUIRED");
+    expect(mockExecuteAll).not.toHaveBeenCalled();
+  });
+
+  it("returns confirmed signatures after confirmation", async () => {
+    const { confirmed } = await previewThenConfirm(call(), { tokenMints: [SOL_MINT] });
+    expect(mockExecuteAll).toHaveBeenCalledTimes(1);
+    expect(confirmed.content[0].text).toContain(okResult.signature);
+  });
+
+  it("reports partial failure honestly instead of claiming success", async () => {
+    mockExecuteAll.mockResolvedValue({
+      executed: [okResult],
+      failedAt: 1,
+      error: new Error("insufficient funds"),
     });
+    const handler = call();
+    const preview = await handler({ tokenMints: [SOL_MINT] });
+    const result = await handler({ tokenMints: [SOL_MINT], confirm: tokenFrom(preview) });
 
-    it("blocks launch when gate fails", async () => {
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 500 });
-      const { server, getHandler } = createMockServer();
-      LaunchTokenTool.registerTool(server);
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Partial claim");
+    expect(result.content[0].text).toContain("insufficient funds");
+  });
 
-      const result = await getHandler("bags_launch_token")({
-        name: "TestToken",
-        symbol: "TT",
-        description: "A test token",
-      });
+  it("does nothing when there is nothing claimable", async () => {
+    mockBagsClient.fee.getClaimTransactions.mockResolvedValue([]);
+    const result = await call()({ tokenMints: [SOL_MINT] });
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Access Denied");
-    });
+    expect(result.content[0].text).toContain("No claimable fees");
+    expect(mockExecuteAll).not.toHaveBeenCalled();
+    mockBagsClient.fee.getClaimTransactions.mockResolvedValue([{ instructions: [], sign: jest.fn(), serialize: () => new Uint8Array() }]);
+  });
 
-    it("blocks launch when gate fails with default balance", async () => {
-      const original = process.env.BOS_REQUIRED_BALANCE;
-      delete process.env.BOS_REQUIRED_BALANCE;
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      LaunchTokenTool.registerTool(server);
+  it("blocks when the token gate fails", async () => {
+    mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
+    const result = await call()({ tokenMints: [SOL_MINT] });
 
-      const result = await getHandler("bags_launch_token")({
-        name: "TestToken", symbol: "TT", description: "Test"
-      });
+    expect(result.isError).toBe(true);
+    expect(mockExecuteAll).not.toHaveBeenCalled();
+  });
+});
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("10000 $BOS");
-      process.env.BOS_REQUIRED_BALANCE = original;
-    });
+describe("PrepareTokenMetadata (formerly LaunchToken)", () => {
+  const call = () => {
+    const { server, getHandler } = createMockServer();
+    LaunchTokenTool.registerTool(server);
+    return getHandler("bags_prepare_token_metadata");
+  };
 
-    it("blocks launch when gate fails with custom BOS_REQUIRED_BALANCE", async () => {
-      process.env.BOS_REQUIRED_BALANCE = "500";
-      mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 0 });
-      const { server, getHandler } = createMockServer();
-      LaunchTokenTool.registerTool(server);
+  it("registers under the honest name", () => {
+    const { server } = createMockServer();
+    LaunchTokenTool.registerTool(server);
+    expect(server.tool).toHaveBeenCalledWith(
+      "bags_prepare_token_metadata", expect.any(String), expect.any(Object), expect.any(Function)
+    );
+  });
 
-      const result = await getHandler("bags_launch_token")({
-        name: "TestToken", symbol: "TT", description: "Test"
-      });
+  it("states plainly that nothing was launched", async () => {
+    const result = await call()({ name: "Test", symbol: "TST", description: "d" });
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("500 $BOS");
-      delete process.env.BOS_REQUIRED_BALANCE;
-    });
+    expect(result.content[0].text).toContain("NOT LAUNCHED");
+    expect(result.content[0].text).toContain("MockMint111");
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
 
-    it("returns error on SDK failure", async () => {
-      mockBagsClient.tokenLaunch.createTokenInfoAndMetadata.mockRejectedValueOnce(
-        new Error("Network error")
-      );
-      const { server, getHandler } = createMockServer();
-      LaunchTokenTool.registerTool(server);
+  it("blocks when the token gate fails", async () => {
+    mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 5 });
+    const result = await call()({ name: "Test", symbol: "TST", description: "d" });
 
-      const result = await getHandler("bags_launch_token")({
-        name: "TestToken",
-        symbol: "TT",
-        description: "A test token",
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Network error");
-    });
-
-    it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
-      process.env.BAGS_KEYPAIR_PATH = "custom/path.json";
-      const { server, getHandler } = createMockServer();
-      LaunchTokenTool.registerTool(server);
-
-      const result = await getHandler("bags_launch_token")({
-        name: "TestToken",
-        symbol: "TT",
-        description: "A test token",
-      });
-      expect(result.isError).toBeUndefined();
-      delete process.env.BAGS_KEYPAIR_PATH;
-    });
+    expect(result.isError).toBe(true);
   });
 });

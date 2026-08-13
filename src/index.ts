@@ -5,7 +5,13 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, "../.env") });
+
+// Load .env from the working directory. The previous path was relative to the
+// installed package, which for `npx bagos-mcp-server` resolves inside
+// node_modules and is never where a user puts their config. Environment
+// variables set by the MCP client always take precedence — dotenv does not
+// overwrite existing vars.
+dotenv.config();
 
 import * as tools from "./tools/index.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -15,12 +21,19 @@ import { IMcpTool } from "./types/IMcpTool.js";
 import cors from "cors";
 import express from "express";
 import { readFileSync } from "fs";
+import { reportPreflight } from "./lib/preflight.js";
 
 const pkg = JSON.parse(readFileSync(join(__dirname, "../package.json"), "utf-8")) as { version: string; name: string };
 
 async function startServer() {
   const isHttp = process.argv.includes("--http");
   const port = process.env["PORT"] || 3050;
+
+  // Report configuration to stderr before opening the transport. stdout is the
+  // JSON-RPC channel on stdio — writing anything there corrupts the stream.
+  if (!reportPreflight()) {
+    process.exit(1);
+  }
 
   const server = new McpServer(
     {

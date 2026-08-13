@@ -5,7 +5,7 @@ import { PublicKey } from '@solana/web3.js';
 import { Wallet } from "../lib/wallet.js";
 import { TokenGate } from "../lib/token-gate.js";
 import { IMcpTool } from "../types/IMcpTool.js";
-import { executeAll } from "../lib/execute.js";
+import { Executor } from "../lib/execute.js";
 import { networkBanner } from "../lib/network.js";
 import {
   confirmationRequired,
@@ -85,7 +85,7 @@ export const ClaimFeesTool: IMcpTool = {
             consumeToken(confirm!, TOOL_NAME, action);
           }
 
-          const { executed, failedAt, error } = await executeAll(transactions, keypair);
+          const { executed, failedAt, error } = await Executor.executeAll(transactions, keypair);
 
           const lines = [
             failedAt === null
