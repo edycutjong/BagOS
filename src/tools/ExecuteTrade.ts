@@ -7,8 +7,10 @@ import { TokenGate } from "../lib/token-gate.js";
 import { IMcpTool } from "../types/IMcpTool.js";
 import { Executor } from "../lib/execute.js";
 import { networkBanner, assertBagsWritesSupported } from "../lib/network.js";
+import { toBaseUnits } from "../lib/mint.js";
 import {
   assertWithinCaps,
+  assertSpendIsCappable,
   recordSpend,
   confirmationRequired,
   issueToken,
@@ -54,19 +56,26 @@ export const ExecuteTradeTool: IMcpTool = {
           const amount = args.amount ?? 0.1;
           const slippageBps = args.slippageBps ?? 300;
 
-          // Caps are denominated in SOL, so they bind only when SOL is what
-          // leaves the wallet. Selling a token for SOL spends ~0 SOL.
-          const solSpend = resolvedInput === SOL_MINT ? amount : 0;
-          assertWithinCaps(solSpend);
+          // Caps are SOL-denominated, so they only bind when SOL leaves the
+          // wallet. A token-input swap cannot be valued here — refuse it unless
+          // the operator has explicitly accepted that it is uncapped.
+          assertSpendIsCappable(resolvedInput, SOL_MINT);
+          const solSpend: number | null = resolvedInput === SOL_MINT ? amount : null;
+          if (solSpend !== null) {
+            assertWithinCaps(solSpend);
+          }
 
           // The token authorizes this exact argument set, minus the token itself.
           const { confirm, ...action } = args;
 
           const client = BagsClient.getBagsClient();
+          // Decimals come from the mint, never assumed. A 6-decimal input under
+          // a hardcoded 1e9 would trade 1000x the requested size.
+          const baseUnits = await toBaseUnits(amount, resolvedInput);
           const quoteResponse = await client.trade.getQuote({
             inputMint: new PublicKey(resolvedInput),
             outputMint: new PublicKey(resolvedOutput),
-            amount: Math.round(amount * 1e9),
+            amount: baseUnits,
             slippageBps
           });
 
@@ -102,7 +111,7 @@ export const ExecuteTradeTool: IMcpTool = {
           });
 
           const result = await Executor.executeTransaction(transaction, keypair);
-          recordSpend(solSpend);
+          if (solSpend !== null) recordSpend(solSpend);
 
           return {
             content: [{

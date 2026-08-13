@@ -4,6 +4,8 @@ import {
   sessionSpend,
   resetGuards,
   assertWithinCaps,
+  assertSpendIsCappable,
+  UncappableSpendError,
   recordSpend,
   SpendCapError,
   confirmationRequired,
@@ -19,6 +21,7 @@ beforeEach(() => {
   delete process.env['BAGS_MAX_SOL_PER_TX'];
   delete process.env['BAGS_MAX_SOL_PER_SESSION'];
   delete process.env['BAGS_ALLOW_UNCONFIRMED'];
+  delete process.env['BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS'];
   delete process.env['BAGS_NETWORK'];
 });
 
@@ -88,6 +91,36 @@ describe("assertWithinCaps", () => {
   it("does not mutate the session total", () => {
     assertWithinCaps(0.05);
     expect(sessionSpend()).toBe(0);
+  });
+});
+
+describe("assertSpendIsCappable", () => {
+  const SOL = 'So11111111111111111111111111111111111111112';
+  const TOKEN = 'EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS';
+
+  it("allows a SOL-input swap", () => {
+    expect(() => assertSpendIsCappable(SOL, SOL)).not.toThrow();
+  });
+
+  it("refuses a token-input swap by default, because no cap can bind", () => {
+    expect(() => assertSpendIsCappable(TOKEN, SOL)).toThrow(UncappableSpendError);
+    expect(() => assertSpendIsCappable(TOKEN, SOL)).toThrow('completely uncapped');
+  });
+
+  it("permits it only with explicit opt-in", () => {
+    process.env['BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS'] = 'true';
+    expect(() => assertSpendIsCappable(TOKEN, SOL)).not.toThrow();
+  });
+});
+
+describe("previewText with an unvalued spend", () => {
+  it("never shows 'Spend: 0 SOL' for a non-SOL trade", () => {
+    const text = previewText({
+      action: 'Swap', amountSol: null, details: [], token: 'T', toolName: 'tool',
+    });
+    expect(text).not.toContain('Spend:   0 SOL');
+    expect(text).toContain('NOT SOL-DENOMINATED');
+    expect(text).toContain('UNCAPPED');
   });
 });
 

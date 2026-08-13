@@ -23,8 +23,28 @@ const SECRET_SHAPES: Array<[RegExp, string]> = [
   [/\b[A-Za-z0-9+/]{80,}={0,2}\b/g, "[REDACTED_BLOB]"],
 ];
 
+/**
+ * A Solana signature is 87-88 base58 characters — the same shape as a base58
+ * secret key, so the two cannot be told apart by pattern alone. Explorer links
+ * are deliberately exempted: SECURITY.md promises that a failed transaction
+ * reports its signature, and redacting it there destroys the one piece of
+ * information the operator needs to investigate.
+ */
+const EXPLORER_URL = /https:\/\/explorer\.solana\.com\/tx\/[1-9A-HJ-NP-Za-km-z]+(\?cluster=\w+)?/g;
+
 export function redact(text: string): string {
-  return SECRET_SHAPES.reduce((acc, [pattern, replacement]) => acc.replace(pattern, replacement), text);
+  const preserved: string[] = [];
+  const withPlaceholders = text.replace(EXPLORER_URL, (match) => {
+    preserved.push(match);
+    return `EXPLORER${preserved.length - 1}`;
+  });
+
+  const redacted = SECRET_SHAPES.reduce(
+    (acc, [pattern, replacement]) => acc.replace(pattern, replacement),
+    withPlaceholders
+  );
+
+  return redacted.replace(/EXPLORER(\d+)/g, (_m, i) => preserved[Number(i)]!);
 }
 
 /**

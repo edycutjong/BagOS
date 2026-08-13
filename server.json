@@ -35,7 +35,10 @@
           "isSecret": false,
           "format": "string",
           "default": "devnet",
-          "choices": ["devnet", "mainnet"]
+          "choices": [
+            "devnet",
+            "mainnet"
+          ]
         },
         {
           "name": "SOLANA_RPC_URL",
@@ -89,6 +92,14 @@
           "isSecret": false,
           "format": "number",
           "default": "10000"
+        },
+        {
+          "name": "BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS",
+          "description": "Permit non-SOL-input swaps, which the SOL-denominated caps cannot limit.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "boolean",
+          "default": "false"
         }
       ]
     }

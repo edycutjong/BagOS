@@ -97,6 +97,42 @@ not land.
   **refuses to start** rather than picking a winner. A "devnet" banner over a
   mainnet endpoint is how people lose money by accident.
 
+## Known limitations
+
+These are real gaps, documented rather than hidden. An adversarial review of
+v2.0.0 surfaced them; each is a deliberate deferral, not an oversight.
+
+**The caps only bind on SOL.** They cannot value an arbitrary token, so a
+non-SOL-input swap is uncapped. Such swaps are refused unless you set
+`BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS=true`, and the preview then says so. In
+v2.0.0-pre this silently displayed "Spend: 0 SOL" and passed every cap.
+
+**The confirmation token binds arguments, not the quoted price.** Confirming
+re-runs the quote, so the `expect`/`min` figures you approved are not what
+executes if the price moved inside the five-minute window. Your slippage
+setting still bounds the loss; the preview numbers are indicative, not a
+guarantee. The same applies to fee claims, where the transaction set is
+re-fetched at confirmation.
+
+**The session cap is not concurrency-safe.** `assertWithinCaps` reads the
+counter and `recordSpend` increments it only after confirmation. Parallel tool
+calls can each pass the check before any of them records, exceeding the session
+cap. Assume the session cap holds for sequential use only.
+
+**A submitted transaction can be reported as failed.** If confirmation times
+out, the transaction may still land. The tool reports an error and does not
+count the spend. Always check the signature on an explorer before retrying.
+
+**HTTP mode is unauthenticated.** `--http` / `npm run start:http` serves `/mcp`
+on `0.0.0.0` with permissive CORS and no auth — anyone who can reach the port
+can invoke the write tools, and all callers share one spend counter and one
+token namespace. **Do not run HTTP mode on a funded wallet or an untrusted
+network.** The controls in this document assume the default stdio transport,
+running locally as a subprocess of your MCP client.
+
+**Cluster detection is substring-based.** A testnet endpoint is not recognised
+and is taken on trust under whatever `BAGS_NETWORK` says.
+
 ## Reporting a vulnerability
 
 Open a security advisory at

@@ -3,7 +3,7 @@
 An MCP server that lets an AI assistant read Bags/Solana token data and — with
 explicit confirmation — execute swaps and claim creator fees from your wallet.
 
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/edycutjong/bagos/actions)
+[![CI](https://github.com/edycutjong/bagos/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/bagos/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm)](https://www.npmjs.com/package/bagos-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -11,6 +11,17 @@ explicit confirmation — execute swaps and claim creator fees from your wallet.
 > transactions, discarded them, and reported success — nothing was ever signed
 > or submitted. If you used 1.x and believed a trade or claim executed, it did
 > not. See [CHANGELOG.md](CHANGELOG.md).
+>
+> **⚠️ 2.0.0 is not published yet.** `npm` currently serves **1.0.0**, which has
+> the defect above and defaults to mainnet. Until 2.0.0 ships, install from
+> source rather than `npx`:
+>
+> ```bash
+> git clone https://github.com/edycutjong/bagos && cd bagos
+> npm ci && npm run build
+> ```
+>
+> and point your client at `node /absolute/path/to/bagos/build/index.js`.
 
 ---
 
@@ -141,6 +152,11 @@ for a transaction that did not land.
 
 Set `BAGS_ALLOW_UNCONFIRMED=true` to skip the preview. Spend caps still apply.
 
+**The caps only bind on SOL.** A swap whose input is some other token cannot be
+valued in SOL, so no cap can limit it. Those swaps are refused by default; set
+`BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS=true` to permit them, and the preview will say
+plainly that the trade is uncapped.
+
 ---
 
 ## Configuration
@@ -156,6 +172,7 @@ Set `BAGS_ALLOW_UNCONFIRMED=true` to skip the preview. Spend caps still apply.
 | `BAGS_MAX_SOL_PER_TX` | no | `0.1` | Per-transaction spend cap |
 | `BAGS_MAX_SOL_PER_SESSION` | no | `1.0` | Per-process spend cap |
 | `BAGS_ALLOW_UNCONFIRMED` | no | `false` | Skip the confirmation step |
+| `BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS` | no | `false` | Permit swaps whose input is not SOL. The caps are SOL-denominated and **cannot limit these**. |
 
 ---
 

@@ -66,6 +66,22 @@ describe("toolError", () => {
     expect(text).toContain("unknown error");
   });
 
+  it("preserves a Solana signature inside an explorer URL", () => {
+    // Regression: signatures are 87-88 base58 chars, same shape as a base58
+    // secret key. The blanket rule redacted the explorer link that
+    // SECURITY.md promises on a failed transaction.
+    const sig = "5".repeat(88);
+    const err = new Error(`Transaction failed. Inspect it at https://explorer.solana.com/tx/${sig}?cluster=devnet`);
+    const text = (toolError(err).content[0] as any).text;
+    expect(text).toContain(sig);
+    expect(text).not.toContain("REDACTED");
+  });
+
+  it("still redacts a bare base58 blob that is not an explorer link", () => {
+    const text = (toolError(new Error(`key ${"5".repeat(88)} leaked`)).content[0] as any).text;
+    expect(text).toContain("[REDACTED_BASE58]");
+  });
+
   it("redacts key material inside an error message", () => {
     const leak = new Error(`parse failed near [${Array.from({ length: 64 }, () => 7).join(",")}]`);
     expect((toolError(leak).content[0] as any).text).toContain("[REDACTED_KEYPAIR_BYTES]");

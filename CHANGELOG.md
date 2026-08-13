@@ -77,8 +77,11 @@ key. Parse failures now produce a generic message.
 - **Default cluster is devnet.** Set `BAGS_NETWORK=mainnet` for the old behaviour.
 - **Package renamed** from `@edycutjong/bagos-mcp-server` (GitHub Packages) to
   **`bagos-mcp-server` on public npm**. The official MCP registry accepts only
-  `registry.npmjs.org`, and GitHub Packages requires auth even for public
-  packages — so `npx` never worked for a stranger.
+  `registry.npmjs.org`, and GitHub Packages requires auth to install even when
+  public, so the repo's own publish target was unreachable by `npx`.
+  Separately, an unscoped `bagos-mcp-server@1.0.0` was published to npmjs on
+  2026-04-21 and is still what `npx bagos-mcp-server` installs today — the
+  defective version described above. Publishing 2.0.0 replaces it.
 - `bags_execute_trade` drops the `side` parameter, which was declared but never
   read. `inputMint`/`outputMint` fully determine the direction.
 - `.env` is now loaded from the working directory, not from a path relative to
@@ -86,7 +89,7 @@ key. Parse failures now produce a generic message.
 
 ### Notes
 
-- 144 tests. Bypass resistance for the caps and the confirmation step is covered
+- 150 tests. Bypass resistance for the caps and the confirmation step is covered
   explicitly and should be treated as non-negotiable in review.
 
 ## [1.0.0] — 2026-04-21

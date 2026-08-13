@@ -127,7 +127,47 @@ describe("Executor.signSendConfirm", () => {
   });
 });
 
+describe("Executor.prepare", () => {
+  /**
+   * Regression: executeTransaction simulated before signSendConfirm set the
+   * feePayer, so a freshly built legacy Transaction threw
+   * "Transaction fee payer required" from compileMessage() and could never be
+   * executed. proof:devnet builds exactly such a transaction.
+   */
+  it("sets feePayer and blockhash on a bare legacy transaction", async () => {
+    const tx = legacyTx();
+    await Executor.prepare(tx, keypair);
+    expect(tx.feePayer).toBe(keypair.publicKey);
+    expect(tx.recentBlockhash).toBe("bh");
+  });
+
+  it("leaves an already-populated legacy transaction alone", async () => {
+    const tx = legacyTx();
+    tx.feePayer = "existing";
+    tx.recentBlockhash = "existing-bh";
+    await Executor.prepare(tx, keypair);
+    expect(tx.feePayer).toBe("existing");
+    expect(tx.recentBlockhash).toBe("existing-bh");
+  });
+
+  it("is a no-op for a versioned transaction", async () => {
+    await Executor.prepare(versionedTx(), keypair);
+    expect(mockConnection.getLatestBlockhash).not.toHaveBeenCalled();
+  });
+});
+
 describe("Executor.executeTransaction", () => {
+  it("prepares a legacy transaction before simulating it", async () => {
+    const tx = legacyTx();
+    let feePayerAtSimulation: unknown = "unset";
+    mockConnection.simulateTransaction.mockImplementation(async () => {
+      feePayerAtSimulation = tx.feePayer;
+      return { value: { err: null, logs: [] } };
+    });
+    await Executor.executeTransaction(tx, keypair);
+    expect(feePayerAtSimulation).toBe(keypair.publicKey);
+  });
+
   it("simulates before it sends", async () => {
     await Executor.executeTransaction(versionedTx(), keypair);
     expect(mockConnection.simulateTransaction).toHaveBeenCalled();

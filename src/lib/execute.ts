@@ -114,11 +114,31 @@ export const Executor = {
     };
   },
 
-  /** Simulate, then sign/send/confirm. The full write path. */
+  /**
+   * A legacy Transaction cannot be compiled — and therefore cannot be
+   * simulated — until it has a feePayer and a recentBlockhash. Simulating
+   * first threw "Transaction fee payer required" on any freshly built legacy
+   * transaction, which made the whole simulate-before-send guarantee
+   * unreachable on that path.
+   */
+  prepare: async function (
+    tx: Transaction | VersionedTransaction,
+    keypair: Keypair
+  ): Promise<void> {
+    if (isVersioned(tx)) return;
+    if (!tx.feePayer) tx.feePayer = keypair.publicKey;
+    if (!tx.recentBlockhash) {
+      const latest = await getConnection().getLatestBlockhash('confirmed');
+      tx.recentBlockhash = latest.blockhash;
+    }
+  },
+
+  /** Prepare, simulate, then sign/send/confirm. The full write path. */
   executeTransaction: async function (
     tx: Transaction | VersionedTransaction,
     keypair: Keypair
   ): Promise<ExecutionResult> {
+    await Executor.prepare(tx, keypair);
     await Executor.simulate(tx);
     return Executor.signSendConfirm(tx, keypair);
   },
