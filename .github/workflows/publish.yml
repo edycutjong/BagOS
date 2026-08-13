@@ -1,4 +1,12 @@
-name: Publish to GitHub Packages
+name: Publish to npm
+
+# Publishes the unscoped package to registry.npmjs.org with provenance.
+#
+# It must be npmjs: the official MCP registry accepts only
+# https://registry.npmjs.org as an npm base URL, and GitHub Packages requires
+# an auth token to install even when public — so `npx bagos-mcp-server` could
+# never work for a stranger. This workflow previously targeted GitHub Packages
+# under the @edycutjong scope; see CHANGELOG 2.0.0.
 
 on:
   release:
@@ -10,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      id-token: write        # required for npm provenance
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,16 +27,40 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@edycutjong'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build project
+      # The registry verifies package.json's mcpName against the published
+      # tarball, and rejects a server.json whose version is not a real published
+      # version. A drift between these three is a failed submission, so catch it
+      # here rather than after publishing an unusable version.
+      - name: Verify version and mcpName consistency
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          PKG_NAME=$(node -p "require('./package.json').name")
+          MCP_NAME=$(node -p "require('./package.json').mcpName || ''")
+          SRV_VERSION=$(node -p "require('./server.json').version")
+          SRV_NAME=$(node -p "require('./server.json').name")
+          SRV_IDENT=$(node -p "require('./server.json').packages[0].identifier")
+          SRV_PKG_VERSION=$(node -p "require('./server.json').packages[0].version")
+
+          fail=0
+          [ "$PKG_VERSION" = "$SRV_VERSION" ]     || { echo "::error::package.json version ($PKG_VERSION) != server.json version ($SRV_VERSION)"; fail=1; }
+          [ "$PKG_VERSION" = "$SRV_PKG_VERSION" ] || { echo "::error::package.json version ($PKG_VERSION) != server.json packages[0].version ($SRV_PKG_VERSION)"; fail=1; }
+          [ "$PKG_NAME" = "$SRV_IDENT" ]          || { echo "::error::package.json name ($PKG_NAME) != server.json packages[0].identifier ($SRV_IDENT)"; fail=1; }
+          [ "$MCP_NAME" = "$SRV_NAME" ]           || { echo "::error::package.json mcpName ($MCP_NAME) != server.json name ($SRV_NAME)"; fail=1; }
+          [ -n "$MCP_NAME" ]                      || { echo "::error::package.json is missing mcpName; the MCP registry uses it to verify package ownership"; fail=1; }
+          exit $fail
+
+      - name: Lint, typecheck, test
+        run: npm run ci
+
+      - name: Build
         run: npm run build
 
-      - name: Publish to GitHub Packages
-        run: npm publish
+      - name: Publish
+        run: npm publish --provenance --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

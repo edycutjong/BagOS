@@ -128,7 +128,7 @@ export function assertBagsWritesSupported(): void {
         'deployment — its API endpoint and program IDs are mainnet-only. ' +
         'Devnet is this server\'s default so an unconfigured install cannot ' +
         'spend real funds. To trade or claim, set BAGS_NETWORK=mainnet and ' +
-        'review your spend caps first (see SECURITY.md).'
+        'review your spend caps first (see .github/SECURITY.md).'
     );
   }
 }

@@ -52,9 +52,18 @@ key. Parse failures now produce a generic message.
   endpoint's cluster disagrees with `BAGS_NETWORK`.
 - **Startup configuration report** on stderr, with RPC credentials redacted.
 - **`server.json`** — MCP registry manifest (schema `2025-12-11`).
-- **`SECURITY.md`** — threat model and key-handling policy.
+- **`.github/SECURITY.md`** — threat model and key-handling policy.
 - Structured tool errors (`toolError`) — no stack traces to the model; keypair
   byte arrays, long base58 strings, and long base64 blobs redacted.
+- **Mainnet-only guard on writes.** The Bags SDK has no devnet deployment — one
+  hardcoded API base URL and fixed mainnet program IDs. Write tools on devnet
+  now return that explanation instead of failing at simulation with an opaque
+  program-not-found.
+- **Community health files** under `.github/`: code of conduct, contributing
+  guide, security policy, issue templates, PR template.
+- **CodeQL** (`security-extended`) and **gitleaks** (full-history secret scan)
+  workflows, plus grouped monthly Dependabot with major bumps ignored.
+- `docs/examples.md` — worked prompts with real expected output.
 
 ### Changed — breaking
 
@@ -77,7 +86,7 @@ key. Parse failures now produce a generic message.
 
 ### Notes
 
-- 143 tests. Bypass resistance for the caps and the confirmation step is covered
+- 144 tests. Bypass resistance for the caps and the confirmation step is covered
   explicitly and should be treated as non-negotiable in review.
 
 ## [1.0.0] — 2026-04-21

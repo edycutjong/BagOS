@@ -161,7 +161,7 @@ Set `BAGS_ALLOW_UNCONFIRMED=true` to skip the preview. Spend caps still apply.
 
 ## Security
 
-Read [SECURITY.md](SECURITY.md) before pointing a funded wallet at this.
+Read [SECURITY.md](.github/SECURITY.md) before pointing a funded wallet at this.
 
 Summary: your private key is read from disk, used to sign, and never logged,
 never sent anywhere, and never placed in an error message. Tool errors return

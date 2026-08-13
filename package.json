@@ -12,7 +12,7 @@
     "build",
     "server.json",
     "README.md",
-    "SECURITY.md",
+    ".github/SECURITY.md",
     "CHANGELOG.md"
   ],
   "engines": {
