@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BagsClient } from "../lib/bags-client.js";
 import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool.js";
+import { Mint } from "../lib/mint.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -27,7 +28,8 @@ export const GetTradeQuoteTool: IMcpTool = {
           const resolvedOutput = args.outputMint || bosMint;
           
           // Convert human-readable amount to lamports (API expects integer lamports)
-          const lamports = Math.round(args.amount * 1e9);
+          // Decimals from the mint, never assumed — see lib/mint.ts.
+          const lamports = await Mint.toBaseUnits(args.amount, resolvedInput);
           
           const quote = await client.trade.getQuote({
             inputMint: new PublicKey(resolvedInput),

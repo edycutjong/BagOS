@@ -134,6 +134,11 @@ Finish at [bags.fm](https://bags.fm).
 **Trade on devnet.** Bags has no devnet deployment. Write tools on devnet return
 an explanation rather than failing obscurely.
 
+**Swap a non-SOL token without opting in.** The caps are SOL-denominated and
+cannot value an arbitrary token, so such a swap would be uncapped. It is refused
+unless you set `BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS=true`, and the preview then says
+plainly that no cap applies rather than showing a misleading "Spend: 0 SOL".
+
 **Exceed your caps.** A request over `BAGS_MAX_SOL_PER_TX` is rejected before the
 Bags SDK is called. Caps apply even with `BAGS_ALLOW_UNCONFIRMED=true`.
 

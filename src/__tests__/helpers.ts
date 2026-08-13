@@ -114,6 +114,7 @@ export function setWriteToolEnv() {
   delete process.env['SOLANA_RPC_URL'];
   delete process.env['HELIUS_RPC_URL'];
   delete process.env['BAGS_ALLOW_UNCONFIRMED'];
+  delete process.env['BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS'];
   delete process.env['BAGS_MAX_SOL_PER_TX'];
   delete process.env['BAGS_MAX_SOL_PER_SESSION'];
 }

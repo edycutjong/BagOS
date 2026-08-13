@@ -13,7 +13,7 @@ import {
   consumeToken,
   previewText,
 } from "../lib/guards.js";
-import { toolError } from "../lib/mcp-utils.js";
+import { toolError, redact } from "../lib/mcp-utils.js";
 
 const TOOL_NAME = "bags_claim_fees";
 
@@ -63,13 +63,13 @@ export const ClaimFeesTool: IMcpTool = {
           }
 
           if (confirmationRequired() && !confirm) {
-            const token = issueToken(TOOL_NAME, action, 0);
+            const token = issueToken(TOOL_NAME, action, null);
             return {
               content: [{
                 type: "text",
                 text: previewText({
                   action: `Claim fees across ${args.tokenMints.length} mint(s)`,
-                  amountSol: 0,
+                  amountSol: null,
                   details: [
                     `transactions  ${transactions.length} to submit`,
                     `mints         ${args.tokenMints.join(", ")}`,
@@ -100,7 +100,7 @@ export const ClaimFeesTool: IMcpTool = {
           if (failedAt !== null) {
             lines.push(
               ``,
-              `Transaction ${failedAt + 1} failed: ${error?.message ?? "unknown error"}`,
+              `Transaction ${failedAt + 1} failed: ${redact(error?.message ?? "unknown error")}`,
               `Remaining transactions were not submitted.`
             );
             return { content: [{ type: "text", text: lines.join("\n") }], isError: true };

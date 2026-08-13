@@ -1,4 +1,5 @@
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { explorerUrl } from "./network.js";
 
 export const McpUtilities = {
   createTextResponse: (
@@ -24,27 +25,37 @@ const SECRET_SHAPES: Array<[RegExp, string]> = [
 ];
 
 /**
- * A Solana signature is 87-88 base58 characters — the same shape as a base58
- * secret key, so the two cannot be told apart by pattern alone. Explorer links
- * are deliberately exempted: SECURITY.md promises that a failed transaction
- * reports its signature, and redacting it there destroys the one piece of
- * information the operator needs to investigate.
+ * Redaction is unconditional. There are deliberately NO exemptions.
+ *
+ * An earlier version carved out explorer URLs so a failed transaction could
+ * still report its signature. That was a smuggling channel: a Solana signature
+ * and a base58 secret key are the same shape, the carve-out put no length
+ * bound on the base58 segment, and any attacker-influenced string placing
+ * "https://explorer.solana.com/tx/" before key material defeated redaction
+ * completely. The placeholder scheme also rendered a literal "EXPLORER0" in an
+ * incoming message as "undefined".
+ *
+ * The signature is now carried out-of-band on the error object instead — see
+ * `toolError` — so nothing needs to survive this function.
  */
-const EXPLORER_URL = /https:\/\/explorer\.solana\.com\/tx\/[1-9A-HJ-NP-Za-km-z]+(\?cluster=\w+)?/g;
-
 export function redact(text: string): string {
-  const preserved: string[] = [];
-  const withPlaceholders = text.replace(EXPLORER_URL, (match) => {
-    preserved.push(match);
-    return `EXPLORER${preserved.length - 1}`;
-  });
-
-  const redacted = SECRET_SHAPES.reduce(
+  return SECRET_SHAPES.reduce(
     (acc, [pattern, replacement]) => acc.replace(pattern, replacement),
-    withPlaceholders
+    text
   );
+}
 
-  return redacted.replace(/EXPLORER(\d+)/g, (_m, i) => preserved[Number(i)]!);
+/** A signature carried on the error object rather than inside its message. */
+function signatureOf(error: unknown): string | null {
+  if (
+    error !== null &&
+    typeof error === "object" &&
+    "signature" in error &&
+    typeof (error as { signature: unknown }).signature === "string"
+  ) {
+    return (error as { signature: string }).signature;
+  }
+  return null;
 }
 
 /**
@@ -53,6 +64,11 @@ export function redact(text: string): string {
  * Deliberately returns only `error.message` — never `error.stack`, never the
  * raw object. A stack trace handed back to an LLM is both a leak vector and
  * noise it cannot use.
+ *
+ * When the error carries a transaction signature, it is appended AFTER
+ * redaction from that structured field. This is how SECURITY.md's promise —
+ * that a failed transaction still reports its signature — is kept without
+ * poking a hole in `redact`.
  */
 export function toolError(error: unknown): CallToolResult {
   let message: string;
@@ -67,8 +83,15 @@ export function toolError(error: unknown): CallToolResult {
     message = "An unknown error occurred.";
   }
 
+  let text = `❌ ${redact(message)}`;
+
+  const signature = signatureOf(error);
+  if (signature) {
+    text += `\n\nSignature: ${signature}\nExplorer:  ${explorerUrl(signature)}`;
+  }
+
   return {
-    content: [{ type: "text", text: `❌ ${redact(message)}` }],
+    content: [{ type: "text", text }],
     isError: true,
   };
 }

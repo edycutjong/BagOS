@@ -66,15 +66,28 @@ describe("toolError", () => {
     expect(text).toContain("unknown error");
   });
 
-  it("preserves a Solana signature inside an explorer URL", () => {
-    // Regression: signatures are 87-88 base58 chars, same shape as a base58
-    // secret key. The blanket rule redacted the explorer link that
-    // SECURITY.md promises on a failed transaction.
+  it("reports a signature carried on the error object, after redaction", () => {
     const sig = "5".repeat(88);
-    const err = new Error(`Transaction failed. Inspect it at https://explorer.solana.com/tx/${sig}?cluster=devnet`);
+    const err = Object.assign(new Error("Transaction failed on chain."), { signature: sig });
     const text = (toolError(err).content[0] as any).text;
-    expect(text).toContain(sig);
-    expect(text).not.toContain("REDACTED");
+    expect(text).toContain(`Signature: ${sig}`);
+    expect(text).toContain("explorer.solana.com");
+  });
+
+  it("does NOT exempt an explorer URL inside the message — that was a smuggling channel", () => {
+    // A base58 secret key and a signature are the same shape, so exempting
+    // explorer URLs let key material survive simply by being prefixed with one.
+    const secret = "5".repeat(88);
+    const err = new Error(`sdk error: https://explorer.solana.com/tx/${secret}`);
+    const text = (toolError(err).content[0] as any).text;
+    expect(text).not.toContain(secret);
+    expect(text).toContain("[REDACTED_BASE58]");
+  });
+
+  it("does not emit 'undefined' for a literal placeholder in the message", () => {
+    const text = (toolError(new Error("see EXPLORER0 for details")).content[0] as any).text;
+    expect(text).not.toContain("undefined");
+    expect(text).toContain("EXPLORER0");
   });
 
   it("still redacts a bare base58 blob that is not an explorer link", () => {

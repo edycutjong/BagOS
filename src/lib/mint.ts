@@ -15,11 +15,11 @@ const SOL_DECIMALS = 9;
 
 const decimalsCache = new Map<string, number>();
 
-export function resetMintCache(): void {
+function resetMintCacheImpl(): void {
   decimalsCache.clear();
 }
 
-export async function getMintDecimals(mint: string): Promise<number> {
+async function getMintDecimalsImpl(mint: string): Promise<number> {
   if (mint === SOL_MINT) return SOL_DECIMALS;
 
   const cached = decimalsCache.get(mint);
@@ -45,8 +45,8 @@ export async function getMintDecimals(mint: string): Promise<number> {
   return decimals;
 }
 
-export async function toBaseUnits(amount: number, mint: string): Promise<number> {
-  const decimals = await getMintDecimals(mint);
+async function toBaseUnitsImpl(amount: number, mint: string): Promise<number> {
+  const decimals = await Mint.getMintDecimals(mint);
   const base = amount * Math.pow(10, decimals);
   if (!Number.isFinite(base)) {
     throw new Error(`Amount ${amount} is not representable for mint ${mint}.`);
@@ -58,3 +58,13 @@ export async function toBaseUnits(amount: number, mint: string): Promise<number>
   }
   return Math.round(base);
 }
+
+/**
+ * Exported as an object (matching Wallet / TokenGate / BagsClient / Executor)
+ * so tests can jest.spyOn it, and so internal calls route through the same seam.
+ */
+export const Mint = {
+  getMintDecimals: getMintDecimalsImpl,
+  toBaseUnits: toBaseUnitsImpl,
+  resetMintCache: resetMintCacheImpl,
+};

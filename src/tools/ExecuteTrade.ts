@@ -7,7 +7,7 @@ import { TokenGate } from "../lib/token-gate.js";
 import { IMcpTool } from "../types/IMcpTool.js";
 import { Executor } from "../lib/execute.js";
 import { networkBanner, assertBagsWritesSupported } from "../lib/network.js";
-import { toBaseUnits } from "../lib/mint.js";
+import { Mint } from "../lib/mint.js";
 import {
   assertWithinCaps,
   assertSpendIsCappable,
@@ -71,7 +71,7 @@ export const ExecuteTradeTool: IMcpTool = {
           const client = BagsClient.getBagsClient();
           // Decimals come from the mint, never assumed. A 6-decimal input under
           // a hardcoded 1e9 would trade 1000x the requested size.
-          const baseUnits = await toBaseUnits(amount, resolvedInput);
+          const baseUnits = await Mint.toBaseUnits(amount, resolvedInput);
           const quoteResponse = await client.trade.getQuote({
             inputMint: new PublicKey(resolvedInput),
             outputMint: new PublicKey(resolvedOutput),

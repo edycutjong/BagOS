@@ -150,9 +150,14 @@ describe("Executor.prepare", () => {
     expect(tx.recentBlockhash).toBe("existing-bh");
   });
 
-  it("is a no-op for a versioned transaction", async () => {
-    await Executor.prepare(versionedTx(), keypair);
-    expect(mockConnection.getLatestBlockhash).not.toHaveBeenCalled();
+  it("does not mutate a versioned transaction, but still bounds confirmation height", async () => {
+    const tx = versionedTx();
+    tx.message.recentBlockhash = "sdk-blockhash";
+    const ctx = await Executor.prepare(tx, keypair);
+    // Confirms against the SDK's own blockhash, not a fresher one — otherwise
+    // a transaction that landed can be reported as expired.
+    expect(ctx.blockhash).toBe("sdk-blockhash");
+    expect(ctx.lastValidBlockHeight).toBe(99);
   });
 });
 

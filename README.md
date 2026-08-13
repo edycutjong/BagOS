@@ -207,8 +207,10 @@ and pushes a transfer through the same simulate/sign/send/confirm path the write
 tools use — then re-fetches the signature from the chain instead of trusting the
 function's return value. Use it to verify the execution layer end to end.
 
-144 tests. The bypass tests around the spend caps and the confirmation step are
-load-bearing; treat a change there as a security change.
+173 tests. The bypass tests around the spend caps and the confirmation step are
+load-bearing; treat a change there as a security change. They are mutation-
+checked: removing the cap guard, the confirmation check, the decimals lookup,
+or the spend recorder each makes the suite fail.
 
 ---
 

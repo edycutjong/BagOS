@@ -75,6 +75,15 @@ key. Parse failures now produce a generic message.
   `bags_execute_trade` or `bags_claim_fees` in one shot must either pass a
   confirmation token or set `BAGS_ALLOW_UNCONFIRMED=true`.
 - **Default cluster is devnet.** Set `BAGS_NETWORK=mainnet` for the old behaviour.
+- **Token-input swaps are refused by default.** The spend caps are
+  SOL-denominated and cannot value an arbitrary token, so a swap whose input is
+  not SOL would be entirely uncapped. Set `BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS=true`
+  to permit them; the confirmation preview then states that no cap applies.
+  Previously such swaps passed every cap and displayed "Spend: 0 SOL".
+- **Amounts convert using the mint's real decimals.** Both `bags_execute_trade`
+  and `bags_get_trade_quote` previously used a hardcoded `1e9`, so a 6-decimal
+  input mint (USDC and most pump-style tokens) traded and quoted 1000x the
+  requested size.
 - **Package renamed** from `@edycutjong/bagos-mcp-server` (GitHub Packages) to
   **`bagos-mcp-server` on public npm**. The official MCP registry accepts only
   `registry.npmjs.org`, and GitHub Packages requires auth to install even when
@@ -89,8 +98,10 @@ key. Parse failures now produce a generic message.
 
 ### Notes
 
-- 150 tests. Bypass resistance for the caps and the confirmation step is covered
-  explicitly and should be treated as non-negotiable in review.
+- 173 tests. Bypass resistance for the caps and the confirmation step is covered
+  explicitly and should be treated as non-negotiable in review. Verified by
+  mutation: deleting the cap guard, the confirmation check, the decimals lookup,
+  or the spend recorder each fails the suite.
 
 ## [1.0.0] — 2026-04-21
 

@@ -4,6 +4,7 @@ import {
   VersionedTransaction,
 } from '@solana/web3.js';
 import { getConnection, explorerUrl } from './network.js';
+// explorerUrl is still used for the successful-result link.
 
 /**
  * Sign → simulate → send → confirm.
@@ -15,6 +16,11 @@ import { getConnection, explorerUrl } from './network.js';
  * Exported as an object (matching Wallet / TokenGate / BagsClient) so tests can
  * jest.spyOn it, and so internal calls route through the same seam.
  */
+
+export interface BlockhashContext {
+  blockhash: string;
+  lastValidBlockHeight: number;
+}
 
 export interface ExecutionResult {
   signature: string;
@@ -71,16 +77,18 @@ export const Executor = {
    */
   signSendConfirm: async function (
     tx: Transaction | VersionedTransaction,
-    keypair: Keypair
+    keypair: Keypair,
+    ctx?: BlockhashContext
   ): Promise<ExecutionResult> {
     const connection = getConnection();
-    const latest = await connection.getLatestBlockhash('confirmed');
+    // Sign exactly what was prepared and simulated. An earlier version
+    // re-fetched a blockhash here and overwrote prepare()'s, so the bytes that
+    // were simulated were not the bytes that were signed and sent.
+    const context = ctx ?? (await Executor.prepare(tx, keypair));
 
     if (isVersioned(tx)) {
       tx.sign([keypair]);
     } else {
-      tx.feePayer = keypair.publicKey;
-      tx.recentBlockhash = latest.blockhash;
       tx.sign(keypair);
     }
 
@@ -92,8 +100,8 @@ export const Executor = {
     const confirmation = await connection.confirmTransaction(
       {
         signature,
-        blockhash: latest.blockhash,
-        lastValidBlockHeight: latest.lastValidBlockHeight,
+        blockhash: context.blockhash,
+        lastValidBlockHeight: context.lastValidBlockHeight,
       },
       'confirmed'
     );
@@ -102,7 +110,7 @@ export const Executor = {
       throw new ConfirmationFailedError(
         `Transaction was submitted but failed on chain: ${JSON.stringify(
           confirmation.value.err
-        )}. Inspect it at ${explorerUrl(signature)}`,
+        )}.`,
         signature
       );
     }
@@ -124,13 +132,25 @@ export const Executor = {
   prepare: async function (
     tx: Transaction | VersionedTransaction,
     keypair: Keypair
-  ): Promise<void> {
-    if (isVersioned(tx)) return;
-    if (!tx.feePayer) tx.feePayer = keypair.publicKey;
-    if (!tx.recentBlockhash) {
-      const latest = await getConnection().getLatestBlockhash('confirmed');
-      tx.recentBlockhash = latest.blockhash;
+  ): Promise<BlockhashContext> {
+    const latest = await getConnection().getLatestBlockhash('confirmed');
+
+    if (isVersioned(tx)) {
+      // The message already carries the blockhash the SDK built against.
+      // Confirm against THAT, not a fresher one, or a transaction that landed
+      // can be reported as expired.
+      return {
+        blockhash: tx.message.recentBlockhash,
+        lastValidBlockHeight: latest.lastValidBlockHeight,
+      };
     }
+
+    if (!tx.feePayer) tx.feePayer = keypair.publicKey;
+    if (!tx.recentBlockhash) tx.recentBlockhash = latest.blockhash;
+    return {
+      blockhash: tx.recentBlockhash,
+      lastValidBlockHeight: latest.lastValidBlockHeight,
+    };
   },
 
   /** Prepare, simulate, then sign/send/confirm. The full write path. */
@@ -138,9 +158,9 @@ export const Executor = {
     tx: Transaction | VersionedTransaction,
     keypair: Keypair
   ): Promise<ExecutionResult> {
-    await Executor.prepare(tx, keypair);
+    const context = await Executor.prepare(tx, keypair);
     await Executor.simulate(tx);
-    return Executor.signSendConfirm(tx, keypair);
+    return Executor.signSendConfirm(tx, keypair, context);
   },
 
   /**

@@ -22,8 +22,8 @@ jest.unstable_mockModule("../../lib/network.js", () => ({
   UnsupportedNetworkError: class extends Error {},
 }));
 
-const { getMintDecimals, toBaseUnits, resetMintCache, SOL_MINT } =
-  await import("../../lib/mint.js");
+const { Mint, SOL_MINT } = await import("../../lib/mint.js");
+const { getMintDecimals, toBaseUnits, resetMintCache } = Mint;
 
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 

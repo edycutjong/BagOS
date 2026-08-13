@@ -23,6 +23,11 @@ const mockExecuteAll = jest.spyOn(Executor, "executeAll");
 
 import { resetGuards } from "../../lib/guards.js";
 
+import { Mint } from "../../lib/mint.js";
+// Decimals are a network lookup; these tests are about the guards, not the RPC.
+const mockToBaseUnits = jest.spyOn(Mint, "toBaseUnits")
+  .mockImplementation(async (amount: number) => Math.round(amount * 1e9));
+
 import { ExecuteTradeTool } from "../../tools/ExecuteTrade";
 import { ClaimFeesTool } from "../../tools/ClaimFees";
 import { LaunchTokenTool } from "../../tools/LaunchToken";
@@ -65,6 +70,25 @@ describe("ExecuteTrade", () => {
       expect.any(String),
       expect.any(Object),
       expect.any(Function)
+    );
+  });
+
+  /* Wiring proof: mint.ts is unit-tested, but nothing here proved the tool
+     actually used it. Reverting the tool to `amount * 1e9` left the whole
+     suite green until this existed. */
+  it("converts the amount via the mint's decimals, not a hardcoded 1e9", async () => {
+    await call()({ inputMint: SYSTEM_PROGRAM, amount: 100, confirm: undefined });
+    expect(mockToBaseUnits).not.toHaveBeenCalled(); // refused before conversion
+
+    process.env['BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS'] = 'true';
+    await call()({ inputMint: SYSTEM_PROGRAM, amount: 100 });
+    expect(mockToBaseUnits).toHaveBeenCalledWith(100, SYSTEM_PROGRAM);
+
+    // And the value it returns is what reaches the SDK.
+    mockToBaseUnits.mockResolvedValueOnce(100_000_000);
+    await call()({ inputMint: SYSTEM_PROGRAM, amount: 100 });
+    expect(mockBagsClient.trade.getQuote).toHaveBeenLastCalledWith(
+      expect.objectContaining({ amount: 100_000_000 })
     );
   });
 
@@ -168,6 +192,39 @@ describe("ExecuteTrade", () => {
     mockExecute.mockResolvedValue(okResult);
     const retry = await handler({ inputMint: SOL_MINT, amount: 0.9 });
     expect(retry.content[0].text).toContain("CONFIRMATION REQUIRED");
+  });
+
+  /* The original fund-loss hole was tool WIRING, not the guard itself.
+     These fail if ExecuteTrade stops calling assertSpendIsCappable. */
+  it("refuses a token-input swap, because no SOL cap can bind it", async () => {
+    const result = await call()({ inputMint: SYSTEM_PROGRAM, amount: 999 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("completely uncapped");
+    expect(mockBagsClient.trade.getQuote).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("permits a token-input swap only with explicit opt-in, and says it is uncapped", async () => {
+    process.env['BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS'] = 'true';
+    const result = await call()({ inputMint: SYSTEM_PROGRAM, amount: 999 });
+
+    expect(result.content[0].text).toContain("CONFIRMATION REQUIRED");
+    expect(result.content[0].text).toContain("NOT SOL-DENOMINATED");
+    expect(result.content[0].text).not.toContain("Spend:   0 SOL");
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
+  it("does not let an uncapped token swap consume the session budget", async () => {
+    process.env['BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS'] = 'true';
+    const handler = call();
+    const args = { inputMint: SYSTEM_PROGRAM, amount: 999 };
+    await handler({ ...args, confirm: tokenFrom(await handler(args)) });
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    // A SOL trade at the full per-tx cap must still be allowed afterwards.
+    const after = await handler({ inputMint: SOL_MINT, amount: 0.1 });
+    expect(after.content[0].text).toContain("CONFIRMATION REQUIRED");
   });
 
   it("refuses to write on devnet, explaining that Bags is mainnet-only", async () => {
