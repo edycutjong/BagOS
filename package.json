@@ -34,7 +34,8 @@
     "demo": "tsx scripts/golden-path.ts",
     "demo:ngrok": "tsx scripts/golden-path.ts https://inadvertent-unmiasmal-diego.ngrok-free.dev",
     "github:meta": "bash scripts/github-meta.sh",
-    "github:release": "bash scripts/github-release.sh"
+    "github:release": "bash scripts/github-release.sh",
+    "proof:devnet": "tsx scripts/devnet-proof.ts"
   },
   "repository": {
     "type": "git",
