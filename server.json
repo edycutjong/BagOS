@@ -1,0 +1,96 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.edycutjong/bagos",
+  "title": "BagOS",
+  "description": "MCP server for Bags on Solana: token analytics, trade quotes, and gated write operations.",
+  "version": "2.0.0",
+  "websiteUrl": "https://github.com/edycutjong/bagos",
+  "repository": {
+    "url": "https://github.com/edycutjong/bagos",
+    "source": "github",
+    "id": "1217066683"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "bagos-mcp-server",
+      "version": "2.0.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "BAGS_API_KEY",
+          "description": "Bags API key from dev.bags.fm. Required for all tools.",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "BAGS_NETWORK",
+          "description": "Solana cluster: devnet (default) or mainnet. Writes on mainnet move real funds.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string",
+          "default": "devnet",
+          "choices": ["devnet", "mainnet"]
+        },
+        {
+          "name": "SOLANA_RPC_URL",
+          "description": "Custom Solana RPC endpoint. Defaults to the public RPC for BAGS_NETWORK.",
+          "isRequired": false,
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "BAGS_KEYPAIR_PATH",
+          "description": "Path to a Solana keypair JSON file. Only required for write tools.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "filepath"
+        },
+        {
+          "name": "BAGS_MAX_SOL_PER_TX",
+          "description": "Hard cap on SOL spent by any single transaction. Default 0.1.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "number",
+          "default": "0.1"
+        },
+        {
+          "name": "BAGS_MAX_SOL_PER_SESSION",
+          "description": "Hard cap on total SOL spent across one server session. Default 1.0.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "number",
+          "default": "1.0"
+        },
+        {
+          "name": "BAGS_ALLOW_UNCONFIRMED",
+          "description": "Set true to skip the two-step confirmation on writes. Default false.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "BOS_TOKEN_MINT",
+          "description": "Mint address of the BOS token used for gating write tools.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "string"
+        },
+        {
+          "name": "BOS_REQUIRED_BALANCE",
+          "description": "Minimum BOS balance required to call write tools. Default 10000.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "number",
+          "default": "10000"
+        }
+      ]
+    }
+  ]
+}
