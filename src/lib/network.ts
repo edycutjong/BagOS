@@ -100,3 +100,35 @@ export function networkBanner(): string {
     ? '🔴 MAINNET — real funds'
     : '🧪 devnet — test funds';
 }
+
+export class UnsupportedNetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnsupportedNetworkError';
+  }
+}
+
+/**
+ * The Bags protocol is mainnet-only.
+ *
+ * @bagsfm/bags-sdk ships a single hardcoded API base URL and fixed program IDs
+ * for the Meteora DBC / DAMM v2 and Bags fee-share programs — all mainnet
+ * deployments. There is no devnet mention anywhere in the package. On devnet a
+ * Bags-built transaction references programs that do not exist, and fails at
+ * simulation with an opaque error.
+ *
+ * Devnet remains the DEFAULT so that an unconfigured install cannot move real
+ * funds. This check turns the resulting failure into an explanation instead of
+ * a confusing program-not-found.
+ */
+export function assertBagsWritesSupported(): void {
+  if (getNetwork() !== 'mainnet') {
+    throw new UnsupportedNetworkError(
+      'Bags write operations require mainnet. The Bags protocol has no devnet ' +
+        'deployment — its API endpoint and program IDs are mainnet-only. ' +
+        'Devnet is this server\'s default so an unconfigured install cannot ' +
+        'spend real funds. To trade or claim, set BAGS_NETWORK=mainnet and ' +
+        'review your spend caps first (see SECURITY.md).'
+    );
+  }
+}

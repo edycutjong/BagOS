@@ -170,6 +170,17 @@ describe("ExecuteTrade", () => {
     expect(retry.content[0].text).toContain("CONFIRMATION REQUIRED");
   });
 
+  it("refuses to write on devnet, explaining that Bags is mainnet-only", async () => {
+    process.env['BAGS_NETWORK'] = 'devnet';
+    const result = await call()({ inputMint: SOL_MINT, amount: 0.05 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("require mainnet");
+    expect(result.content[0].text).toContain("no devnet deployment");
+    expect(mockBagsClient.trade.getQuote).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
+
   it("blocks entirely when the token gate fails", async () => {
     mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 12 });
     const result = await call()({ inputMint: SOL_MINT, amount: 0.05 });

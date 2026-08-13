@@ -6,7 +6,7 @@ import { Wallet } from "../lib/wallet.js";
 import { TokenGate } from "../lib/token-gate.js";
 import { IMcpTool } from "../types/IMcpTool.js";
 import { Executor } from "../lib/execute.js";
-import { networkBanner } from "../lib/network.js";
+import { networkBanner, assertBagsWritesSupported } from "../lib/network.js";
 import {
   assertWithinCaps,
   recordSpend,
@@ -36,6 +36,8 @@ export const ExecuteTradeTool: IMcpTool = {
       },
       async (args) => {
         try {
+          assertBagsWritesSupported();
+
           const keyPath = process.env['BAGS_KEYPAIR_PATH'] || "~/.config/bags/keypair.json";
           const keypair = Wallet.loadKeypair(keyPath);
           const walletAddress = keypair.publicKey.toBase58();

@@ -108,7 +108,11 @@ export function setWriteToolEnv() {
   process.env['BOS_TOKEN_MINT'] = 'EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS';
   process.env['BOS_REQUIRED_BALANCE'] = '10000';
   process.env['BAGS_KEYPAIR_PATH'] = '/tmp/bagos-test-keypair.json';
-  delete process.env['BAGS_NETWORK'];
+  // Bags is mainnet-only, so the write tools require it. Devnet is the
+  // product default; these tests exercise the path that actually runs.
+  process.env['BAGS_NETWORK'] = 'mainnet';
+  delete process.env['SOLANA_RPC_URL'];
+  delete process.env['HELIUS_RPC_URL'];
   delete process.env['BAGS_ALLOW_UNCONFIRMED'];
   delete process.env['BAGS_MAX_SOL_PER_TX'];
   delete process.env['BAGS_MAX_SOL_PER_SESSION'];

@@ -1,228 +1,205 @@
-<div align="center">
-  <a href="https://github.com/edycutjong/bagos">
-    <img src="docs/og-image.png" alt="BagOS Project Banner" width="800" />
-  </a>
-  <h1>🖥️ BagOS</h1>
-  <p><em>The AI Operating System for Creator Finance — trade, claim, and launch tokens through natural language.</em></p>
+# BagOS
 
-  <img src="https://img.shields.io/badge/MCP-v1.25-purple.svg?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJMNCAxMnYxMGg1VjhsMy01LDMuNSA1VjIySDIwVjEyTDEyIDJ6Ii8+PC9zdmc+" alt="MCP" />
-  <img src="https://img.shields.io/badge/Bags_SDK-v1.3.7-blue.svg" alt="Bags SDK" />
-  <img src="https://img.shields.io/badge/Solana-Mainnet-9945FF.svg?logo=solana" alt="Solana" />
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript" alt="TypeScript" />
+An MCP server that lets an AI assistant read Bags/Solana token data and — with
+explicit confirmation — execute swaps and claim creator fees from your wallet.
 
-  <br/>
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/edycutjong/bagos/actions)
+[![npm](https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm)](https://www.npmjs.com/package/bagos-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-  <img src="https://img.shields.io/badge/CI-passing-brightgreen" alt="CI" />
-  <img src="https://img.shields.io/badge/Coverage-100%25-brightgreen" alt="Coverage" />
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License" />
-  <a href="https://github.com/edycutjong/bagos/pkgs/npm/bagos-mcp-server"><img src="https://img.shields.io/github/package-json/v/edycutjong/bagos?color=CB3837&logo=npm" alt="npm version"></a>
-
-  <br/>
-
-  <a href="https://youtu.be/tJC7rYnksdY"><img src="https://img.shields.io/badge/Demo_Video-▶_Watch_Now-red?logo=youtube" alt="Demo Video" /></a>
-  <a href="https://dorahacks.io/buidl/43312"><img src="https://img.shields.io/badge/DoraHacks-BUIDL-orange?logo=dorahacks&logoColor=white" alt="DoraHacks BUIDL" /></a>
-  <a href="https://www.npmjs.com/package/bagos-mcp-server"><img src="https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm&label=npmjs" alt="npmjs"></a>
-</div>
+> **v2.0.0 corrects a serious defect.** In 1.x the write tools built
+> transactions, discarded them, and reported success — nothing was ever signed
+> or submitted. If you used 1.x and believed a trade or claim executed, it did
+> not. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
-## 🎯 Problem
-
-Bags.fm creators manage their token economy across **3+ different dashboards** — the Bags.fm web app for launches, DEX aggregators for trades, and claim portals for fee collection. This tab-switching workflow is slow, error-prone, and disconnected from modern AI-native workflows.
-
-## 💡 Solution
-
-**BagOS** is the first **Model Context Protocol (MCP) server** for Solana DeFi. It registers 10 native tools directly into Claude Desktop, letting creators manage their entire Bags token economy through natural language.
-
-**No dashboards. No tab-switching. Just type what you want.**
-
-- ⚡ **Instant Authentication** — V2 wallet auth with Ed25519 signature verification
-- 🔒 **$BOS Token Gate** — Write operations (trades, claims, launches) require holding ≥10,000 $BOS
-- 🚀 **Full Lifecycle** — Launch tokens, execute trades, claim fees, view analytics — all from Claude
-
----
-
-## 📸 See it in Action
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/1088284a-5fb4-4e32-bf0a-eca3348c0fce" alt="BagOS MCP Tools in Claude Desktop" width="400" />
-      <br/><strong>Claude Desktop Integration</strong>
-      <br/><sub>10 MCP tools loaded and ready — natural language DeFi</sub>
-    </td>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/9b6c41d4-edc4-45a5-bade-215e6a979f3b" alt="Authentication Flow" width="400" />
-      <br/><strong>Wallet Authentication</strong>
-      <br/><sub>V2 auth with Ed25519 signature + $BOS token gate verification</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/67e98789-89a1-4db7-af96-4e4f8fe187b8" alt="Trade Quote" width="400" />
-      <br/><strong>Trade Quote</strong>
-      <br/><sub>Get real-time swap quotes with slippage protection</sub>
-    </td>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/3e95f7f1-141e-42b5-a3a3-964d3c4fc6db" alt="Execute Trade" width="400" />
-      <br/><strong>Execute Trade</strong>
-      <br/><sub>Token swaps executed directly through Claude</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/1147a3a0-408e-4faf-adc5-47f404f45741" alt="Fee Claims" width="400" />
-      <br/><strong>Claim Creator Fees</strong>
-      <br/><sub>Discover and claim pending fee positions in one command</sub>
-    </td>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/55db843d-9cce-451a-bae7-94b05a59b70c" alt="Token Launch" width="400" />
-      <br/><strong>Launch Token</strong>
-      <br/><sub>Deploy a new creator token with metadata — all from chat</sub>
-    </td>
-  </tr>
-</table>
-
----
-
-## 🏗️ Architecture
-
-![BagOS Architecture](docs/architecture.png)
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| MCP Server | `@modelcontextprotocol/sdk` v1.25+ |
-| DeFi SDK | `@bagsfm/bags-sdk` v1.3.7+ |
-| Blockchain | `@solana/web3.js` + `tweetnacl` + `bs58` |
-| Validation | `zod` v4 |
-| Runtime | Node.js 22, TypeScript 5 |
-| Testing | Jest, 100% coverage |
-| Deployment | Docker / Fly.io |
-
----
-
-## 🔧 Tools Reference
-
-| Tool | Description | Token-Gated |
-|------|-------------|:-----------:|
-| `bags_authenticate` | V2 wallet authentication via Ed25519 | No |
-| `bags_get_claimable_fees` | Discover claimable fee positions | No |
-| `bags_claim_fees` | Claim pending creator fees | ✅ |
-| `bags_get_trade_quote` | Get swap quotes with slippage | No |
-| `bags_execute_trade` | Execute token swaps on Bags pools | ✅ |
-| `bags_launch_token` | Launch a new creator token | ✅ |
-| `bags_get_creators` | Top creators leaderboard | No |
-| `bags_get_token_analytics` | Token pool & claim stats | No |
-| `bags_get_partner_stats` | Partner referral earnings | No |
-| `bags_heartbeat` | Health check & system summary | No |
-
----
-
-## 🚀 Getting Started (For Judges)
-
-### 1. Clone & Install
+## Install
 
 ```bash
-git clone https://github.com/edycutjong/bagos.git
-cd bagos && npm install
+npx bagos-mcp-server
 ```
 
-### 2. Configure Environment
+You need a Bags API key from [dev.bags.fm](https://dev.bags.fm). That alone
+enables the read-only tools. For trading and fee claims you also need a Solana
+keypair file and the gating token — see [Write tools](#write-tools).
 
-```bash
-cp .env.example .env
-# Add your BAGS_API_KEY and HELIUS_RPC_URL
-```
+### Claude Desktop
 
-### 3. Build & Add to Claude Desktop
+`~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or
+`%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
-First, compile the server from TypeScript to JavaScript:
-```bash
-npm run build
-```
-
-Then edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "bagos": {
-      "command": "node",
-      "args": ["/absolute/path/to/bagos/build/index.js"]
+      "command": "npx",
+      "args": ["-y", "bagos-mcp-server"],
+      "env": {
+        "BAGS_API_KEY": "your-key-here"
+      }
     }
   }
 }
 ```
 
-### 4. Restart Claude Desktop & Start Chatting
+### Claude Code
 
-> **🎬 Judge Shortcut:** Run `npm run demo` to execute the full golden path flow (auth → quote → trade → claim) without needing Claude Desktop configured.
-
----
-
-## 📁 Project Structure
-
-```
-bagos/
-├── build/                # Compiled JavaScript output
-├── src/
-│   ├── index.ts              # MCP server entry point
-│   ├── tools/                # 10 MCP tool implementations
-│   │   ├── AuthenticateTool.ts
-│   │   ├── ClaimFees.ts
-│   │   ├── ExecuteTrade.ts
-│   │   ├── GetClaimableFees.ts
-│   │   ├── GetCreators.ts
-│   │   ├── GetPartnerStats.ts
-│   │   ├── GetTokenAnalytics.ts
-│   │   ├── GetTradeQuote.ts
-│   │   ├── Heartbeat.ts
-│   │   ├── LaunchToken.ts
-│   │   └── index.ts          # Tool registry
-│   ├── lib/                  # Shared utilities
-│   │   ├── bags-client.ts    # Bags SDK wrapper
-│   │   ├── mcp-utils.ts      # MCP response helpers
-│   │   ├── token-gate.ts     # $BOS balance verification
-│   │   └── wallet.ts         # Solana keypair management
-│   └── types/
-│       └── IMcpTool.ts       # Tool interface definition
-├── scripts/
-│   ├── golden-path.ts        # E2E demo script (auth → trade → claim)
-│   └── setup.sh              # Environment bootstrap
-├── .env.example              # Required environment variables
-├── Dockerfile                # Container deployment
-├── fly.toml                  # Fly.io deployment config
-└── package.json
+```bash
+claude mcp add bagos --env BAGS_API_KEY=your-key-here -- npx -y bagos-mcp-server
 ```
 
----
-
-## 💰 $BOS Token
-
-$BOS is the access key for BagOS write operations. Hold ≥10,000 $BOS to unlock trades, claims, and token launches.
-
-- **Contract Address**: `BagOS11111111111111111111111111111111111111`
-- **Trade on Bags.fm**: [bags.fm/BOS](https://bags.fm/)
+Restart the client, then ask it: *"check the bagos heartbeat"*. The server
+prints a configuration report to stderr on startup; if something is missing it
+tells you which variable and why.
 
 ---
 
-## 🏆 Sponsor Tracks Targeted
+## Tools
 
-* **Bags SDK** — All 10 MCP tools use the `@bagsfm/bags-sdk` (v1.3.7) for authentication, trading, fee claiming, and token launches. Core integration: [`src/tools/`](./src/tools/)
-* **Token Gating** — $BOS token gate implementation verifying on-chain balance before write operations. See: [`src/lib/token-gate.ts`](./src/lib/token-gate.ts)
-* **Claude Skills Track** — MCP server architecture enabling Claude Desktop as the primary DeFi interface. Entry point: [`src/index.ts`](./src/index.ts)
+| Tool | Type | What it does |
+|---|---|---|
+| `bags_heartbeat` | read | Server status and wallet reachability |
+| `bags_get_token_analytics` | read | Lifetime fee data for a token mint |
+| `bags_get_creators` | read | Top token creators by lifetime fees |
+| `bags_get_trade_quote` | read | Price quote for a swap. Does not trade. |
+| `bags_get_claimable_fees` | read | Fees currently claimable by your wallet |
+| `bags_get_partner_stats` | read | Partner config claim statistics |
+| `bags_authenticate` | read | Verify wallet ownership via Ed25519 signature |
+| `bags_prepare_token_metadata` | gated | Creates token info + metadata. **Does not launch a token.** |
+| `bags_execute_trade` | **write** | Swap tokens. Signs and submits. |
+| `bags_claim_fees` | **write** | Claim creator/LP fees. Signs and submits. |
+
+`bags_prepare_token_metadata` reserves a mint and uploads metadata. Completing a
+launch also requires a Meteora fee-share config, whose fee-claimer split has to
+be your decision — so this server does not implement that step rather than
+guessing at it. Finish the launch at [bags.fm](https://bags.fm).
 
 ---
 
-## 📄 License
+## Write tools
 
-MIT © 2026 [Edy Cu](https://github.com/edycutjong)
+Writes are off unless you configure them, and they are mainnet-only.
 
-## Built for [The Bags Hackathon](https://dorahacks.io/hackathon/the-bags-hackathon)
+**Bags has no devnet deployment.** Its API endpoint and its Meteora/fee-share
+program IDs are all mainnet. This server nonetheless defaults to **devnet**, so
+an unconfigured install cannot spend real money. Calling a write tool on devnet
+returns an explanation, not a cryptic program error.
 
-**🚀 BUIDL Link:** [https://dorahacks.io/buidl/43312](https://dorahacks.io/buidl/43312)
+To enable writes:
 
-Track: Claude Skills | Token: $BOS | By: [@edycutjong](https://x.com/edycutjong)
+```json
+{
+  "mcpServers": {
+    "bagos": {
+      "command": "npx",
+      "args": ["-y", "bagos-mcp-server"],
+      "env": {
+        "BAGS_API_KEY": "your-key-here",
+        "BAGS_NETWORK": "mainnet",
+        "BAGS_KEYPAIR_PATH": "~/.config/bags/keypair.json",
+        "BOS_TOKEN_MINT": "EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS",
+        "BAGS_MAX_SOL_PER_TX": "0.1",
+        "BAGS_MAX_SOL_PER_SESSION": "1.0"
+      }
+    }
+  }
+}
+```
+
+### Every write goes through this
+
+```
+token gate → spend caps → confirmation → simulate → sign → send → confirm
+```
+
+The first call to a write tool **signs nothing**. It returns a preview and a
+single-use token:
+
+```
+⚠️  CONFIRMATION REQUIRED — nothing has been signed or sent.
+
+Action:  Swap 0.05 of So1111…1112
+         for       EkJuyY…dBAGS
+         expect    4823917722 (min 4679199990)
+         slippage  3%
+         network   🔴 MAINNET — real funds
+
+Spend:   0.05 SOL
+Caps:    0.1 SOL/tx · 0/1 SOL used this session
+
+To execute, call bags_execute_trade again with the identical arguments plus:
+  confirm: "kR3nT9xQm2vP"
+```
+
+The token is a fingerprint of the tool name plus the exact arguments, so one
+issued for a 0.01 SOL swap cannot authorize a 10 SOL one. It expires in five
+minutes and is consumed on every outcome, so it cannot be replayed.
+
+On success you get a real signature and explorer link — never a success message
+for a transaction that did not land.
+
+Set `BAGS_ALLOW_UNCONFIRMED=true` to skip the preview. Spend caps still apply.
+
+---
+
+## Configuration
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `BAGS_API_KEY` | yes | — | From [dev.bags.fm](https://dev.bags.fm) |
+| `BAGS_NETWORK` | no | `devnet` | `devnet` or `mainnet`. Writes need mainnet. |
+| `SOLANA_RPC_URL` | no | public cluster RPC | Must agree with `BAGS_NETWORK` or the server refuses to start |
+| `BAGS_KEYPAIR_PATH` | writes only | `~/.config/bags/keypair.json` | JSON byte-array keypair file |
+| `BOS_TOKEN_MINT` | writes only | — | Gating token mint |
+| `BOS_REQUIRED_BALANCE` | no | `10000` | Minimum gating-token balance |
+| `BAGS_MAX_SOL_PER_TX` | no | `0.1` | Per-transaction spend cap |
+| `BAGS_MAX_SOL_PER_SESSION` | no | `1.0` | Per-process spend cap |
+| `BAGS_ALLOW_UNCONFIRMED` | no | `false` | Skip the confirmation step |
+
+---
+
+## Security
+
+Read [SECURITY.md](SECURITY.md) before pointing a funded wallet at this.
+
+Summary: your private key is read from disk, used to sign, and never logged,
+never sent anywhere, and never placed in an error message. Tool errors return
+a message only — no stack traces — with key-shaped strings redacted. The startup
+report strips credentials from the RPC URL. If the RPC endpoint's cluster
+disagrees with `BAGS_NETWORK`, the server refuses to start rather than sign
+mainnet transactions under a devnet banner.
+
+Report vulnerabilities via
+[GitHub security advisories](https://github.com/edycutjong/bagos/security/advisories/new).
+
+---
+
+## Development
+
+```bash
+npm ci
+npm run ci            # lint + typecheck + tests with coverage
+npm run dev           # stdio server with watch
+npm run inspector     # MCP Inspector against the built server
+npm run proof:devnet  # land a real devnet transaction through the write path
+```
+
+`proof:devnet` generates a throwaway keypair, funds it from the devnet faucet,
+and pushes a transfer through the same simulate/sign/send/confirm path the write
+tools use — then re-fetches the signature from the chain instead of trusting the
+function's return value. Use it to verify the execution layer end to end.
+
+144 tests. The bypass tests around the spend caps and the confirmation step are
+load-bearing; treat a change there as a security change.
+
+---
+
+## Examples
+
+See [docs/examples.md](docs/examples.md) for prompts you can type at your
+assistant and what each should do.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
