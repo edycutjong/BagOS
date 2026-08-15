@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="docs/assets/icon.svg" alt="BagOS Icon" width="144">
+  <img src="docs/icon-animated.svg" alt="BagOS Icon" width="144">
   <h1>BagOS 🚦</h1>
   <p><em>Every AI-initiated Solana spend: gated, capped, confirmed on chain.</em></p>
-  <img src="docs/assets/readme-hero-animated.svg"
+  <img src="docs/readme-hero-animated.svg"
        alt="BagOS — gates every AI-initiated Solana spend: the amber-held swap turns green only when its confirmed signature lands on chain"
        width="100%">
 
