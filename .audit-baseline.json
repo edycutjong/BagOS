@@ -1,8 +1,8 @@
 {
-  "low": 2,
+  "low": 0,
   "moderate": 0,
-  "high": 11,
+  "high": 6,
   "critical": 0,
-  "_note": "Runtime-path only. Lowered after npm overrides forced patched axios/form-data/uuid/ws/body-parser/qs/ip-address past the exact pins in @bagsfm/bags-sdk. Remaining are transitive with no patched version available. Policy: fix what ships in the tarball runtime path; everything else rides weekly Dependabot PRs.",
+  "_note": "Runtime-path floor. All remaining advisories are ONE root cause — bigint-buffer GHSA-3gc7-fjrx-p6mg — reported at each level of bigint-buffer -> @solana/buffer-layout-utils -> @solana/spl-token -> @meteora-ag/* -> @bagsfm/bags-sdk. No patched bigint-buffer exists: 1.1.5 is both installed and latest, and the advisory covers all published versions. Everything else was cleared with version-scoped overrides. NOTE: npm honours `overrides` only in the ROOT project, so these protect this repo and CI but NOT consumers of the published package — that needs the SDK to unpin axios/form-data upstream.",
   "_recorded": "2026-08-15"
 }
