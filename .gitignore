@@ -19,5 +19,18 @@ Thumbs.db
 coverage/
 
 # Assets
+# docs/assets/ is the media-dir the asset pipeline syncs into. Everything there is
+# ignored by default (it is also where large demo captures land), then the ten
+# judge-facing files produced by the suite are un-ignored by name.
 docs/assets/*
+!docs/assets/icon.svg
+!docs/assets/icon-animated.svg
+!docs/assets/readme-hero-animated.svg
+!docs/assets/readme-hero.png
+!docs/assets/og-image.png
+!docs/assets/youtube-thumbnail.png
+!docs/assets/devpost-thumbnail.png
+!docs/assets/devpost-gallery.png
+!docs/assets/icon-512.png
+!docs/assets/icon-1024.png
 build/

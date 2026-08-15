@@ -68,6 +68,25 @@ describe("Executor.simulate", () => {
       logs: ["line1", "line2"],
     });
   });
+
+  // The RPC's SimulatedTransactionResponse declares logs as `Array | null`,
+  // and some RPC providers omit the field entirely. The contract here is that
+  // simulate() normalizes that to exactly null — never undefined — so callers
+  // can rely on `logs === null` checks.
+  it("normalizes absent logs to null on a successful simulation", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: null } });
+    await expect(Executor.simulate(versionedTx())).resolves.toBeNull();
+  });
+
+  it("normalizes absent logs to null on a failed simulation", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: "bad" } });
+    const err = await Executor.simulate(versionedTx()).then(
+      () => { throw new Error("expected simulate to reject"); },
+      (e) => e
+    );
+    expect(err).toBeInstanceOf(SimulationError);
+    expect(err.logs).toBeNull();
+  });
 });
 
 describe("Executor.signSendConfirm", () => {

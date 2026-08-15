@@ -87,6 +87,53 @@ export function createMockBagsClient() {
     state: {
       getTopTokensByLifetimeFees: jest.fn<any>().mockResolvedValue([{ creator: "Alice", fees: 100 }]),
       getTokenLifetimeFees: jest.fn<any>().mockResolvedValue({ totalFees: 42 }),
+      // Real signature: (tokenMint) => Promise<Array<TokenLaunchCreatorV3WithClaimStats>>
+      getTokenClaimStats: jest.fn<any>().mockResolvedValue([
+        {
+          username: "alice",
+          pfp: "https://example.test/alice.png",
+          royaltyBps: 7000,
+          isCreator: true,
+          wallet: "11111111111111111111111111111111",
+          provider: "twitter",
+          providerUsername: "alice",
+          totalClaimed: "1500000",
+        },
+      ]),
+      // Real signature: (tokenMint, options?: { limit?, offset? }) => Promise<Array<TokenClaimEvent>>
+      getTokenClaimEvents: jest.fn<any>().mockResolvedValue([
+        {
+          wallet: "11111111111111111111111111111111",
+          isCreator: true,
+          amount: "500000",
+          signature: "5igNaTure111",
+          timestamp: 1700000000,
+        },
+      ]),
+      // Real signature: (tokenMint) => Promise<Array<TokenLaunchCreator>>
+      getTokenCreators: jest.fn<any>().mockResolvedValue([
+        {
+          username: "alice",
+          pfp: "https://example.test/alice.png",
+          royaltyBps: 10000,
+          isCreator: true,
+          wallet: "11111111111111111111111111111111",
+          provider: "twitter",
+          providerUsername: "alice",
+        },
+      ]),
+      // Real signature: (username, provider) => Promise<BagsGetFeeShareWalletV2State>
+      // (wallet is a web3.js PublicKey — mock the surface the tool touches)
+      getLaunchWalletV2: jest.fn<any>().mockResolvedValue({
+        provider: "twitter",
+        platformData: {
+          id: "12345",
+          username: "alice",
+          display_name: "Alice",
+          avatar_url: "https://example.test/alice.png",
+        },
+        wallet: { toBase58: () => "11111111111111111111111111111111" },
+      }),
     },
     partner: {
       getPartnerConfigClaimStats: jest.fn<any>().mockResolvedValue({ earnings: 10 }),

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img"
+     aria-label="BagOS — gates every AI-initiated Solana spend: the amber-held swap turns green only when its confirmed signature lands on chain">
+<!-- STORYBOARD (dur 6s — the single master dur of this file)
+  0-10%   steady state: plate, gate posts, CLOSED threshold, dashed unsigned inbound path — the full brand mark visible at t=0 (poster rule)
+  10-25%  trigger:      the AI's swap packet fades in and travels the path, stops held at the gate; amber hold halo pulses     data-story="beat-2"
+  25-55%  mechanism:    the amber-held swap turns green only when its confirmed signature lands on chain — the single-use token ring closes around the held packet, the threshold retracts, the packet crosses     data-story="beat-3"
+  55-88%  resolution:   packet lands right of the gate; green signature ring seals and the check draws; state persists          data-story="beat-4"
+  88-100% breathe + seam fade: glow breath, threshold re-closes for the next spend, story layer fades (rules 5-7)
+-->
+  <style>
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+  <defs>
+    <linearGradient id="postGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+    <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+
+  <!-- ============ BRAND LAYER — fully visible at t=0 ============ -->
+  <rect x="30" y="30" width="452" height="452" rx="106"
+        fill="#0F172A" stroke="rgba(255,255,255,0.16)" stroke-width="4"/>
+
+  <!-- unsigned inbound path (dashed = nothing signed or sent) -->
+  <line x1="88" y1="256" x2="180" y2="256"
+        stroke="#F59E0B" stroke-width="20" stroke-linecap="round"
+        stroke-dasharray="4 38" opacity="0.85"/>
+
+  <!-- gate posts -->
+  <rect x="238" y="96"  width="44" height="104" rx="22" fill="url(#postGrad)"/>
+  <rect x="238" y="312" width="44" height="104" rx="22" fill="url(#postGrad)"/>
+
+  <!-- threshold bar: closed at t=0, retracts at the mechanism beat, re-closes before the seam -->
+  <rect x="248" width="24" rx="12" fill="#F59E0B">
+    <animate attributeName="height" dur="6s" repeatCount="indefinite"
+             values="84;84;0;0;84;84" keyTimes="0;0.44;0.52;0.88;0.92;1"/>
+    <animate attributeName="y" dur="6s" repeatCount="indefinite"
+             values="214;214;256;256;214;214" keyTimes="0;0.44;0.52;0.88;0.92;1"/>
+  </rect>
+
+  <!-- ============ STORY LAYER — seam-faded as a group ============ -->
+  <g data-story="beat-2">
+    <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+             values="0;0;1;1;0;0" keyTimes="0;0.02;0.05;0.90;0.95;1"/>
+
+    <!-- amber hold halo: pulses while the swap is held unsigned -->
+    <circle cx="196" cy="256" r="72" fill="#F59E0B" filter="url(#softGlow)" data-story="beat-2">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;0.35;0.35;0;0" keyTimes="0;0.20;0.25;0.46;0.52;1"/>
+    </circle>
+
+    <!-- single-use token ring: closes around the held packet (the confirmation) -->
+    <circle cx="196" cy="256" r="56" fill="none" stroke="#F59E0B" stroke-width="10"
+            pathLength="100" stroke-dasharray="100" transform="rotate(-90 196 256)"
+            data-story="beat-3">
+      <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+               values="100;100;0;0" keyTimes="0;0.26;0.44;1"/>
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;1;1;0;0" keyTimes="0;0.24;0.28;0.55;0.62;1"/>
+    </circle>
+
+    <!-- confirmed exit path: appears once the threshold opens -->
+    <line x1="306" y1="256" x2="356" y2="256"
+          stroke="#34D399" stroke-width="20" stroke-linecap="round" data-story="beat-3">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;1;1" keyTimes="0;0.52;0.58;1"/>
+    </line>
+
+    <!-- the swap packet: travels, is HELD at the gate, crosses only when confirmed -->
+    <circle r="34" fill="#F59E0B" data-story="beat-2">
+      <animateMotion dur="6s" repeatCount="indefinite" calcMode="linear"
+                     path="M 120 256 L 404 256"
+                     keyPoints="0;0;0.268;0.268;1;1" keyTimes="0;0.10;0.22;0.50;0.62;1"/>
+      <animate attributeName="fill" dur="6s" repeatCount="indefinite"
+               values="#F59E0B;#F59E0B;#34D399;#34D399" keyTimes="0;0.60;0.66;1"/>
+    </circle>
+
+    <!-- landed signature ring: seals green and persists -->
+    <circle cx="404" cy="256" r="52" fill="none" stroke="#34D399" stroke-width="14"
+            data-story="beat-4">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;1;1" keyTimes="0;0.62;0.68;1"/>
+    </circle>
+    <path d="M 380 256 l 16 16 l 30 -32" fill="none" stroke="#0F172A" stroke-width="12"
+          stroke-linecap="round" stroke-linejoin="round" pathLength="100"
+          stroke-dasharray="100" data-story="beat-4">
+      <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+               values="100;100;0;0" keyTimes="0;0.66;0.76;1"/>
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;1;1" keyTimes="0;0.64;0.66;1"/>
+    </path>
+
+    <!-- glow breath on the landed state -->
+    <circle cx="404" cy="256" r="64" fill="#34D399" filter="url(#softGlow)" data-story="beat-4">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;0.4;0.15;0.4;0" keyTimes="0;0.66;0.74;0.81;0.88;1"/>
+    </circle>
+  </g>
+</svg>

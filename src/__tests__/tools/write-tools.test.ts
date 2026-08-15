@@ -263,6 +263,41 @@ describe("ExecuteTrade", () => {
     expect(result.isError).toBe(true);
     expect(mockExecute).not.toHaveBeenCalled();
   });
+
+  /* --- documented defaults: these fail if any fallback constant drifts --- */
+
+  it("defaults to SOL → canonical BOS at 0.1 when no mints, amount, or env override are given", async () => {
+    delete process.env['BOS_TOKEN_MINT']; // registerTool reads this — delete BEFORE call()
+    const result = await call()({});
+
+    expect(result.content[0].text).toContain("CONFIRMATION REQUIRED");
+    expect(mockToBaseUnits).toHaveBeenCalledWith(0.1, SOL_MINT);
+    const quoteArgs = mockBagsClient.trade.getQuote.mock.calls[0]![0] as any;
+    expect(quoteArgs.inputMint.toBase58()).toBe(SOL_MINT);
+    expect(quoteArgs.outputMint.toBase58()).toBe("EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS");
+  });
+
+  it("falls back to ~/.config/bags/keypair.json when BAGS_KEYPAIR_PATH is unset", async () => {
+    delete process.env['BAGS_KEYPAIR_PATH'];
+    await call()({ inputMint: SOL_MINT, amount: 0.05 });
+    expect(Wallet.loadKeypair).toHaveBeenCalledWith("~/.config/bags/keypair.json");
+  });
+
+  it("reports the default 10000 $BOS requirement in the denial when the env override is unset", async () => {
+    delete process.env['BOS_REQUIRED_BALANCE'];
+    mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 3 });
+    const result = await call()({ inputMint: SOL_MINT, amount: 0.05 });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("10000 is required");
+  });
+
+  it("prints 'unknown' rather than a fake slot when confirmation returned none", async () => {
+    mockExecute.mockResolvedValue({ ...okResult, slot: null });
+    const { confirmed } = await previewThenConfirm(call(), { inputMint: SOL_MINT, amount: 0.05 });
+
+    expect(confirmed.content[0].text).toMatch(/Slot:\s+unknown/);
+  });
 });
 
 describe("ClaimFees", () => {
@@ -323,6 +358,67 @@ describe("ClaimFees", () => {
     expect(result.isError).toBe(true);
     expect(mockExecuteAll).not.toHaveBeenCalled();
   });
+
+  it("falls back to ~/.config/bags/keypair.json when BAGS_KEYPAIR_PATH is unset", async () => {
+    delete process.env['BAGS_KEYPAIR_PATH'];
+    await call()({ tokenMints: [SOL_MINT] });
+    expect(Wallet.loadKeypair).toHaveBeenCalledWith("~/.config/bags/keypair.json");
+  });
+
+  it("skips the preview only when BAGS_ALLOW_UNCONFIRMED is true", async () => {
+    process.env['BAGS_ALLOW_UNCONFIRMED'] = 'true';
+    const result = await call()({ tokenMints: [SOL_MINT] });
+
+    expect(mockExecuteAll).toHaveBeenCalledTimes(1);
+    expect(result.content[0].text).toContain("Claimed fees");
+    expect(result.content[0].text).not.toContain("CONFIRMATION REQUIRED");
+  });
+
+  /* Bypass resistance existed for ExecuteTrade but was never asserted here:
+     without this, deleting ClaimFees' consumeToken call left the suite green. */
+  it("rejects a fabricated confirmation token without executing", async () => {
+    const result = await call()({ tokenMints: [SOL_MINT], confirm: "not-a-real-token" });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Unknown or already-used");
+    expect(mockExecuteAll).not.toHaveBeenCalled();
+  });
+
+  it("reports the default 10000 $BOS requirement in the denial when the env override is unset", async () => {
+    delete process.env['BOS_REQUIRED_BALANCE'];
+    mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 1 });
+    const result = await call()({ tokenMints: [SOL_MINT] });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("10000 is required");
+  });
+
+  it("returns a tool error instead of success when a mint address is malformed", async () => {
+    // `new PublicKey("not-a-mint")` throws inside the handler's try block —
+    // the catch must convert it to an isError result, never a success.
+    const result = await call()({ tokenMints: ["not-a-mint"] });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("❌");
+    expect(result.content[0].text).not.toContain("Claimed fees");
+    expect(mockExecuteAll).not.toHaveBeenCalled();
+  });
+
+  it("says 'unknown error' when a failed transaction carried no message", async () => {
+    // executeAll returns the caught value cast to Error; JS lets code
+    // `throw undefined`, so error can genuinely be nullish with failedAt set.
+    mockExecuteAll.mockResolvedValue({
+      executed: [],
+      failedAt: 0,
+      error: undefined as unknown as Error,
+    });
+    const handler = call();
+    const preview = await handler({ tokenMints: [SOL_MINT] });
+    const result = await handler({ tokenMints: [SOL_MINT], confirm: tokenFrom(preview) });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Transaction 1 failed: unknown error");
+  });
 });
 
 describe("PrepareTokenMetadata (formerly LaunchToken)", () => {
@@ -353,5 +449,31 @@ describe("PrepareTokenMetadata (formerly LaunchToken)", () => {
     const result = await call()({ name: "Test", symbol: "TST", description: "d" });
 
     expect(result.isError).toBe(true);
+  });
+
+  it("falls back to ~/.config/bags/keypair.json when BAGS_KEYPAIR_PATH is unset", async () => {
+    delete process.env['BAGS_KEYPAIR_PATH'];
+    await call()({ name: "Test", symbol: "TST", description: "d" });
+    expect(Wallet.loadKeypair).toHaveBeenCalledWith("~/.config/bags/keypair.json");
+  });
+
+  it("reports the default 10000 $BOS requirement in the denial when the env override is unset", async () => {
+    delete process.env['BOS_REQUIRED_BALANCE'];
+    mockCheckTokenGate.mockResolvedValue({ allowed: false, balance: 2 });
+    const result = await call()({ name: "Test", symbol: "TST", description: "d" });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("10000 is required");
+  });
+
+  it("returns a tool error, never a success, when the SDK call fails", async () => {
+    mockBagsClient.tokenLaunch.createTokenInfoAndMetadata.mockRejectedValueOnce(
+      new Error("bags api 500")
+    );
+    const result = await call()({ name: "Test", symbol: "TST", description: "d" });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("bags api 500");
+    expect(result.content[0].text).not.toContain("Metadata prepared");
   });
 });

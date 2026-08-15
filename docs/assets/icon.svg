@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="BagOS — gates every AI-initiated Solana spend: the amber-held swap turns green only when its confirmed signature lands on chain">
+  <!-- BagOS mark: a transaction packet held at a checkpoint gate.
+       Left: dashed unsigned path + amber held packet (state token: held).
+       Center: gate posts with closed threshold.
+       Right: solid confirmed path + green landed ring (state token: landed). -->
+  <defs>
+    <linearGradient id="postGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--text-hi, #F8FAFC)"/>
+      <stop offset="100%" stop-color="var(--text-mid, #94A3B8)"/>
+    </linearGradient>
+    <radialGradient id="heldGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="var(--primary, #F59E0B)" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="var(--primary, #F59E0B)" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- self-carried plate: keeps the mark legible on GitHub light AND dark -->
+  <rect x="30" y="30" width="452" height="452" rx="106"
+        fill="var(--plate, #0F172A)" stroke="rgba(255,255,255,0.16)" stroke-width="4"/>
+
+  <!-- unsigned inbound path (dashed = nothing signed or sent) -->
+  <line x1="88" y1="256" x2="148" y2="256"
+        stroke="var(--held, #F59E0B)" stroke-width="22" stroke-linecap="round"
+        stroke-dasharray="4 40"/>
+
+  <!-- glow under the held packet -->
+  <circle cx="196" cy="256" r="86" fill="url(#heldGlow)"/>
+
+  <!-- the held packet, stopped short of the threshold -->
+  <circle cx="196" cy="256" r="36" fill="var(--held, #F59E0B)"/>
+
+  <!-- gate posts -->
+  <rect x="238" y="96"  width="44" height="104" rx="22" fill="url(#postGrad)"/>
+  <rect x="238" y="312" width="44" height="104" rx="22" fill="url(#postGrad)"/>
+  <!-- closed threshold bar between the posts -->
+  <rect x="248" y="214" width="24" height="84" rx="12" fill="var(--held, #F59E0B)"/>
+
+  <!-- confirmed path beyond the gate -->
+  <line x1="306" y1="256" x2="356" y2="256"
+        stroke="var(--landed, #34D399)" stroke-width="22" stroke-linecap="round"/>
+  <!-- landed signature ring (confirmed on chain) -->
+  <circle cx="404" cy="256" r="32" fill="none"
+          stroke="var(--landed, #34D399)" stroke-width="18"/>
+</svg>

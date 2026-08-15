@@ -56,10 +56,67 @@ describe("AuthenticateTool", () => {
 
     const result = await getHandler("bags_authenticate")({});
     expect(result.content[0].text).toContain("Successfully authenticated");
-    expect(result.content[0].text).toContain("test-api-key");
     expect(result.content[0].text).toContain("test-key-id");
     expect(result.isError).toBeUndefined();
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  // Regression: the tool used to interpolate the live API key straight into its text
+  // response. MCP tool output lands in the assistant's context and in transcripts, so a
+  // real `bags_prod_*` secret was being published every time a user authenticated. The
+  // key is written to credentials.json instead; only a 4-char tail is echoed.
+  // This is a leak-channel test — treat a change here as a security change.
+  it("never echoes the API key in the tool response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        message: "3Wd1Fn", // base58-encoded payload
+        nonce: "test-nonce-123",
+      }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        apiKey: "bags_prod_SUPERSECRETVALUE",
+        keyId: "test-key-id",
+      }),
+    });
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const text = (await getHandler("bags_authenticate")({})).content[0].text;
+    expect(text).not.toContain("bags_prod_SUPERSECRETVALUE");
+    expect(text).not.toContain("SUPERSECRET");
+    // the tail hint is allowed — it identifies the key without disclosing it
+    expect(text).toContain("…ALUE");
+    expect(text).toContain("not printed in full");
+  });
+
+  // The other half of the keyHint branch. If the upstream response carries no apiKey, or
+  // one too short to take a 4-char tail from, the hint must degrade to a fixed literal
+  // rather than slicing a short secret (which would disclose most of it) or interpolating
+  // `undefined`. Guards the fallback arm of the ternary added with the leak fix.
+  it.each([
+    ["a missing apiKey", undefined],
+    ["an apiKey too short to hint", "abc"],
+  ])("falls back to (hidden) on %s", async (_label, apiKey) => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ apiKey, keyId: "test-key-id" }),
+    });
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const text = (await getHandler("bags_authenticate")({})).content[0].text;
+    expect(text).toContain("(hidden)");
+    expect(text).not.toContain("undefined");
+    if (typeof apiKey === "string") expect(text).not.toContain(apiKey);
   });
 
   it("returns error when init fails", async () => {

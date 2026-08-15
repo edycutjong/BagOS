@@ -46,6 +46,30 @@ describe("wallet.ts — loadKeypair", () => {
     expect(() => Wallet.loadKeypair(objPath)).toThrow("must contain a JSON array of 64 bytes");
   });
 
+  it("throws with the actual byte count when the array is not 64 bytes", () => {
+    const shortPath = path.join(tmpDir, "short.json");
+    fs.writeFileSync(shortPath, JSON.stringify(Array.from({ length: 32 }, () => 7)));
+    expect(() => Wallet.loadKeypair(shortPath)).toThrow("contains 32 bytes; expected 64");
+  });
+
+  it("throws a clean error for 64 bytes that are not a valid Ed25519 key", () => {
+    // 64 zero bytes: right length, but the trailing 32 bytes are not the
+    // public key derived from the leading 32, so web3.js rejects it.
+    const zerosPath = path.join(tmpDir, "zeros.json");
+    fs.writeFileSync(zerosPath, JSON.stringify(new Array(64).fill(0)));
+    let thrown: Error | null = null;
+    try {
+      Wallet.loadKeypair(zerosPath);
+    } catch (e) {
+      thrown = e as Error;
+    }
+    expect(thrown?.message).toContain("not a valid Ed25519 secret key");
+    // The security contract: nothing derived from the file's contents may
+    // appear in the error — only the path and a fixed description.
+    expect(thrown?.message).not.toContain("0,0");
+    expect(thrown?.message).not.toContain("secretKey is invalid");
+  });
+
   it("resolves ~ to home directory", () => {
     // This will throw because the file doesn't exist at ~/test-keypair.json,
     // but it should resolve the path correctly

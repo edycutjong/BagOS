@@ -6,30 +6,90 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [22]
+# One run per ref. A new push supersedes the in-flight run instead of queueing behind it.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+permissions:
+  contents: read
+
+jobs:
+  # ── Stage 1: Quality ────────────────────────────────────────
+  # Lint and types. Cheapest signal, so it gates everything below.
+  quality:
+    name: Quality (lint + types)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v5
+  # ── Stage 2: Security ───────────────────────────────────────
+  # Runs in parallel with Test — a dependency advisory does not depend on the suite.
+  # CodeQL and gitleaks are separate workflows; this is the SCA layer.
+  security:
+    name: Security (npm audit)
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  # ── Stage 3: Test ───────────────────────────────────────────
+  # Coverage is enforced at 100% by jest.config.ts, so a drop fails here.
+  test:
+    name: Test (coverage enforced)
+    runs-on: ubuntu-latest
+    needs: quality
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Run tests with coverage
+      - run: npm ci
+      - name: Tests with coverage
         run: npm run test:coverage
 
-      - name: Build check
-        run: npx tsc --noEmit
+  # ── Stage 4: Build ──────────────────────────────────────────
+  # Proves the published artifact compiles and the bin entrypoint is executable —
+  # this is what `npx bagos-mcp-server` actually runs.
+  build:
+    name: Build (packaged artifact)
+    runs-on: ubuntu-latest
+    needs: [security, test]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Compile
+        run: npm run build
+      - name: Entrypoint is executable and starts
+        run: |
+          test -x build/index.js || { echo "build/index.js is not executable"; exit 1; }
+          # No API key in CI, so the server must exit with its config report rather than hang.
+          timeout 20s node build/index.js < /dev/null > startup.log 2>&1 || true
+          cat startup.log
+          grep -q "BagOS MCP server — configuration" startup.log
+      - name: Pack check (what npm would publish)
+        run: npm pack --dry-run

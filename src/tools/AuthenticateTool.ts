@@ -86,13 +86,19 @@ export const AuthenticateTool: IMcpTool = {
             console.error("Could not save credentials", e);
           }
 
-          // If the user's .env didn't have API key, they can now add it.
-          // In a real flow, we'd dynamically update our singleton or file.
+          // The API key is deliberately NOT echoed here. Tool output goes straight into
+          // an AI assistant's context, and from there into transcripts, logs and provider
+          // retention — printing a live `bags_prod_*` secret there is a leak channel, not
+          // a convenience. The key is already persisted to credentials.json above, so the
+          // caller loses nothing: point them at the file instead of the value.
+          const keyHint = typeof callbackData.apiKey === "string" && callbackData.apiKey.length > 4
+            ? `…${callbackData.apiKey.slice(-4)}`
+            : "(hidden)";
           return {
             content: [
               {
                 type: "text",
-                text: `✅ Successfully authenticated with Bags API.\nWallet: ${walletAddress}\nKey ID: ${callbackData.keyId}\nAPI Key: ${callbackData.apiKey}${savePathMessage}\n\nPlease add this API key to your .env file as BAGS_API_KEY.`
+                text: `✅ Successfully authenticated with Bags API.\nWallet: ${walletAddress}\nKey ID: ${callbackData.keyId}\nAPI Key: ${keyHint} — not printed in full${savePathMessage}\n\nRead the key from the credentials file above and set it as BAGS_API_KEY in your .env.`
               }
             ]
           };

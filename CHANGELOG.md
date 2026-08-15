@@ -36,6 +36,46 @@ unconfigured install pointed at mainnet.
 errors can quote the offending input, which for a keypair file is the secret
 key. Parse failures now produce a generic message.
 
+### Fixed — the declared SDK floor was a version the code cannot run on
+
+`package.json` required `@bagsfm/bags-sdk@^1.0.8`. That version ships only four
+services — `tokenLaunch`, `state`, `config`, `fee`. It has no `trade` and no
+`partner`, so three of the eight SDK calls this server makes do not exist there:
+
+| Call | Present in 1.0.8? |
+|---|---|
+| `client.trade.getQuote` | no |
+| `client.trade.createSwapTransaction` | no |
+| `client.partner.getPartnerConfigClaimStats` | no |
+
+Any install that resolved to the floor produced a server that crashed at runtime
+on `bags_get_trade_quote`, `bags_execute_trade` and `bags_get_partner_stats` —
+three of the ten tools, including the quote path both write tools depend on. The
+lockfile masked it by resolving to 1.3.7.
+
+The floor is now `^1.3.7`, the lowest version where all eight calls exist. Verified
+against 1.4.2 as well: all eight survive with unchanged signatures.
+
+Note for anyone widening this range again: 1.3.7 → 1.4.2 **removed** the
+`incorporation` service and added `robinhood`. This SDK drops services in minor
+bumps, so treat a caret range as something to re-verify, not something to trust.
+
+### Fixed — the API key was echoed into tool output
+
+`bags_authenticate` interpolated the freshly-issued Bags production API key
+directly into its text response. MCP tool output is fed into the assistant's
+context, so every successful authentication published a live `bags_prod_*`
+credential into that context and into any transcript, log, or provider retention
+downstream of it. The key was already being written to
+`~/.config/bags/credentials.json`, so printing it bought nothing.
+
+The response now shows the key ID, the save path, and a four-character tail
+(`…ABCD — not printed in full`). A regression test asserts the full value never
+appears in the response; treat a change there as a security change.
+
+**If you ran `bags_authenticate` on any earlier build, rotate that key** at
+[dev.bags.fm](https://dev.bags.fm) — assume the value is compromised.
+
 ### Added
 
 - **Real execution path** (`lib/execute.ts`) — simulate → sign → send → confirm.
@@ -98,7 +138,7 @@ key. Parse failures now produce a generic message.
 
 ### Notes
 
-- 173 tests. Bypass resistance for the caps and the confirmation step is covered
+- 209 tests. Bypass resistance for the caps and the confirmation step is covered
   explicitly and should be treated as non-negotiable in review. Verified by
   mutation: deleting the cap guard, the confirmation check, the decimals lookup,
   or the spend recorder each fails the suite.

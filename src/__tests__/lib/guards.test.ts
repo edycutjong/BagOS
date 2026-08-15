@@ -144,6 +144,16 @@ describe("confirmation tokens", () => {
     expect(fingerprint('a', { x: 1 })).not.toBe(fingerprint('a', { x: 2 }));
   });
 
+  // JSON.stringify(undefined) is `undefined` (not a string), which would crash
+  // createHash().update(). The `args ?? null` normalization is what makes an
+  // argument-less action fingerprintable at all — and makes undefined and null
+  // canonically the same action.
+  it("fingerprints nullish arguments without crashing, treating undefined as null", () => {
+    expect(fingerprint('a', undefined)).toMatch(/^[0-9a-f]{32}$/);
+    expect(fingerprint('a', undefined)).toBe(fingerprint('a', null));
+    expect(fingerprint('a', undefined)).not.toBe(fingerprint('a', {}));
+  });
+
   it("accepts a matching token exactly once", () => {
     const token = issueToken('tool', { a: 1 }, 0.05);
     expect(() => consumeToken(token, 'tool', { a: 1 })).not.toThrow();
