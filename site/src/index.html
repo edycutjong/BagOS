@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>BagOS — Every AI-initiated Solana spend: gated, capped, confirmed on chain</title>
-  <meta name="description" content="BagOS is an MCP server that lets an AI assistant read Bags/Solana token data and — only with explicit, single-use confirmation — execute swaps and claim fees. Hard spend caps, mainnet-only writes, 337 tests at 100% coverage.">
+  <title>BagOS — gated Solana spending for AI agents</title>
+  <meta name="description" content="An MCP server that lets an AI assistant read Bags/Solana token data and execute swaps or fee claims — only behind a spend cap and a single-use confirmation.">
   <link rel="canonical" href="https://bagos.edycu.dev/">
 
   <!-- Icons -->
@@ -23,8 +23,8 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="BagOS">
-  <meta property="og:title" content="BagOS — Every AI-initiated Solana spend: gated, capped, confirmed on chain">
-  <meta property="og:description" content="The first call to a write tool signs nothing. It returns a preview and a single-use confirmation token fingerprinted to the exact arguments. Hard caps, mainnet-only writes, 337 tests at 100% coverage.">
+  <meta property="og:title" content="BagOS — gated Solana spending for AI agents">
+  <meta property="og:description" content="The first call to a write tool signs nothing. It returns a preview and a single-use token bound to the exact arguments.">
   <meta property="og:url" content="https://bagos.edycu.dev/">
   <meta property="og:image" content="https://bagos.edycu.dev/og-image.png">
   <meta property="og:image:width" content="2400">
@@ -33,8 +33,8 @@
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="BagOS — Every AI-initiated Solana spend: gated, capped, confirmed on chain">
-  <meta name="twitter:description" content="The first call to a write tool signs nothing. Single-use confirmation tokens, hard spend caps, mainnet-only writes, 337 tests at 100% coverage.">
+  <meta name="twitter:title" content="BagOS — gated Solana spending for AI agents">
+  <meta name="twitter:description" content="The first write call signs nothing — preview plus a single-use token bound to the exact arguments. Hard SOL caps.">
   <meta name="twitter:image" content="https://bagos.edycu.dev/og-image.png">
   <meta name="twitter:image:alt" content="BagOS — the gate pipeline: token gate, spend caps, confirmation, simulate, sign, send, confirm">
 
@@ -252,6 +252,51 @@
       .pipeline > .arrow .v { display: inline; }
     }
     .pipeline-legend { font-size: .9rem; color: var(--ink-muted); max-width: 44rem; }
+
+    /* ── Sequenced pipeline ────────────────────────────────────────────────
+       The page argues that a request is HELD and only then released. That is a
+       thing that happens over time, and describing it in static boxes asks the
+       reader to imagine the one detail the whole product turns on. So the
+       diagram performs it: the request walks the stages, stalls visibly at
+       `confirmation`, and only then continues to a green landing.
+
+       Everything here is gated behind `.seq`, which the script adds only when
+       motion is allowed. No JavaScript, or prefers-reduced-motion, and none of
+       this applies — the diagram keeps the static appearance defined above,
+       fully legible. The animation is an enhancement, never the only telling. */
+    .pipeline.seq .stage,
+    .pipeline.seq .arrow { transition: opacity .38s ease, transform .38s ease, box-shadow .38s ease; }
+    .pipeline.seq .stage { opacity: .34; }
+    .pipeline.seq .arrow { opacity: .22; }
+    .pipeline.seq .stage.lit,
+    .pipeline.seq .arrow.lit { opacity: 1; }
+    .pipeline.seq .arrow.lit { opacity: .75; }
+    .pipeline.seq .stage.now { transform: translateY(-.14rem) scale(1.045); }
+
+    /* The hold. Amber, breathing, going nowhere — this is the beat the product
+       exists to create, so it is the one moment given a loop rather than a
+       transition. */
+    @keyframes bagos-hold {
+      0%, 100% { box-shadow: 0 0 0 .26rem color-mix(in srgb, var(--amber) 30%, transparent); }
+      50%      { box-shadow: 0 0 0 .58rem color-mix(in srgb, var(--amber)  4%, transparent); }
+    }
+    .pipeline.seq .stage.holding { animation: bagos-hold 1.6s ease-in-out infinite; }
+
+    /* The landing. One settle, no loop: "confirmed" is a fact, not a state. */
+    @keyframes bagos-land {
+      0%   { box-shadow: 0 0 0 0     color-mix(in srgb, var(--green) 45%, transparent); }
+      55%  { box-shadow: 0 0 0 .6rem color-mix(in srgb, var(--green) 18%, transparent); }
+      100% { box-shadow: 0 0 0 .3rem color-mix(in srgb, var(--green) 22%, transparent); }
+    }
+    .pipeline.seq .stage.chain.lit { animation: bagos-land .9s ease-out forwards; }
+
+    .pipeline.seq { cursor: pointer; }
+    .pipeline-replay {
+      display: inline-block; margin-left: .1rem; font-size: .82rem; color: var(--ink-muted);
+      background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline;
+      text-underline-offset: .2em; font-family: inherit;
+    }
+    .pipeline-replay:hover { color: var(--ink); }
 
     /* Terminal block */
     figure.term { margin: 2rem 0 0; }
@@ -634,5 +679,93 @@ To execute, call bags_execute_trade again with the identical arguments plus:
       <p class="fine">© 2026 Edy Cu Tjong · MIT</p>
     </div>
   </footer>
+
+  <script>
+  /* Plays the pipeline diagram once when it scrolls into view.
+   *
+   * Progressive enhancement, strictly. The `seq` class that enables every
+   * animated style is added HERE and nowhere else, so a reader without
+   * JavaScript, or with prefers-reduced-motion, sees the finished diagram
+   * exactly as it has always looked. Nothing is hidden behind the animation.
+   *
+   * Inline on purpose: the site makes zero external requests by design, and a
+   * short enhancement does not justify breaking that.
+   *
+   * Stage order is document order, so there are no markup changes and no index
+   * bookkeeping — `.stage` and `.arrow` interleave naturally left to right.
+   */
+  (function () {
+    var pipe = document.querySelector('.pipeline');
+    if (!pipe || !window.IntersectionObserver) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var steps = Array.prototype.slice.call(pipe.querySelectorAll('.stage, .arrow'));
+    var timers = [];
+    var playing = false;
+
+    function reset() {
+      timers.forEach(clearTimeout);
+      timers = [];
+      steps.forEach(function (el) { el.classList.remove('lit', 'now', 'holding'); });
+    }
+
+    function play() {
+      if (playing) return;
+      playing = true;
+      reset();
+      var t = 260;
+
+      steps.forEach(function (el) {
+        var isStage = el.classList.contains('stage');
+        // "confirmation" is the last gate stage — where the request stops and
+        // waits for a human. Before it is approach; after it, flight.
+        var isHold = isStage && el.textContent.trim() === 'confirmation';
+
+        timers.push(setTimeout(function () {
+          steps.forEach(function (o) { o.classList.remove('now'); });
+          el.classList.add('lit');
+          if (isStage) el.classList.add('now');
+          if (isHold) el.classList.add('holding');
+        }, t));
+
+        if (isHold) {
+          // The dwell IS the argument. Long enough to read as a stop, not a stutter.
+          timers.push(setTimeout(function () {
+            el.classList.remove('holding', 'now');
+          }, t + 2100));
+          t += 2100;
+        }
+        t += isStage ? 300 : 130;
+      });
+
+      timers.push(setTimeout(function () {
+        steps.forEach(function (o) { o.classList.remove('now'); });
+        playing = false;
+      }, t + 900));
+    }
+
+    pipe.classList.add('seq');
+
+    var seen = false;
+    new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting && !seen) { seen = true; play(); obs.disconnect(); }
+      });
+    }, { threshold: 0.35 }).observe(pipe);
+
+    // Replay, for anyone who looked away during the one beat that matters.
+    pipe.addEventListener('click', play);
+    var legend = document.querySelector('.pipeline-legend');
+    if (legend) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pipeline-replay';
+      btn.textContent = 'Replay';
+      btn.addEventListener('click', play);
+      legend.appendChild(document.createTextNode(' '));
+      legend.appendChild(btn);
+    }
+  })();
+  </script>
 </body>
 </html>
