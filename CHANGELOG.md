@@ -3,6 +3,33 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.2.0](https://github.com/edycutjong/BagOS/compare/v2.1.0...v2.2.0) (2026-08-15)
+
+
+### Features
+
+* build an MCPB bundle for Smithery's stdio release type ([ce0a968](https://github.com/edycutjong/BagOS/commit/ce0a968deef01c95319bd60238c7a8570cd348fc))
+
+
+### Bug Fixes
+
+* **ci:** redeploy the site when the version changes, add a release badge ([9e8723c](https://github.com/edycutjong/BagOS/commit/9e8723c14b19c6dac050609d3a80ef1894024387))
+* **docs:** restore the canonical BagOS repo casing in links ([982ffb1](https://github.com/edycutjong/BagOS/commit/982ffb185866e6f888846d1d4cb087ca1fd7de0c))
+* **pkg:** declare Node 22 as the real floor, document USE_MOCK_DATA ([f9ae229](https://github.com/edycutjong/BagOS/commit/f9ae2296d8b73b2bfedfe9151c042479a0e4e439))
+* **security:** route every tool error through the redaction helper ([e658886](https://github.com/edycutjong/BagOS/commit/e658886f187e90f4bcd408cbb7999491489360c6))
+
+
+### Documentation
+
+* correct the USE_MOCK_DATA claim and the repo URL casing ([924870e](https://github.com/edycutjong/BagOS/commit/924870ee6054c241d2bbb7f3d23b1c59fd7ec521))
+* update the test count to 337 across README and site ([318ed5a](https://github.com/edycutjong/BagOS/commit/318ed5aee6aab916125a43c8c4861ed01c766a29))
+
+
+### CI/CD
+
+* publish the MCPB bundle to Smithery on release ([4301038](https://github.com/edycutjong/BagOS/commit/4301038d702149e42ad21799a430078015534789))
+* publish to the MCP registry on release, and surface its version ([fefab6b](https://github.com/edycutjong/BagOS/commit/fefab6b88c1aaf035e3cbb07dca3361af5cf38a8))
+
 ## [2.1.0](https://github.com/edycutjong/BagOS/compare/v2.0.0...v2.1.0) (2026-08-15)
 
 
