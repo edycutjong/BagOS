@@ -26,11 +26,11 @@
   ![Solana](https://img.shields.io/badge/Solana-9945FF?style=flat&logo=solana&logoColor=white)
   ![Jest](https://img.shields.io/badge/Jest-100%25_coverage-C21325?style=flat&logo=jest&logoColor=white)
   [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-  [![CI/CD](https://github.com/edycutjong/bagos/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/bagos/actions/workflows/ci.yml)
-  [![Publish](https://github.com/edycutjong/bagos/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/bagos/actions/workflows/publish.yml)
-  [![CodeQL](https://github.com/edycutjong/bagos/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/bagos/actions/workflows/codeql.yml)
+  [![CI/CD](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml)
+  [![Publish](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml)
+  [![CodeQL](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml)
   [![npm](https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm)](https://www.npmjs.com/package/bagos-mcp-server)
-  [![Release](https://img.shields.io/github/v/release/edycutjong/bagos?color=8b5cf6&logo=github&label=release)](https://github.com/edycutjong/bagos/releases/latest)
+  [![Release](https://img.shields.io/github/v/release/edycutjong/BagOS?color=8b5cf6&logo=github&label=release)](https://github.com/edycutjong/BagOS/releases/latest)
 
 </div>
 
@@ -294,7 +294,7 @@ context and every transcript downstream of it. If you ran `bags_authenticate` on
 a version before this change, rotate that key at [dev.bags.fm](https://dev.bags.fm).
 
 Report vulnerabilities via
-[GitHub security advisories](https://github.com/edycutjong/bagos/security/advisories/new).
+[GitHub security advisories](https://github.com/edycutjong/BagOS/security/advisories/new).
 
 ---
 
