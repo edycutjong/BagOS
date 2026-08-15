@@ -100,6 +100,14 @@
           "isSecret": false,
           "format": "boolean",
           "default": "false"
+        },
+        {
+          "name": "USE_MOCK_DATA",
+          "description": "Makes bags_get_claimable_fees return fabricated data instead of calling the API. Default false.",
+          "isRequired": false,
+          "isSecret": false,
+          "format": "boolean",
+          "default": "false"
         }
       ]
     }
