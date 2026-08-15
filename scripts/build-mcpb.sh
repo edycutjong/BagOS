@@ -38,14 +38,26 @@ npm run build >/dev/null
 
 echo "==> staging"
 rm -rf "${STAGE}" "${OUT}"
-mkdir -p "${STAGE}/server" "${OUT}"
+mkdir -p "${STAGE}/server/build" "${OUT}"
 cp manifest.json "${STAGE}/manifest.json"
 cp README.md LICENSE "${STAGE}/"
-cp -R build "${STAGE}/server/build"
 cp package.json "${STAGE}/server/package.json"
 
-echo "==> installing production dependencies into the bundle"
-( cd "${STAGE}/server" && npm install --omit=dev --silent --no-audit --no-fund )
+# Bundle to a single file rather than shipping node_modules.
+#
+# Smithery rejects anything over 25 MB. Copying the production dependency tree
+# produced a 50 MB bundle (137 MB unpacked, 6,588 files) and the publish failed
+# outright — the Solana and Bags SDK trees are simply that large. esbuild emits
+# one ~5 MB file with the same behaviour and nothing to resolve at runtime.
+#
+# The createRequire banner is needed because the output is ESM but several
+# transitive dependencies still call require() internally.
+echo "==> bundling with esbuild (single file, no node_modules)"
+npx -y esbuild@0.28.1 src/index.ts \
+  --bundle --platform=node --format=esm --target=node22 \
+  --outfile="${STAGE}/server/build/index.js" \
+  --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);" \
+  --log-level=warning
 
 echo "==> smoke-testing the bundled entry point"
 # Proves the ../package.json resolution above: flatten the layout and this dies.
@@ -102,6 +114,19 @@ echo "    clean"
 echo "==> packing"
 npx -y @anthropic-ai/mcpb@2.1.2 pack "${STAGE}" "${OUT}/bagos-${PKG_V}.mcpb"
 npx -y @anthropic-ai/mcpb@2.1.2 validate "${STAGE}/manifest.json"
+
+# Smithery's hard ceiling. Fail here, where the number and the fix are obvious,
+# rather than after a CI run in `smithery mcp publish` with "Bundle exceeds
+# 25 MB limit" and no indication of what grew.
+LIMIT_MB=25
+SIZE_B=$(wc -c < "${OUT}/bagos-${PKG_V}.mcpb" | tr -d ' ')
+SIZE_MB=$(( SIZE_B / 1024 / 1024 ))
+if [ "${SIZE_MB}" -ge "${LIMIT_MB}" ]; then
+  echo "ERROR: bundle is ${SIZE_MB} MB; Smithery rejects anything at or over ${LIMIT_MB} MB." >&2
+  echo "       Something is being bundled that should be external, or a dependency grew." >&2
+  exit 1
+fi
+echo "    $(( SIZE_B / 1024 )) KB (limit ${LIMIT_MB} MB)"
 
 rm -rf "${STAGE}"
 echo

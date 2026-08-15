@@ -78,7 +78,7 @@ jobs:
           set -euo pipefail
           SRV_VERSION=$(node -p "require('./server.json').version")
           SRV_NAME=$(node -p "require('./server.json').name")
-          LIVE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos" \
+          LIVE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos&version=latest" \
                  | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
                      try{const j=JSON.parse(s);
                        const m=(j.servers||[]).find(x=>x.server && x.server.name==='$SRV_NAME');
@@ -125,14 +125,14 @@ jobs:
           set -euo pipefail
           SRV_VERSION=$(node -p "require('./server.json').version")
           SRV_NAME=$(node -p "require('./server.json').name")
-          for i in $(seq 1 10); do
-            LIVE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos" \
+          for i in $(seq 1 30); do
+            LIVE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos&version=latest" \
                    | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
                        try{const j=JSON.parse(s);
                          const m=(j.servers||[]).find(x=>x.server && x.server.name==='$SRV_NAME');
                          process.stdout.write(m?m.server.version:'');
                        }catch(e){process.stdout.write('')}})" || echo "")
             [ "$LIVE" = "$SRV_VERSION" ] && { echo "registry serves $SRV_NAME@$SRV_VERSION"; exit 0; }
-            echo "registry has '${LIVE:-none}', want $SRV_VERSION ($i/10)"; sleep 10
+            echo "registry has '${LIVE:-none}', want $SRV_VERSION ($i/30)"; sleep 10
           done
-          echo "::error::registry did not serve $SRV_VERSION within 100s"; exit 1
+          echo "::error::registry did not serve $SRV_VERSION within 5 minutes"; exit 1

@@ -30,7 +30,7 @@
   [![Publish](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml)
   [![CodeQL](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml)
   [![npm](https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm)](https://www.npmjs.com/package/bagos-mcp-server)
-  [![MCP registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20registry&color=000000)](https://registry.modelcontextprotocol.io/?q=bagos)
+  [![MCP registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20registry&color=000000)](https://registry.modelcontextprotocol.io/?q=bagos)
   [![Release](https://img.shields.io/github/v/release/edycutjong/BagOS?color=8b5cf6&logo=github&label=release)](https://github.com/edycutjong/BagOS/releases/latest)
 
 </div>
