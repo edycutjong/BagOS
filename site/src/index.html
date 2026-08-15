@@ -127,6 +127,19 @@
       html { scroll-behavior: auto; }
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
+    /* Page-wide grid.
+       It used to live on the hero alone, which made the texture stop at the
+       fold and the rest of the page read as a different, flatter surface.
+       `fixed` rather than scrolling with the content: the grid is the room the
+       page sits in, not an element on it, and a fixed plane also costs one
+       paint instead of repainting a tall repeating background on every scroll.
+       Behind everything at z-index 0, with the content lifted to 1. */
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: var(--grid-bg);
+    }
+    body > * { position: relative; z-index: 1; }
+
     body {
       background: var(--bg);
       color: var(--ink);
@@ -189,11 +202,9 @@
       content: ""; position: absolute; inset: 0; pointer-events: none;
     }
     .hero::before { background: var(--gradient-mesh); opacity: .55; }
-    .hero::after {
-      background: var(--grid-bg);
-      -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
-      mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
-    }
+    /* The grid is page-wide (see body::before). The hero only adds the colour
+       wash, so the two do not double up into a denser mesh at the top. */
+    .hero::after { display: none; }
     .hero .wrap { position: relative; z-index: 1; }
 
     .hero-grid {
