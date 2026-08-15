@@ -16,9 +16,8 @@
   <link rel="manifest" href="/site.webmanifest">
 
   <!-- Theme color, both schemes -->
-  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
-  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#060B16">
+  <meta name="color-scheme" content="dark">
 
   <!-- Open Graph -->
   <meta property="og:type" content="website">
@@ -61,44 +60,61 @@
   </script>
 
   <style>
-    /* ── Tokens ─────────────────────────────────────────────── */
+    /* ── Tokens ─────────────────────────────────────────────────
+       These ARE ../../assets/_tokens.css — the same contract the OG image,
+       the README hero and every generated asset already render against.
+       The site used to carry its own light palette, which is why it read as a
+       different product to its own social card. Dark-committed on purpose:
+       _tokens.css ships light mode commented out and marked INCOMPLETE, and a
+       half-tuned second theme is worse than one theme meant sincerely.
+
+       Old variable names are kept as aliases so the rest of this stylesheet —
+       and the pipeline animation — keep working untouched. */
     :root {
-      --bg: #f8fafc;
-      --bg-raise: #ffffff;
-      --bg-inset: #eef2f7;
-      --ink: #0f172a;
-      --ink-muted: #46566e;
-      --line: #dbe3ec;
-      --amber: #92610b;         /* "held" accent, AA on light bg */
-      --amber-soft: #fdf3e0;
-      --green: #067352;         /* "confirmed" accent, AA on light bg */
-      --green-soft: #e3f6ee;
-      --link: #0b5ec9;
-      --code-bg: #0f172a;       /* terminal blocks stay dark in both schemes */
-      --code-ink: #e2e8f0;
-      --code-amber: #fbbf24;
-      --code-green: #34d399;
-      --code-red: #f87171;
-      --code-muted: #94a3b8;
-      --focus: #0b5ec9;
-      --shadow: 0 1px 2px rgb(15 23 42 / .06), 0 8px 24px rgb(15 23 42 / .07);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0b1220;
-        --bg-raise: #101a2e;
-        --bg-inset: #0d1526;
-        --ink: #e6ecf4;
-        --ink-muted: #9fb0c7;
-        --line: #24324a;
-        --amber: #fbbf24;
-        --amber-soft: #2a2109;
-        --green: #34d399;
-        --green-soft: #06281d;
-        --link: #79b3f7;
-        --focus: #79b3f7;
-        --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35);
-      }
+      /* Brand, straight from _tokens.css */
+      --primary: #F59E0B;
+      --accent:  #34D399;
+      --held:    var(--primary);   /* unsigned at the gate */
+      --landed:  var(--accent);    /* confirmed on chain */
+      --primary-glow: color-mix(in srgb, var(--primary) 35%, transparent);
+      --accent-glow:  color-mix(in srgb, var(--accent)  35%, transparent);
+
+      --bg: #060B16;               /* --bg-base */
+      --bg-raise: #0A101E;         /* --plate */
+      --bg-inset: #080D19;
+      --ink: #F8FAFC;              /* --text-hi */
+      --ink-muted: #94A3B8;        /* --text-mid */
+      --ink-low: #64748B;
+      --line: rgba(255,255,255,.09);
+      --line-strong: rgba(255,255,255,.16);
+
+      --amber: #FBBF24;
+      --amber-soft: color-mix(in srgb, var(--primary) 13%, transparent);
+      --green: #34D399;
+      --green-soft: color-mix(in srgb, var(--accent) 13%, transparent);
+      --link: #7CC0FF;
+      --focus: #FBBF24;
+
+      --code-bg: #070D1A;
+      --code-ink: #E2E8F0;
+      --code-amber: #FBBF24;
+      --code-green: #34D399;
+      --code-red: #F87171;
+      --code-muted: #7C8CA3;
+
+      --shadow: 0 1px 2px rgb(0 0 0 / .45), 0 10px 30px rgb(0 0 0 / .40);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,.55);
+
+      /* Space Grotesk when the reader has it; never fetched — this page makes
+         zero external requests and a webfont would be the first. */
+      --font-display: 'Space Grotesk', 'Avenir Next', system-ui, sans-serif;
+
+      --grid-bg:
+        repeating-linear-gradient(0deg,  rgba(255,255,255,.035) 0 1px, transparent 1px 48px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 48px);
+      --gradient-mesh:
+        radial-gradient(ellipse 60% 50% at 12% 6%,  var(--primary-glow), transparent 62%),
+        radial-gradient(ellipse 55% 45% at 88% 32%, var(--accent-glow),  transparent 62%);
     }
 
     /* ── Base ───────────────────────────────────────────────── */
@@ -157,19 +173,70 @@
     header.site nav a { color: var(--ink-muted); text-decoration: none; font-size: .95rem; }
     header.site nav a:hover { color: var(--ink); text-decoration: underline; }
 
-    /* ── Hero ───────────────────────────────────────────────── */
-    .hero { padding: 4.5rem 0 3.5rem; text-align: center; }
-    .hero img.mark { width: 6rem; height: 6rem; margin-bottom: 1.25rem; }
+    /* ── Hero ─────────────────────────────────────────────────
+       Split, not centred. A centred column caps the headline at whatever the
+       measure allows and leaves the terminal stranded below the fold; side by
+       side, the claim and the evidence for it are on screen together, which is
+       the entire pitch. */
+    .hero {
+      position: relative; overflow: hidden;
+      padding: 4.25rem 0 3.25rem;
+    }
+    /* Atmosphere: mesh glow under a fine grid, both from _tokens.css. Two
+       stacked pseudo-elements rather than one background so the grid can fade
+       out toward the bottom independently of the colour wash. */
+    .hero::before, .hero::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+    }
+    .hero::before { background: var(--gradient-mesh); opacity: .55; }
+    .hero::after {
+      background: var(--grid-bg);
+      -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+      mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+    }
+    .hero .wrap { position: relative; z-index: 1; }
+
+    .hero-grid {
+      display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+      gap: 2.75rem; align-items: center;
+    }
+    @media (max-width: 62rem) { .hero-grid { grid-template-columns: 1fr; gap: 2rem; } }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: .55rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .78rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--ink-muted);
+      border: 1px solid var(--line); border-radius: 9999px;
+      padding: .38rem .85rem; background: rgb(255 255 255 / .03);
+    }
+    .eyebrow .dot {
+      width: .45rem; height: .45rem; border-radius: 50%;
+      background: var(--landed); box-shadow: 0 0 0 .18rem color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
     .hero h1 {
-      font-size: clamp(2rem, 5.5vw, 3.1rem);
-      line-height: 1.15; letter-spacing: -.02em; font-weight: 800;
-      max-width: 42rem; margin: 0 auto;
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 5.4vw, 4rem);
+      line-height: 1.04; letter-spacing: -.03em; font-weight: 700;
+      margin-top: 1.4rem;
     }
-    .hero h1 .held { color: var(--amber); }
-    .hero h1 .landed { color: var(--green); }
+    .hero h1 .held   { color: var(--held); }
+    .hero h1 .landed { color: var(--landed); }
+    /* The two words the product is about get an underline that reads as a
+       state change: dashed while held, solid once landed. */
+    .hero h1 .held, .hero h1 .landed { position: relative; white-space: nowrap; }
+    .hero h1 .held::after, .hero h1 .landed::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -.11em; height: .09em;
+      border-radius: 2px;
+    }
+    .hero h1 .held::after   { background: repeating-linear-gradient(90deg, var(--held) 0 .38em, transparent .38em .72em); opacity: .8; }
+    .hero h1 .landed::after { background: var(--landed); opacity: .9; }
+
     .hero .sub {
-      max-width: 40rem; margin: 1.25rem auto 0; color: var(--ink-muted); font-size: 1.15rem;
+      max-width: 34rem; margin: 1.35rem 0 0; color: var(--ink-muted); font-size: 1.12rem;
     }
+    .hero .sub strong { color: var(--ink); }
     .hero .install-line {
       display: inline-block; margin-top: 1.75rem;
       background: var(--code-bg); color: var(--code-ink);
@@ -189,7 +256,6 @@
     }
     .btn:hover { border-color: var(--ink-muted); }
     .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-    @media (prefers-color-scheme: dark) { .btn.primary { background: #e6ecf4; color: #0b1220; border-color: #e6ecf4; } }
     .btn.primary:hover { opacity: .92; }
 
     /* Fact strip */
@@ -376,6 +442,109 @@
     footer.site li { margin: .3rem 0; }
     footer.site a { color: var(--ink); }
     footer.site .fine { margin-top: 2rem; font-size: .85rem; color: var(--ink-muted); max-width: 44rem; }
+
+    /* ══ Dark-system overrides ══════════════════════════════════
+       Appended rather than edited in place: everything above is the original
+       light-theme stylesheet, and keeping it intact means the diff shows what
+       the redesign actually changed rather than a wall of rewritten rules. */
+
+    /* A split hero needs room. 62rem crushed the two columns together. */
+    .wrap { max-width: 74rem; }
+
+    /* Buttons: pill, with a physical bottom edge on the primary — same
+       affordance the OG image uses, so the card and the page agree. */
+    .btn {
+      border-radius: 9999px; padding: .72rem 1.4rem;
+      background: rgb(255 255 255 / .04); border-color: var(--line);
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: var(--line-strong); background: rgb(255 255 255 / .07); }
+    .btn:active { transform: translateY(0); }
+    .btn.primary {
+      background: linear-gradient(180deg, #FCC63D 0%, #F59E0B 100%);
+      color: #1A1206; border-color: rgb(255 255 255 / .28);
+      box-shadow: 0 4px 0 #A55A06, 0 10px 22px color-mix(in srgb, var(--primary) 26%, transparent);
+    }
+    .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 5px 0 #A55A06, 0 14px 28px color-mix(in srgb, var(--primary) 32%, transparent); opacity: 1; }
+    .btn.primary:active { transform: translateY(2px); box-shadow: 0 2px 0 #A55A06, 0 6px 14px color-mix(in srgb, var(--primary) 22%, transparent); }
+    .cta { justify-content: flex-start; margin-top: 1.6rem; align-items: center; }
+
+    .hero .install-line {
+      margin-top: 1.6rem; border: 1px solid var(--line);
+      background: rgb(255 255 255 / .03); box-shadow: none;
+    }
+
+    /* Terminal: it is the evidence, so give it presence — a glow that ties it
+       to the amber "held" state it is showing. */
+    .hero figure.term { max-width: none; margin: 0; }
+    .term pre { border-color: var(--line); box-shadow: var(--shadow-lg), 0 0 60px color-mix(in srgb, var(--primary) 9%, transparent); }
+    .term .bar { background: #101A2C; border-color: var(--line); }
+    /* The preview is 78 columns wide. Shrink it to fit the column rather than
+       clipping the line that names the confirmation token — that line IS the
+       point of the screenshot. */
+    .hero .term pre { font-size: .78rem; padding: 1.1rem 1.15rem; }
+    @media (min-width: 62rem) { .hero .term pre { font-size: clamp(.7rem, .95vw, .82rem); } }
+    .hero .term figcaption { text-align: left; margin-top: .7rem; }
+
+    /* Cursor. A terminal that never blinks looks like a screenshot. */
+    .term pre code::after {
+      content: ""; display: inline-block; width: .55em; height: 1.05em;
+      margin-left: .18em; vertical-align: -.19em; background: var(--code-amber);
+      animation: bagos-caret 1.15s step-end infinite;
+    }
+    @keyframes bagos-caret { 0%, 45% { opacity: 1; } 46%, 100% { opacity: 0; } }
+
+    /* ── Stat strip ──────────────────────────────────────────
+       Was a row of small grey text. The numbers are the argument, so they get
+       display scale and the labels shrink underneath them. */
+    .facts { background: transparent; border-color: var(--line); }
+    .facts ul {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0; padding: 0; justify-content: stretch;
+    }
+    .facts li {
+      display: flex; flex-direction: column; gap: .3rem;
+      padding: 1.5rem 1.1rem; font-size: .78rem; line-height: 1.35;
+      color: var(--ink-muted); text-transform: uppercase; letter-spacing: .07em;
+      border-left: 1px solid var(--line);
+    }
+    .facts li:first-child { border-left: 0; }
+    .facts li strong {
+      font-family: var(--font-display); font-size: 1.95rem; font-weight: 700;
+      letter-spacing: -.02em; color: var(--ink); text-transform: none;
+    }
+    .facts li:nth-child(3) strong { color: var(--held); }
+    .facts li:nth-child(5) strong { color: var(--landed); }
+    @media (max-width: 62rem) {
+      .facts ul { grid-template-columns: repeat(2, 1fr); }
+      .facts li:nth-child(odd) { border-left: 0; }
+      .facts li { border-top: 1px solid var(--line); }
+    }
+
+    /* Cards lift on hover — the page had no hover state anywhere. */
+    .card {
+      background: var(--bg-raise); border: 1px solid var(--line); border-radius: 1rem;
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--line-strong); box-shadow: var(--shadow-lg); }
+
+    section h2 { font-family: var(--font-display); letter-spacing: -.025em; }
+    .kicker { color: var(--held); }
+
+    header.site { background: color-mix(in srgb, var(--bg) 82%, transparent); border-color: var(--line); }
+
+    /* ── Scroll reveal ───────────────────────────────────────
+       Opt-in via .reveal, which the script adds — so with no JavaScript, or
+       reduced motion, every section is simply visible. Never a blank page. */
+    .reveal > * { opacity: 0; transform: translateY(14px); }
+    .reveal.in > * {
+      opacity: 1; transform: none;
+      transition: opacity .55s cubic-bezier(.2,.7,.3,1), transform .55s cubic-bezier(.2,.7,.3,1);
+    }
+    .reveal.in > *:nth-child(2) { transition-delay: .06s; }
+    .reveal.in > *:nth-child(3) { transition-delay: .12s; }
+    .reveal.in > *:nth-child(4) { transition-delay: .18s; }
+    .reveal.in > *:nth-child(5) { transition-delay: .24s; }
   </style>
 </head>
 <body>
@@ -401,12 +570,22 @@
     <!-- ── Hero ── -->
     <section class="hero" aria-labelledby="hero-h">
       <div class="wrap">
-        <img class="mark" src="/icon.svg" alt="" width="96" height="96">
-        <h1 id="hero-h">Every AI-initiated <span class="nb"><svg class="icn icn-sol" viewBox="0 0 24 24" role="img" aria-label="Solana"><path d="m23.8764 18.0313-3.962 4.1393a.9201.9201 0 0 1-.306.2106.9407.9407 0 0 1-.367.0742H.4599a.4689.4689 0 0 1-.2522-.0733.4513.4513 0 0 1-.1696-.1962.4375.4375 0 0 1-.0314-.2545.4438.4438 0 0 1 .117-.2298l3.9649-4.1393a.92.92 0 0 1 .3052-.2102.9407.9407 0 0 1 .3658-.0746H23.54a.4692.4692 0 0 1 .2523.0734.4531.4531 0 0 1 .1697.196.438.438 0 0 1 .0313.2547.4442.4442 0 0 1-.1169.2297zm-3.962-8.3355a.9202.9202 0 0 0-.306-.2106.941.941 0 0 0-.367-.0742H.4599a.4687.4687 0 0 0-.2522.0734.4513.4513 0 0 0-.1696.1961.4376.4376 0 0 0-.0314.2546.444.444 0 0 0 .117.2297l3.9649 4.1394a.9204.9204 0 0 0 .3052.2102c.1154.049.24.0744.3658.0746H23.54a.469.469 0 0 0 .2523-.0734.453.453 0 0 0 .1697-.1961.4382.4382 0 0 0 .0313-.2546.4444.4444 0 0 0-.1169-.2297zM.46 6.7225h18.7815a.9411.9411 0 0 0 .367-.0742.9202.9202 0 0 0 .306-.2106l3.962-4.1394a.4442.4442 0 0 0 .117-.2297.4378.4378 0 0 0-.0314-.2546.453.453 0 0 0-.1697-.196.469.469 0 0 0-.2523-.0734H4.7596a.941.941 0 0 0-.3658.0745.9203.9203 0 0 0-.3052.2102L.1246 5.9687a.4438.4438 0 0 0-.1169.2295.4375.4375 0 0 0 .0312.2544.4512.4512 0 0 0 .1692.196.4689.4689 0 0 0 .2518.0739z"/></svg>&nbsp;Solana spend:</span><br>
+        <div class="hero-grid">
+          <div class="hero-copy">
+        <span class="eyebrow"><span class="dot"></span>MCP server · Solana · mainnet-guarded</span>
+        <h1 id="hero-h">Every AI-initiated Solana spend:<br>
           <span class="held">gated</span>, <span class="held">capped</span>, <span class="landed">confirmed on&nbsp;chain</span>.</h1>
         <p class="sub">BagOS is an MCP server that lets an AI assistant read Bags/Solana token data
           and — only with explicit confirmation — execute swaps and claim creator fees.
           The first call to a write tool <strong>signs nothing</strong>. It answers with this:</p>
+
+        <p><code class="install-line"><span class="p">$</span> npx bagos-mcp-server</code></p>
+        <div class="cta">
+          <a class="btn primary" href="#mechanism">See the gate hold →</a>
+          <a class="btn" href="/deck/">View the deck</a>
+          <a class="btn" href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm&nbsp;·&nbsp;v2.0.0</a>
+        </div>
+          </div>
 
         <figure class="term">
           <div class="bar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span>bags_execute_trade — first call</div>
@@ -421,16 +600,11 @@ Action:  Swap 0.05 of So1111…1112
 Spend:   0.05 SOL
 Caps:    0.1 SOL/tx · 0/1 SOL used this session
 
-To execute, call bags_execute_trade again with the identical arguments plus:
+To execute, call bags_execute_trade again with the
+identical arguments plus:
   confirm: <span class="tok">"kR3nT9xQm2vP"</span></code></pre>
           <figcaption>What the assistant — and you, reading over its shoulder — sees before any money moves.</figcaption>
         </figure>
-
-        <p><code class="install-line"><span class="p">$</span> npx bagos-mcp-server</code></p>
-        <div class="cta">
-          <a class="btn primary" href="#mechanism">How the gate works</a>
-          <a class="btn" href="/deck/">View the deck</a>
-          <a class="btn" href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm&nbsp;·&nbsp;v2.0.0</a>
         </div>
       </div>
     </section>
@@ -439,9 +613,9 @@ To execute, call bags_execute_trade again with the identical arguments plus:
       <div class="wrap">
         <ul>
           <li><strong>14</strong> MCP tools</li>
-          <li><strong>337</strong> tests · <strong>100%</strong> coverage</li>
-          <li><strong>0.1&nbsp;SOL</strong>/tx · <strong>1.0&nbsp;SOL</strong>/session caps</li>
-          <li><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> <strong>v2.0.0</strong> on npm, SLSA provenance</li>
+          <li><strong>337</strong> tests at 100% coverage</li>
+          <li><strong>0.1&nbsp;SOL</strong> hard cap per tx</li>
+          <li><strong>v2.0.0</strong> on npm, SLSA provenance</li>
           <li><strong>Active</strong> in the MCP registry</li>
         </ul>
       </div>
@@ -745,6 +919,29 @@ To execute, call bags_execute_trade again with the identical arguments plus:
     }
 
     pipe.classList.add('seq');
+
+    // Scroll reveal for every section body. Added here so no-JS and
+    // reduced-motion readers never meet an invisible page.
+    //
+    // Two failsafes, because "content is hidden until an event fires" is the
+    // one animation pattern that can break a page outright:
+    //   - anything already on screen (or reached by a deep link like #install)
+    //     is revealed immediately rather than waiting for a scroll that the
+    //     reader has no reason to make;
+    //   - a hard timer reveals everything regardless, so a wedged observer
+    //     costs a nice transition and never the text.
+    var blocks = [].slice.call(document.querySelectorAll('section .wrap, .facts .wrap'));
+    blocks.forEach(function (el) {
+      el.classList.add('reveal');
+      var io = new IntersectionObserver(function (es, o) {
+        es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); o.disconnect(); } });
+      }, { threshold: 0.12 });
+      io.observe(el);
+      if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
+    });
+    setTimeout(function () {
+      blocks.forEach(function (el) { el.classList.add('in'); });
+    }, 4000);
 
     var seen = false;
     new IntersectionObserver(function (entries, obs) {
