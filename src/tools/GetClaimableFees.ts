@@ -4,6 +4,7 @@ import { BagsClient } from "../lib/bags-client.js";
 import { PublicKey } from '@solana/web3.js';
 import { Wallet } from "../lib/wallet.js";
 import { IMcpTool } from "../types/IMcpTool.js";
+import { toolError } from "../lib/mcp-utils.js";
 
 export const GetClaimableFeesTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -48,13 +49,8 @@ export const GetClaimableFeesTool: IMcpTool = {
               }
             ]
           };
-        } catch (error: any) {
-          return {
-            content: [
-              { type: "text", text: `Failed to fetch fees: ${error.message}` }
-            ],
-            isError: true,
-          };
+        } catch (error) {
+          return toolError(error);
         }
       }
     );

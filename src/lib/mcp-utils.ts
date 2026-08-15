@@ -19,6 +19,23 @@ export const McpUtilities = {
  * base64 blobs are all shapes that have leaked out of error messages before.
  */
 const SECRET_SHAPES: Array<[RegExp, string]> = [
+  // The shape from the original incident: a live `bags_prod_*` API key. The three
+  // shapes below are length-based and do NOT catch it — a Bags key contains an
+  // underscore, so it is neither base58 nor base64, and it is well under 80 chars.
+  // Added when AuthenticateTool started routing upstream auth-endpoint response
+  // bodies through here: that endpoint is the one that mints these keys, so its
+  // error bodies are the likeliest place for one to surface.
+  //
+  // The lookahead is load-bearing. Every tool in this server is named
+  // `bags_<lowercase words>` — and `bags_get_claimable_fees` matches
+  // `bags_[a-z]+_[A-Za-z0-9]{8,}` on its own, so without the lookahead this rule
+  // rewrote that tool's name to "[REDACTED_API_KEY]_fees" inside otherwise
+  // ordinary error text. Requiring at least one uppercase letter or digit in the
+  // trailing segment separates a minted key from an all-lowercase tool name.
+  // Trade-off, stated rather than hidden: an all-lowercase key would slip past
+  // this rule. Keys observed so far are mixed-case, and corrupting every error
+  // message that names a tool is the worse failure.
+  [/\bbags_[a-z]+_(?=[A-Za-z0-9]*[A-Z0-9])[A-Za-z0-9]{8,}/g, "[REDACTED_API_KEY]"],
   [/\[\s*(?:\d{1,3}\s*,\s*){31,}\d{1,3}\s*\]/g, "[REDACTED_KEYPAIR_BYTES]"],
   [/\b[1-9A-HJ-NP-Za-km-z]{80,}\b/g, "[REDACTED_BASE58]"],
   [/\b[A-Za-z0-9+/]{80,}={0,2}\b/g, "[REDACTED_BLOB]"],

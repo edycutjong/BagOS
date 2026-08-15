@@ -4,6 +4,7 @@ import { BagsClient } from "../lib/bags-client.js";
 import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool.js";
 import { Mint } from "../lib/mint.js";
+import { toolError } from "../lib/mcp-utils.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -45,13 +46,8 @@ export const GetTradeQuoteTool: IMcpTool = {
               }
             ]
           };
-        } catch (error: any) {
-          return {
-            content: [
-              { type: "text", text: `Failed to fetch quote: ${error.message}` }
-            ],
-            isError: true,
-          };
+        } catch (error) {
+          return toolError(error);
         }
       }
     );

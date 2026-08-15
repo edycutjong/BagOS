@@ -6,6 +6,26 @@ import bs58 from "bs58";
 import { IMcpTool } from "../types/IMcpTool.js";
 import fs from "fs";
 import * as path from "path";
+import { redact, toolError } from "../lib/mcp-utils.js";
+
+/**
+ * Upstream error bodies are not ours and are not trusted. This endpoint is the one
+ * that MINTS `bags_prod_*` API keys, so a 4xx/5xx body from it is the single most
+ * likely place for live key material to appear — and interpolating it verbatim into
+ * a thrown Error put it straight into tool output, which is exactly the channel the
+ * echoed-API-key incident closed.
+ *
+ * Redact FIRST, then bound the length. The order matters: truncating first could cut
+ * a key-shaped run below the length thresholds in `redact`, so the trailing fragment
+ * would sail through unredacted.
+ */
+const MAX_ERR_BODY_CHARS = 200;
+function safeErrorBody(body: string): string {
+  const redacted = redact(body);
+  return redacted.length > MAX_ERR_BODY_CHARS
+    ? `${redacted.slice(0, MAX_ERR_BODY_CHARS)}… [truncated, ${redacted.length} chars]`
+    : redacted;
+}
 
 export const AuthenticateTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -34,7 +54,7 @@ export const AuthenticateTool: IMcpTool = {
 
           if (!initRes.ok) {
             const errBody = await initRes.text();
-            throw new Error(`Init auth failed: ${initRes.status} ${errBody}`);
+            throw new Error(`Init auth failed: ${initRes.status} ${safeErrorBody(errBody)}`);
           }
 
           const initRaw = await initRes.json();
@@ -61,7 +81,7 @@ export const AuthenticateTool: IMcpTool = {
 
           if (!callbackRes.ok) {
              const errBody = await callbackRes.text();
-             throw new Error(`Auth callback failed: ${callbackRes.status} ${errBody}`);
+             throw new Error(`Auth callback failed: ${callbackRes.status} ${safeErrorBody(errBody)}`);
           }
 
           const callbackRaw = await callbackRes.json();
@@ -120,13 +140,8 @@ export const AuthenticateTool: IMcpTool = {
               }
             ]
           };
-        } catch (error: any) {
-          return {
-            content: [
-              { type: "text", text: `Authentication failed: ${error.message}` }
-            ],
-            isError: true,
-          };
+        } catch (error) {
+          return toolError(error);
         }
       }
     );

@@ -27,6 +27,11 @@ import { GetTokenAnalyticsTool } from "../../tools/GetTokenAnalytics";
 import { GetPartnerStatsTool } from "../../tools/GetPartnerStats";
 import { HeartbeatTool } from "../../tools/Heartbeat";
 
+// A base58 string long enough to be key-shaped (>= 80 chars). Same leak-channel
+// bar as state-read-tools.test.ts and authenticate.test.ts: if an SDK error
+// message ever carries key material, the tool response must not.
+const KEY_SHAPED_BASE58 = "5".repeat(88);
+
 describe("Read-only MCP Tools", () => {
   beforeEach(() => {
     delete process.env.BAGS_KEYPAIR_PATH;
@@ -126,6 +131,10 @@ describe("Read-only MCP Tools", () => {
         side: "buy",
       });
       expect(result.isError).toBe(true);
+      // the SDK's own message still reaches the model — only the hand-rolled
+      // "Failed to fetch quote:" prefix went away with the toolError migration
+      expect(result.content[0].text).toContain("Invalid mint");
+      expect(result.content[0].text).not.toContain("at "); // no stack trace
     });
   });
 
@@ -145,6 +154,8 @@ describe("Read-only MCP Tools", () => {
       GetCreatorsTool.registerTool(server);
       const result = await getHandler("bags_get_creators")({});
       expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("API Error");
+      expect(result.content[0].text).not.toContain("at "); // no stack trace
     });
   });
 
@@ -166,6 +177,8 @@ describe("Read-only MCP Tools", () => {
       GetTokenAnalyticsTool.registerTool(server);
       const result = await getHandler("bags_get_token_analytics")({ tokenMint: SOL_MINT });
       expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("API Error");
+      expect(result.content[0].text).not.toContain("at "); // no stack trace
     });
   });
 
@@ -186,6 +199,8 @@ describe("Read-only MCP Tools", () => {
       GetPartnerStatsTool.registerTool(server);
       const result = await getHandler("bags_get_partner_stats")({ partnerId: SOL_MINT });
       expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("API Error");
+      expect(result.content[0].text).not.toContain("at "); // no stack trace
     });
   });
 
@@ -205,6 +220,8 @@ describe("Read-only MCP Tools", () => {
       HeartbeatTool.registerTool(server);
       const result = await getHandler("bags_heartbeat")({});
       expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("API Error");
+      expect(result.content[0].text).not.toContain("at "); // no stack trace
     });
 
     it("uses custom BAGS_KEYPAIR_PATH when provided", async () => {
@@ -214,6 +231,32 @@ describe("Read-only MCP Tools", () => {
       const result = await getHandler("bags_heartbeat")({});
       expect(result.isError).toBeUndefined();
       delete process.env.BAGS_KEYPAIR_PATH;
+    });
+  });
+
+  // These six tools used to return `Failed to ...: ${error.message}` directly, so an
+  // SDK error carrying key material was republished verbatim into the model's context.
+  // They now route through toolError()/redact() like the rest of the surface. This is a
+  // leak-channel test — treat a change here as a security change.
+  describe("error redaction", () => {
+    const cases: Array<[string, any, jest.Mock<any>, object]> = [
+      ["bags_get_claimable_fees", GetClaimableFeesTool, mockBagsClient.fee.getAllClaimablePositions, { walletAddress: SYSTEM_PROGRAM }],
+      ["bags_get_trade_quote", GetTradeQuoteTool, mockBagsClient.trade.getQuote, { inputMint: SOL_MINT, outputMint: SYSTEM_PROGRAM, amount: 1, side: "buy" }],
+      ["bags_get_creators", GetCreatorsTool, mockBagsClient.state.getTopTokensByLifetimeFees, {}],
+      ["bags_get_token_analytics", GetTokenAnalyticsTool, mockBagsClient.state.getTokenLifetimeFees, { tokenMint: SOL_MINT }],
+      ["bags_get_partner_stats", GetPartnerStatsTool, mockBagsClient.partner.getPartnerConfigClaimStats, { partnerId: SOL_MINT }],
+      ["bags_heartbeat", HeartbeatTool, mockBagsClient.fee.getAllClaimablePositions, {}],
+    ];
+
+    it.each(cases)("%s never echoes key-shaped strings from errors", async (name, tool, sdkMethod, args) => {
+      sdkMethod.mockRejectedValueOnce(new Error(`request failed: ${KEY_SHAPED_BASE58}`));
+      const { server, getHandler } = createMockServer();
+      tool.registerTool(server);
+      const result = await getHandler(name)(args);
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).not.toContain(KEY_SHAPED_BASE58);
+      expect(result.content[0].text).toContain("[REDACTED_BASE58]");
+      expect(result.content[0].text).not.toContain("at "); // no stack trace
     });
   });
 });

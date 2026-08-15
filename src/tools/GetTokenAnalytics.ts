@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BagsClient } from "../lib/bags-client.js";
 import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool.js";
+import { toolError } from "../lib/mcp-utils.js";
 
 export const GetTokenAnalyticsTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -28,13 +29,8 @@ export const GetTokenAnalyticsTool: IMcpTool = {
               }
             ]
           };
-        } catch (error: any) {
-          return {
-            content: [
-              { type: "text", text: `Failed to fetch token analytics: ${error.message}` }
-            ],
-            isError: true,
-          };
+        } catch (error) {
+          return toolError(error);
         }
       }
     );

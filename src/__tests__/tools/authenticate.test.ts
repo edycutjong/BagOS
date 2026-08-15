@@ -175,6 +175,53 @@ describe("AuthenticateTool", () => {
     expect(result.content[0].text).toContain("403");
   });
 
+  // Leak channel: the upstream auth endpoint is the one that MINTS bags_prod_* keys,
+  // and its raw response body used to be interpolated verbatim into the thrown Error,
+  // whose .message was then printed straight to the model. The body is now redacted at
+  // the point of interpolation. This is a leak-channel test — treat a change here as a
+  // security change.
+  it("redacts key material in an upstream error body", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () => `rejected key bags_prod_SUPERSECRETVALUE and seed ${"5".repeat(88)}`,
+    });
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const text = (await getHandler("bags_authenticate")({})).content[0].text;
+    expect(text).not.toContain("SUPERSECRETVALUE");
+    expect(text).not.toContain("5".repeat(88));
+    expect(text).toContain("[REDACTED_API_KEY]");
+    expect(text).toContain("[REDACTED_BASE58]");
+    // the useful part still survives
+    expect(text).toContain("Init auth failed");
+    expect(text).toContain("400");
+  });
+
+  // An upstream that returns a huge body should not be able to flood the model's
+  // context through an error path either.
+  it("bounds the length of an upstream error body", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => "upstream exploded. ".repeat(200),
+    });
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const text = (await getHandler("bags_authenticate")({})).content[0].text;
+    expect(text).toContain("Auth callback failed");
+    expect(text).toMatch(/truncated, \d+ chars/);
+    expect(text.length).toBeLessThan(400);
+  });
+
   it("returns error when init response missing nonce", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,

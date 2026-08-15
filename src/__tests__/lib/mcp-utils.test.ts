@@ -22,6 +22,38 @@ describe("redact", () => {
     expect(redact(blob)).toMatch(/REDACTED/);
   });
 
+  // The shape from the original incident. The length-based rules miss it: a Bags
+  // key is neither base58 nor base64 (it has underscores) and is far under 80
+  // chars, so before this pattern existed a `bags_prod_*` key passed through
+  // redact() untouched.
+  it("removes a bags API key, which no length-based rule catches", () => {
+    const text = redact("upstream said: key bags_prod_SUPERSECRETVALUE is revoked");
+    expect(text).not.toContain("SUPERSECRETVALUE");
+    expect(text).toContain("[REDACTED_API_KEY]");
+  });
+
+  // Regression: the first version of the API-key rule was
+  // /\bbags_[a-z]+_[A-Za-z0-9]{8,}/ , which matches this server's own tool name
+  // `bags_get_claimable_fees` ("claimable" is 9 chars) and rewrote it to
+  // "[REDACTED_API_KEY]_fees" in any error message that mentioned it. A redactor
+  // that corrupts ordinary text gets switched off, so this case is load-bearing.
+  it("leaves tool names alone, including the one that collides with the key shape", () => {
+    for (const name of [
+      "bags_get_claimable_fees",
+      "bags_get_partner_stats",
+      "bags_get_token_claim_events",
+      "bags_resolve_launch_wallet",
+      "bags_execute_trade",
+    ]) {
+      const msg = `Failed calling ${name} for wallet`;
+      expect(redact(msg)).toBe(msg);
+    }
+  });
+
+  it("still catches a key whose prefix looks like a tool verb", () => {
+    expect(redact("bags_get_A1b2C3d4E5")).toContain("[REDACTED_API_KEY]");
+  });
+
   it("leaves ordinary messages and addresses alone", () => {
     const msg = "Insufficient funds for So11111111111111111111111111111111111111112";
     expect(redact(msg)).toBe(msg);

@@ -3,6 +3,7 @@ import { BagsClient } from "../lib/bags-client.js";
 import { Wallet } from "../lib/wallet.js";
 import { PublicKey } from '@solana/web3.js';
 import { IMcpTool } from "../types/IMcpTool.js";
+import { toolError } from "../lib/mcp-utils.js";
 
 export const HeartbeatTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -35,13 +36,8 @@ export const HeartbeatTool: IMcpTool = {
               }
             ]
           };
-        } catch (error: any) {
-          return {
-            content: [
-              { type: "text", text: `Heartbeat health check failed: ${error.message}` }
-            ],
-            isError: true,
-          };
+        } catch (error) {
+          return toolError(error);
         }
       }
     );

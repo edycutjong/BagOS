@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { BagsClient } from "../lib/bags-client.js";
 import { IMcpTool } from "../types/IMcpTool.js";
+import { toolError } from "../lib/mcp-utils.js";
 
 export const GetCreatorsTool: IMcpTool = {
   registerTool: (server: McpServer) => {
@@ -29,13 +30,8 @@ export const GetCreatorsTool: IMcpTool = {
               }
             ]
           };
-        } catch (error: any) {
-          return {
-            content: [
-              { type: "text", text: `Failed to fetch creators: ${error.message}` }
-            ],
-            isError: true,
-          };
+        } catch (error) {
+          return toolError(error);
         }
       }
     );
