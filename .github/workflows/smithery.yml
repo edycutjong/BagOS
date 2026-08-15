@@ -1,0 +1,120 @@
+name: Publish to Smithery
+
+# Builds the MCPB bundle and publishes it as a stdio release on Smithery.
+#
+# Why stdio and not hosted/external: BagOS's write tools load a Solana keypair
+# off the local filesystem (src/lib/wallet.ts), so a server running on someone
+# else's infrastructure cannot sign anything — hosted BagOS would be BagOS with
+# the write path removed. Publishing the HTTP transport is separately ruled out
+# by .github/SECURITY.md: /mcp has no auth and all callers share one spend
+# counter. See scripts/build-mcpb.sh.
+#
+# Trigger mirrors publish.yml and registry.yml deliberately. release-please's own
+# jobs are gated on release_created, but in practice the release event fires and
+# publish.yml catches it through its own `release: published` trigger, leaving
+# release-please's downstream jobs skipped. That is exactly how the MCP registry
+# sat on 2.0.0 while npm served 2.1.0. Every distribution channel listens for the
+# same event so none of them can silently fall behind again.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smithery-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-smithery:
+    name: Build bundle and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # Absent secret is a skip, not a failure. A fork, or this repo before the
+      # token is minted, should not show a red X on every release for a channel
+      # it was never configured to publish to.
+      - name: Check for the Smithery token
+        id: gate
+        env:
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
+        run: |
+          if [ -z "${SMITHERY_API_KEY}" ]; then
+            echo "::notice::SMITHERY_API_KEY is not set — skipping the Smithery publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.gate.outputs.skip == 'false'
+        run: npm ci
+
+      # build-mcpb.sh enforces version lockstep between package.json and
+      # manifest.json, smoke-tests the packed entry point in an isolated
+      # directory, and refuses to pack if anything credential-shaped is staged.
+      # Those guards are the reason this job can be trusted unattended.
+      - name: Build the MCPB bundle
+        if: steps.gate.outputs.skip == 'false'
+        run: npm run bundle:mcpb
+
+      - name: Resolve the bundle path
+        if: steps.gate.outputs.skip == 'false'
+        id: bundle
+        run: |
+          set -euo pipefail
+          V=$(node -p "require('./package.json').version")
+          BUNDLE="dist-mcpb/bagos-${V}.mcpb"
+          test -s "${BUNDLE}" || { echo "::error::${BUNDLE} was not produced"; exit 1; }
+          echo "path=${BUNDLE}" >> "$GITHUB_OUTPUT"
+          echo "version=${V}" >> "$GITHUB_OUTPUT"
+          ls -lh "${BUNDLE}"
+
+      - name: Publish
+        if: steps.gate.outputs.skip == 'false'
+        env:
+          # The CLI reads this directly; there is no interactive login in CI.
+          # Mint a RESTRICTED token, never an account key:
+          #   smithery auth token --policy '{"resources":"servers","operations":["read","write"],"namespaces":"edycutjong"}'
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
+        run: |
+          npx -y @smithery/cli@4.11.1 mcp publish \
+            "${{ steps.bundle.outputs.path }}" \
+            -n edycutjong/bagos
+
+      # PRESENCE CHECK ONLY — and that limitation is deliberate, not an oversight.
+      #
+      # Elsewhere in this repo (registry.yml) the equivalent step asserts the
+      # VERSION, because a presence check stays green across every release and
+      # would not notice the exact drift that left the MCP registry on 2.0.0.
+      # The same assertion is not possible here: Smithery's public server
+      # endpoint returns qualifiedName, displayName, description, connections,
+      # tools and security — and no version field at all. `smithery mcp list`
+      # is not the substitute; it lists your CONNECTIONS, not published servers.
+      #
+      # So this confirms the server resolves and says plainly in the log that it
+      # cannot confirm which version. Do not upgrade the wording to imply more
+      # than it checks. If Smithery later exposes a version, tighten this.
+      - name: Verify the server resolves (presence only)
+        if: steps.gate.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          WANT="${{ steps.bundle.outputs.version }}"
+          for i in $(seq 1 6); do
+            if curl -sf "https://registry.smithery.ai/servers/edycutjong/bagos" \
+                 | grep -q '"qualifiedName"'; then
+              echo "Smithery resolves edycutjong/bagos."
+              echo "::notice::Published ${WANT}. Smithery's public API exposes no version field, so this step confirms the listing exists, NOT that it serves ${WANT}. Confirm at https://smithery.ai/server/edycutjong/bagos"
+              exit 0
+            fi
+            echo "not resolving yet ($i/6)"; sleep 10
+          done
+          echo "::warning::edycutjong/bagos did not resolve within 60s. The publish step reported success; check https://smithery.ai/server/edycutjong/bagos"
