@@ -33,7 +33,23 @@ on:
 permissions:
   contents: write        # create tags, releases, and the release PR's commits
   pull-requests: write   # open and update the release PR
+  issues: write          # labels — see below; PR labels go through the Issues API
   id-token: write        # npm provenance in publish.yml, OIDC in the registry job
+
+# Why issues: write, when this workflow never touches an issue.
+#
+# release-please tracks its own state in PR LABELS, not in git. A release PR is
+# opened as `autorelease: pending` and relabelled `autorelease: tagged` once its
+# tag exists. GitHub applies labels to PRs through the Issues API, so the label
+# write needs this scope — contents+pull-requests is enough to cut the release
+# but not to record that it happened.
+#
+# The failure that produced this line: v2.2.0 and v2.3.0 were both tagged and
+# released correctly, but their PRs stayed `autorelease: pending`, and the
+# `autorelease: tagged` label did not exist in this repo at all. On every later
+# run release-please then found "untagged, merged release PRs outstanding" and
+# aborted before opening a new PR — silently, with a green check. 23 commits
+# accumulated unreleased across three weeks before anyone noticed.
 
 # Never run two of these at once — concurrent runs fight over the same release PR.
 # Do not cancel in progress: a half-created release is worse than a queued one.
@@ -54,6 +70,38 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # The stuck state above is invisible: release-please logs "aborting" and
+      # exits 0, so the workflow is green while nothing has been released for
+      # weeks. A permissions fix cannot prove itself — this can, by failing the
+      # run the moment the condition reappears.
+      #
+      # Stuck == a MERGED release PR still labelled `autorelease: pending` whose
+      # version has no tag. That is exactly the state release-please refuses to
+      # build a new PR on top of.
+      - name: Release state is not stuck
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          stuck=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged \
+                    --label 'autorelease: pending' --limit 20 \
+                    --json number,title --jq '.[] | "#\(.number) \(.title)"')
+          if [ -z "$stuck" ]; then
+            echo "No merged release PR is left pending."
+            exit 0
+          fi
+          # A pending label is only a problem once the tag it implies exists —
+          # between merge and tag creation the label is legitimately pending.
+          version=$(jq -r '.["."]' .release-please-manifest.json)
+          if gh release view "v${version}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release v${version} exists but its PR is still labelled 'autorelease: pending':"
+            echo "$stuck"
+            echo "::error::release-please will silently refuse to open the next release PR until this is cleared. Fix with: gh pr edit <n> --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'"
+            exit 1
+          fi
+          echo "Pending PR found but v${version} is not tagged yet — normal mid-release state."
+          echo "$stuck"
 
   # Only reached when the release PR was just merged. Reuses the publish pipeline
   # verbatim — same consistency check, same CI gate, same tarball audit, same provenance.
