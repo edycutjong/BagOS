@@ -132,4 +132,4 @@ rm -rf "${STAGE}"
 echo
 echo "Bundle: ${OUT}/bagos-${PKG_V}.mcpb"
 echo "Publish with:"
-echo "  npx -y @smithery/cli mcp publish ${OUT}/bagos-${PKG_V}.mcpb -n edycutjong/bagos"
+echo "  npx -y @smithery/cli mcp publish ${OUT}/bagos-${PKG_V}.mcpb -n edy-cu/bagos"

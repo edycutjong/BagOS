@@ -97,12 +97,12 @@ jobs:
         env:
           # The CLI reads this directly; there is no interactive login in CI.
           # Mint a RESTRICTED token, never an account key:
-          #   smithery auth token --policy '{"resources":"servers","operations":["read","write"],"namespaces":"edycutjong"}'
+          #   smithery auth token --policy '{"resources":"servers","operations":["read","write"],"namespaces":"edy-cu"}'
           SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
         run: |
           npx -y @smithery/cli@4.11.1 mcp publish \
             "${{ steps.bundle.outputs.path }}" \
-            -n edycutjong/bagos
+            -n edy-cu/bagos
 
       # PRESENCE CHECK ONLY — and that limitation is deliberate, not an oversight.
       #
@@ -123,12 +123,12 @@ jobs:
           set -euo pipefail
           WANT="${{ steps.bundle.outputs.version }}"
           for i in $(seq 1 6); do
-            if curl -sf "https://registry.smithery.ai/servers/edycutjong/bagos" \
+            if curl -sf "https://registry.smithery.ai/servers/edy-cu/bagos" \
                  | grep -q '"qualifiedName"'; then
-              echo "Smithery resolves edycutjong/bagos."
-              echo "::notice::Published ${WANT}. Smithery's public API exposes no version field, so this step confirms the listing exists, NOT that it serves ${WANT}. Confirm at https://smithery.ai/server/edycutjong/bagos"
+              echo "Smithery resolves edy-cu/bagos."
+              echo "::notice::Published ${WANT}. Smithery's public API exposes no version field, so this step confirms the listing exists, NOT that it serves ${WANT}. Confirm at https://smithery.ai/server/edy-cu/bagos"
               exit 0
             fi
             echo "not resolving yet ($i/6)"; sleep 10
           done
-          echo "::warning::edycutjong/bagos did not resolve within 60s. The publish step reported success; check https://smithery.ai/server/edycutjong/bagos"
+          echo "::warning::edy-cu/bagos did not resolve within 60s. The publish step reported success; check https://smithery.ai/server/edy-cu/bagos"
