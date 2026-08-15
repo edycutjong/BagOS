@@ -37,16 +37,10 @@
 > or submitted. If you used 1.x and believed a trade or claim executed, it did
 > not. See [CHANGELOG.md](CHANGELOG.md).
 >
-> **⚠️ 2.0.0 is not published yet.** `npm` currently serves **1.0.0**, which has
-> the defect above and defaults to mainnet. Until 2.0.0 ships, install from
-> source rather than `npx`:
->
-> ```bash
-> git clone https://github.com/edycutjong/bagos && cd bagos
-> npm ci && npm run build
-> ```
->
-> and point your client at `node /absolute/path/to/bagos/build/index.js`.
+> **2.0.0 is live on npm** and is what `npx bagos-mcp-server` installs. It ships with
+> [npm provenance](https://registry.npmjs.org/-/npm/v1/attestations/bagos-mcp-server@2.0.0) —
+> the tarball is cryptographically attested to this repository and the commit that built it.
+> If you are still on 1.x, upgrade.
 
 ---
 
