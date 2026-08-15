@@ -124,9 +124,18 @@ jobs:
       - name: Entrypoint is executable and starts
         run: |
           test -x build/index.js || { echo "build/index.js is not executable"; exit 1; }
-          # No API key in CI, so the server must exit with its config report rather than hang.
+          # There is no API key in CI, and that is now a [WARN] rather than a fatal:
+          # the server starts and serves tools/list so clients can see what it offers
+          # before being configured. It prints its config report either way.
           timeout 20s node build/index.js < /dev/null > startup.log 2>&1 || true
           cat startup.log
           grep -q "BagOS MCP server — configuration" startup.log
+      # A stdio bundle is never executed by a registry, so manifest.json's `tools`
+      # array is the only capability metadata a registry can read. It is generated
+      # from the server, and stale-checked here: renaming a tool without
+      # regenerating would silently ship a manifest describing a server that no
+      # longer exists, which is how Smithery came to list this one with zero tools.
+      - name: Manifest tool list matches the server
+        run: node scripts/sync-manifest-tools.mjs --check
       - name: Pack check (what npm would publish)
         run: npm pack --dry-run
