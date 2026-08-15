@@ -1,0 +1,69 @@
+name: Publish to the MCP registry
+
+# Submits server.json to registry.modelcontextprotocol.io.
+#
+# Auth is github-oidc, not the interactive `mcp-publisher login github` device flow —
+# OIDC needs no human, and the token proves this workflow is running in this repository,
+# which is what grants the io.github.edycutjong/* namespace.
+#
+# Note on casing: the repo was renamed bagos -> BagOS, while server.json still says
+# io.github.edycutjong/bagos. That is fine. For io.github.* namespaces the registry
+# authenticates the OWNER; the segment after the slash is a free-form identifier, not a
+# repo lookup (see registry entries like ai.smithery/Hint-Services-obsidian-github-mcp).
+# Changing it would mean republishing npm, because the registry cross-checks server.json
+# `name` against `mcpName` inside the published tarball.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write        # required for OIDC
+
+jobs:
+  publish-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The registry rejects a server.json whose version is not a real published npm
+      # version, and verifies package ownership via mcpName inside the tarball. Check
+      # both here — a failed submission is slower to diagnose than a failed assertion.
+      - name: Verify the npm package backs this server.json
+        run: |
+          set -euo pipefail
+          SRV_VERSION=$(node -p "require('./server.json').version")
+          SRV_NAME=$(node -p "require('./server.json').name")
+          IDENT=$(node -p "require('./server.json').packages[0].identifier")
+
+          npm view "$IDENT@$SRV_VERSION" version >/dev/null 2>&1 \
+            || { echo "::error::$IDENT@$SRV_VERSION is not published on npm"; exit 1; }
+
+          PUBLISHED_MCPNAME=$(npm view "$IDENT@$SRV_VERSION" mcpName 2>/dev/null || echo "")
+          [ "$PUBLISHED_MCPNAME" = "$SRV_NAME" ] \
+            || { echo "::error::published mcpName ('$PUBLISHED_MCPNAME') != server.json name ('$SRV_NAME')"; exit 1; }
+          echo "npm backs it: $IDENT@$SRV_VERSION with mcpName $PUBLISHED_MCPNAME"
+
+      - name: Install mcp-publisher
+        run: |
+          curl -sSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.tar.gz" \
+            | tar xz mcp-publisher
+          ./mcp-publisher --version
+
+      - name: Validate server.json
+        run: ./mcp-publisher validate
+
+      - name: Login via OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
+
+      - name: Verify it is listed
+        run: |
+          sleep 15
+          NAME=$(node -p "require('./server.json').name")
+          curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos" \
+            | grep -q "$NAME" \
+            && echo "listed: $NAME" \
+            || { echo "::error::not found in the registry after publish"; exit 1; }
