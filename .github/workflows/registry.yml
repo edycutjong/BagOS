@@ -44,20 +44,26 @@ jobs:
             || { echo "::error::published mcpName ('$PUBLISHED_MCPNAME') != server.json name ('$SRV_NAME')"; exit 1; }
           echo "npm backs it: $IDENT@$SRV_VERSION with mcpName $PUBLISHED_MCPNAME"
 
+      # Download to a file rather than piping curl into tar. The piped form failed on the
+      # runner: GitHub's release redirect makes the stream unseekable and tar exits 2.
       - name: Install mcp-publisher
         run: |
-          curl -sSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_amd64.tar.gz" \
-            | tar xz mcp-publisher
-          ./mcp-publisher --version
+          set -euo pipefail
+          curl -sSL -o /tmp/mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz"
+          test -s /tmp/mcp-publisher.tar.gz
+          tar xzf /tmp/mcp-publisher.tar.gz -C /tmp mcp-publisher
+          chmod +x /tmp/mcp-publisher
+          /tmp/mcp-publisher --version
 
       - name: Validate server.json
-        run: ./mcp-publisher validate
+        run: /tmp/mcp-publisher validate
 
       - name: Login via OIDC
-        run: ./mcp-publisher login github-oidc
+        run: /tmp/mcp-publisher login github-oidc
 
       - name: Publish
-        run: ./mcp-publisher publish
+        run: /tmp/mcp-publisher publish
 
       - name: Verify it is listed
         run: |
