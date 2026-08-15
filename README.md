@@ -26,7 +26,11 @@
        verified live before being listed — a badge for a listing that does not
        resolve is a claim a judge can disprove in one click. -->
   [![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20Registry&color=000000&style=for-the-badge)](https://registry.modelcontextprotocol.io/?q=bagos)
-  [![smithery badge](https://smithery.ai/badge/edycutjong/bagos)](https://smithery.ai/servers/edycutjong/bagos)
+  <!-- Smithery's own badge endpoint (smithery.ai/badge/<ns>) returns HTTP 500 with a
+       zero-byte body for every server, not just this one — verified against
+       upstash/context7-mcp and smithery-ai/github. It renders as a broken image, so
+       this is a shields badge matching the rest of the row. Swap back if they fix it. -->
+  [![Smithery](https://img.shields.io/badge/Smithery-edycutjong%2Fbagos-A855F7?style=for-the-badge)](https://smithery.ai/servers/edycutjong/bagos)
   [![npm](https://img.shields.io/npm/v/bagos-mcp-server?style=for-the-badge&color=CB3837&logo=npm&logoColor=white&label=npm)](https://www.npmjs.com/package/bagos-mcp-server)
   [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/edycutjong/BagOS/pkgs/npm/bagos-mcp-server)
 
