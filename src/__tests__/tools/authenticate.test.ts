@@ -93,21 +93,16 @@ describe("AuthenticateTool", () => {
     expect(text).toContain("not printed in full");
   });
 
-  // The other half of the keyHint branch. If the upstream response carries no apiKey, or
-  // one too short to take a 4-char tail from, the hint must degrade to a fixed literal
-  // rather than slicing a short secret (which would disclose most of it) or interpolating
-  // `undefined`. Guards the fallback arm of the ternary added with the leak fix.
-  it.each([
-    ["a missing apiKey", undefined],
-    ["an apiKey too short to hint", "abc"],
-  ])("falls back to (hidden) on %s", async (_label, apiKey) => {
+  // A short-but-valid key still has to avoid disclosure: slicing a 4-char tail off a
+  // 3-char secret would print most of it, so the hint degrades to a fixed literal.
+  it("falls back to (hidden) on an apiKey too short to hint", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
     });
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ apiKey, keyId: "test-key-id" }),
+      json: async () => ({ apiKey: "abc", keyId: "test-key-id" }),
     });
 
     const { server, getHandler } = createMockServer();
@@ -116,7 +111,31 @@ describe("AuthenticateTool", () => {
     const text = (await getHandler("bags_authenticate")({})).content[0].text;
     expect(text).toContain("(hidden)");
     expect(text).not.toContain("undefined");
-    if (typeof apiKey === "string") expect(text).not.toContain(apiKey);
+    expect(text).not.toContain("abc");
+  });
+
+  // Regression for CodeQL js/http-to-file-access. The callback response used to be written
+  // to credentials.json verbatim; a malformed or wrong-typed body reached the filesystem
+  // unchecked. It is now validated first, and a bad response is an error rather than a
+  // partial write. Treat a change here as a security change.
+  it.each([
+    ["a missing apiKey", { keyId: "test-key-id" }],
+    ["a non-string apiKey", { apiKey: { nested: "object" }, keyId: "test-key-id" }],
+    ["a missing keyId", { apiKey: "bags_prod_ABCDEFGH" }],
+    ["an oversized apiKey", { apiKey: "x".repeat(513), keyId: "test-key-id" }],
+  ])("rejects %s instead of writing it to disk", async (_label, body) => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
+    });
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => body });
+
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+
+    const result = await getHandler("bags_authenticate")({});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Invalid response from auth/callback");
   });
 
   it("returns error when init fails", async () => {

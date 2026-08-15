@@ -8,7 +8,7 @@
 
   <p>
     The first call to a write tool <strong>signs nothing</strong> — it answers with a preview and a
-    single-use token. Hard cap <strong>0.1 SOL/tx</strong>, 209 tests at 100% coverage, and a live-run
+    single-use token. Hard cap <strong>0.1 SOL/tx</strong>, 212 tests at 100% coverage, and a live-run
     receipt you can reproduce with <code>npm run demo</code>.
   </p>
 
@@ -25,7 +25,9 @@
   ![Solana](https://img.shields.io/badge/Solana-14F195?style=flat&logo=solana&logoColor=black)
   ![Jest](https://img.shields.io/badge/Jest-100%25_coverage-C21325?style=flat&logo=jest&logoColor=white)
   [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-  [![CI](https://github.com/edycutjong/bagos/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/bagos/actions/workflows/ci.yml)
+  [![CI](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml)
+  [![Publish](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml)
+  [![CodeQL](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml)
   [![npm](https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm)](https://www.npmjs.com/package/bagos-mcp-server)
 
 </div>
@@ -141,7 +143,7 @@ plainly that the trade is uncapped.
 
 ## 📊 Engineering Rigor
 
-209 tests. The bypass tests around the spend caps and the confirmation step are
+212 tests. The bypass tests around the spend caps and the confirmation step are
 load-bearing; treat a change there as a security change. They are mutation-
 checked: removing the cap guard, the confirmation check, the decimals lookup,
 or the spend recorder each makes the suite fail.
@@ -150,11 +152,12 @@ or the spend recorder each makes the suite fail.
 |---|---|---|
 | **Real default path** | ✅ | No kill-switch flag in any documented command. `USE_MOCK_DATA` defaults **off** and stamps `⚠️ [MOCK DATA ENABLED]` on every response when on. Live-run receipts in [DEMO.md](DEMO.md) |
 | Code quality | ✅ | ESLint + `tsc --noEmit`, both clean |
-| Unit testing | ✅ | Jest, 209 tests / 13 suites, **100%** statements · branches · functions · lines, enforced |
+| Unit testing | ✅ | Jest, 212 tests / 13 suites, **100%** statements · branches · functions · lines, enforced |
 | High-signal tests | ✅ | Mutation-checked cap/confirmation bypass tests · a leak-channel regression test (the API key used to be echoed into tool output) · network-mismatch refusal |
 | Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · secret scanning + push protection on · `npm audit` in CI as a **ratchet** — see below |
 | Dependency debt | ⚠️ | 18 high / 11 moderate advisories, **0 critical**, all transitive through `@bagsfm/bags-sdk` → `@solana/web3.js`. Not fixable here: `npm audit fix --force` downgrades the SDK to 1.0.8 (no `trade`/`partner` services) and web3.js to 0.0.3. CI blocks any critical and any *increase* over [`.audit-baseline.json`](.audit-baseline.json). |
-| CI/CD | ✅ | 4 stages (Quality → Security ∥ Test → Build) with `cancel-in-progress` concurrency; Node 20 + 22 matrix; packaged-artifact and entrypoint checks |
+| CI | ✅ | 4 stages (Quality → Security ∥ Test → Build) with `cancel-in-progress` concurrency; Node 20 + 22 matrix; packaged-artifact and entrypoint checks |
+| CD | ✅ | Release → tarball audit → `npm publish --provenance` → auto-deprecate the superseded version. A second workflow submits `server.json` to the MCP registry via OIDC. Both are gated on the full CI suite. |
 | On-chain proof | ⚠️ | `npm run proof:devnet` exists and lands a real devnet transaction, but the public faucet was dry on 2026-08-15 — no signature captured yet. See [DEMO.md](DEMO.md) |
 | Community standards | ✅ | Code of Conduct · Contributing · Security policy · issue + PR templates |
 

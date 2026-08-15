@@ -138,7 +138,7 @@ appears in the response; treat a change there as a security change.
 
 ### Notes
 
-- 209 tests. Bypass resistance for the caps and the confirmation step is covered
+- 212 tests. Bypass resistance for the caps and the confirmation step is covered
   explicitly and should be treated as non-negotiable in review. Verified by
   mutation: deleting the cap guard, the confirmation check, the decimals lookup,
   or the spend recorder each fails the suite.

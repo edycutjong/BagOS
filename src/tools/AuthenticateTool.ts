@@ -67,13 +67,31 @@ export const AuthenticateTool: IMcpTool = {
           const callbackRaw = await callbackRes.json();
           const callbackData = callbackRaw.response || callbackRaw;
 
-          // Store the obtained keys if desired or just return them
+          // Validate before this touches the filesystem. CodeQL js/http-to-file-access
+          // flagged the write below as "file system write depends on untrusted data", and
+          // it was right: the response body was persisted verbatim. The path never came
+          // from the network, so this was not a traversal, but an upstream that returned
+          // a huge or wrong-typed body would still have been written to disk unchecked.
+          // Only these three fields are stored, only as strings, only within sane bounds.
+          const CredentialsSchema = z.object({
+            apiKey: z.string().min(1).max(512),
+            keyId: z.string().min(1).max(256),
+          });
+          const parsed = CredentialsSchema.safeParse({
+            apiKey: callbackData?.apiKey,
+            keyId: callbackData?.keyId,
+          });
+          if (!parsed.success) {
+            throw new Error(
+              "Invalid response from auth/callback: expected string apiKey and keyId within length limits."
+            );
+          }
           const credentials = {
-            apiKey: callbackData.apiKey,
-            keyId: callbackData.keyId,
-            wallet: walletAddress
+            apiKey: parsed.data.apiKey,
+            keyId: parsed.data.keyId,
+            wallet: walletAddress,
           };
-          
+
           let savePathMessage = "";
           try {
             const configDir = path.dirname(keyPath.replace("~", process.env.HOME || ""));

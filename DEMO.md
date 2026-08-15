@@ -90,7 +90,7 @@ npm run ci      # lint + typecheck + tests with coverage
 
 ```
 Test Suites: 13 passed, 13 total
-Tests:       209 passed, 209 total
+Tests:       212 passed, 212 total
 Time:        2.313 s
 
 All files              |     100 |      100 |     100 |     100 |
