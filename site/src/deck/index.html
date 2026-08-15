@@ -173,6 +173,17 @@
       font-size: clamp(.72rem, 1.9vmin, 1.05rem);
       max-width: 100%;
     }
+    pre.term { border: 1px solid #26344e; }  /* edge stays visible on the dark scheme */
+    .termbar {
+      display: flex; align-items: center; gap: .45em;
+      background: #1c2942; border: 1px solid #26344e; border-bottom: 0;
+      border-radius: .7rem .7rem 0 0; padding: .5em .95em; margin-top: 1.6rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(.62rem, 1.6vmin, .85rem); color: #a7b4c9;
+    }
+    .termbar .dots { display: inline-flex; gap: .32em; margin-right: .35em; }
+    .termbar .dots i { width: .55em; height: .55em; border-radius: 50%; background: #3d4f70; }
+    .termbar + pre.term { border-radius: 0 0 .7rem .7rem; margin-top: 0; }
     pre.term .warn { color: var(--code-amber); font-weight: 700; }
     pre.term .net { color: var(--code-red); font-weight: 700; }
     pre.term .tok { color: var(--code-green); font-weight: 700; }
@@ -288,6 +299,7 @@
     <section class="slide" id="s4" aria-label="Slide 4 of 9: the gate walkthrough">
       <p class="kicker">The gate, live</p>
       <h2>The first call to a write tool signs nothing</h2>
+      <div class="termbar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span>bags_execute_trade — first call</div>
       <pre class="term"><code><span class="warn">⚠️  CONFIRMATION REQUIRED — nothing has been signed or sent.</span>
 
 Action:  Swap 0.05 of So1111…1112

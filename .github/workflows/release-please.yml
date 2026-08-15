@@ -27,9 +27,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A called workflow cannot request more than its caller was granted, so id-token has to be
+# here even though only publish.yml and the registry job use it. Omitting it fails the run
+# at startup, before any job is scheduled and before any log exists to explain why.
 permissions:
   contents: write        # create tags, releases, and the release PR's commits
   pull-requests: write   # open and update the release PR
+  id-token: write        # npm provenance in publish.yml, OIDC in the registry job
 
 # Never run two of these at once — concurrent runs fight over the same release PR.
 # Do not cancel in progress: a half-created release is worse than a queued one.
