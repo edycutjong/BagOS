@@ -14,6 +14,7 @@
 
   <br/>
 
+  [![Live Site](https://img.shields.io/badge/🌐_bagos.edycu-.dev-0ea5e9?style=for-the-badge)](https://bagos.edycu.dev)
   [![Run Receipts](https://img.shields.io/badge/📊_Run-Receipts-06b6d4?style=for-the-badge)](DEMO.md)
   [![Security Policy](https://img.shields.io/badge/🔐_Security-Policy-ef4444?style=for-the-badge)](.github/SECURITY.md)
   [![Changelog](https://img.shields.io/badge/📋_Change-log-8b5cf6?style=for-the-badge)](CHANGELOG.md)
@@ -22,7 +23,7 @@
 
   ![MCP](https://img.shields.io/badge/MCP-stdio_+_HTTP-000000?style=flat)
   ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-  ![Solana](https://img.shields.io/badge/Solana-14F195?style=flat&logo=solana&logoColor=black)
+  ![Solana](https://img.shields.io/badge/Solana-9945FF?style=flat&logo=solana&logoColor=black)
   ![Jest](https://img.shields.io/badge/Jest-100%25_coverage-C21325?style=flat&logo=jest&logoColor=white)
   [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
   [![CI](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml)
@@ -155,7 +156,7 @@ or the spend recorder each makes the suite fail.
 | Unit testing | ✅ | Jest, 212 tests / 13 suites, **100%** statements · branches · functions · lines, enforced |
 | High-signal tests | ✅ | Mutation-checked cap/confirmation bypass tests · a leak-channel regression test (the API key used to be echoed into tool output) · network-mismatch refusal |
 | Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · secret scanning + push protection on · `npm audit` in CI as a **ratchet** — see below |
-| Dependency debt | ⚠️ | 18 high / 11 moderate advisories, **0 critical**, all transitive through `@bagsfm/bags-sdk` → `@solana/web3.js`. Not fixable here: `npm audit fix --force` downgrades the SDK to 1.0.8 (no `trade`/`partner` services) and web3.js to 0.0.3. CI blocks any critical and any *increase* over [`.audit-baseline.json`](.audit-baseline.json). |
+| Dependency debt | ⚠️ | **6 advisories, 0 critical** — down from 90. Everything patchable was cleared with version-scoped `overrides` (see [`package.json`](package.json)). The 6 that remain are **one** root cause, `bigint-buffer` [GHSA-3gc7-fjrx-p6mg](https://github.com/advisories/GHSA-3gc7-fjrx-p6mg), counted once at each level of the chain it travels up to `@bagsfm/bags-sdk`. No patched `bigint-buffer` exists — 1.1.5 is the installed version, the latest version, and vulnerable. CI blocks any critical and any increase over [`.audit-baseline.json`](.audit-baseline.json). **Note:** npm honours `overrides` only in a root project, so these protect this repo and CI, not consumers of the published package. |
 | CI | ✅ | 4 stages (Quality → Security ∥ Test → Build) with `cancel-in-progress` concurrency; Node 20 + 22 matrix; packaged-artifact and entrypoint checks |
 | CD | ✅ | Release → tarball audit → `npm publish --provenance` → auto-deprecate the superseded version. A second workflow submits `server.json` to the MCP registry via OIDC. Both are gated on the full CI suite. |
 | On-chain proof | ⚠️ | `npm run proof:devnet` exists and lands a real devnet transaction, but the public faucet was dry on 2026-08-15 — no signature captured yet. See [DEMO.md](DEMO.md) |
