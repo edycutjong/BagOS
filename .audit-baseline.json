@@ -1,7 +1,7 @@
 {
   "low": 2,
   "moderate": 0,
-  "high": 12,
+  "high": 11,
   "critical": 0,
   "_note": "Runtime-path only. Lowered after npm overrides forced patched axios/form-data/uuid/ws/body-parser/qs/ip-address past the exact pins in @bagsfm/bags-sdk. Remaining are transitive with no patched version available. Policy: fix what ships in the tarball runtime path; everything else rides weekly Dependabot PRs.",
   "_recorded": "2026-08-15"
