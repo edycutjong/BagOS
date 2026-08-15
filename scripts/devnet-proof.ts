@@ -13,7 +13,7 @@
  * than asserting it against a mock.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -43,19 +43,26 @@ async function main() {
   // every run, which made its own recovery advice impossible to follow: when the
   // faucet is rate limited it prints "fund this address and re-run", but the
   // re-run generated a DIFFERENT address and never saw the SOL. The key is kept
-  // so a manually funded address survives to the next attempt.
+  // so a manually funded address survives to the next attempt. Still throwaway
+  // and still devnet-only — valueless tokens, gitignored — but it has to be the
+  // SAME throwaway twice.
   //
-  // Still throwaway and still devnet-only — it holds valueless tokens and is
-  // gitignored — but it has to be the SAME throwaway twice.
+  // Read-or-create, with no existsSync() check first: check-then-act is a
+  // time-of-check/time-of-use race (CodeQL js/file-system-race). The file can
+  // appear between the two calls, and the create branch would then overwrite a
+  // keypair that may already hold funded devnet SOL. So attempt the read and
+  // treat ENOENT as "not there yet", then create with the `wx` flag, which fails
+  // rather than clobbers if something won the race in between.
   const keyPath = process.env['PROOF_KEYPAIR_PATH'] || join(PROOF_DIR, 'devnet-payer.json');
   let payer: Keypair;
-  if (existsSync(keyPath)) {
+  try {
     payer = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(keyPath, 'utf8'))));
     console.log(`keypair   ${payer.publicKey.toBase58()} (reused from ${keyPath})`);
-  } else {
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
     payer = Keypair.generate();
     mkdirSync(dirname(keyPath), { recursive: true });
-    writeFileSync(keyPath, JSON.stringify(Array.from(payer.secretKey)), { mode: 0o600 });
+    writeFileSync(keyPath, JSON.stringify(Array.from(payer.secretKey)), { mode: 0o600, flag: 'wx' });
     console.log(`keypair   ${payer.publicKey.toBase58()} (new throwaway, saved to ${keyPath})`);
   }
 

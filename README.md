@@ -294,6 +294,9 @@ signature you can open on an explorer is evidence.
   gate caught refusing a write.
 - **[docs/examples.md](docs/examples.md)** — prompts you can type at your assistant and
   what each should do.
+- **[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)** — what is currently broken and why,
+  including what has already been ruled out. Open advisories are explained there rather
+  than left for you to discover.
 
 ---
 
