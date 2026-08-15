@@ -78,6 +78,20 @@ jobs:
           echo "version=${V}" >> "$GITHUB_OUTPUT"
           ls -lh "${BUNDLE}"
 
+      # Diagnostic, never fatal. The first publish failed with
+      # `404 {"error":"Namespace not found"}` for edycutjong, and the error does
+      # not say which namespaces the token CAN reach. This prints them, so a
+      # future mismatch is one log line instead of a guess. Runs before the
+      # publish so the answer is present even when the publish fails.
+      - name: Show the token's identity and namespaces
+        if: steps.gate.outputs.skip == 'false'
+        continue-on-error: true
+        env:
+          SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
+        run: |
+          npx -y @smithery/cli@4.11.1 auth whoami || true
+          npx -y @smithery/cli@4.11.1 namespace list || true
+
       - name: Publish
         if: steps.gate.outputs.skip == 'false'
         env:
