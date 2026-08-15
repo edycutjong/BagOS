@@ -79,6 +79,10 @@ exact arguments it was issued for.
 
 ## 🏗️ Architecture & Tech Stack
 
+<img src="docs/architecture.svg"
+     alt="BagOS architecture: an MCP client speaks stdio or Streamable HTTP to the BagOS MCP server, which exposes 11 read tools, 1 gated tool and 2 write tools. Every write passes token gate, spend caps, confirmation, simulate, sign, send and confirm before reaching the Bags SDK and Solana."
+     width="100%">
+
 Every write goes through this:
 
 ```

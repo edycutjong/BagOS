@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 740" width="1200" height="740" role="img"
+     aria-label="BagOS architecture: an MCP client speaks stdio or Streamable HTTP to the BagOS MCP server, which exposes 11 read tools, 1 gated tool and 2 write tools. Every write passes token gate, spend caps, confirmation, simulate, sign, send and confirm before reaching the Bags SDK and Solana.">
+<!-- Redrawn from the source, not from memory. Every claim here is checkable:
+       tool names + counts  src/tools/*.ts          (14 registered)
+       write path order     src/lib/execute.ts      (simulate runs BEFORE signing)
+       gate + caps env      src/lib/token-gate.ts, src/lib/guards.ts
+       transports           src/index.ts            (stdio + StreamableHTTP)
+       SDK version          package.json            (@bagsfm/bags-sdk ^1.3.7)
+     The plate is opaque so the file is self-sufficient on light AND dark GitHub. -->
+  <defs>
+    <clipPath id="plate"><rect x="8" y="8" width="1184" height="724" rx="24"/></clipPath>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="amberGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.13"/><stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="greenGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34D399" stop-opacity="0.13"/><stop offset="100%" stop-color="#34D399" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <rect x="8" y="8" width="1184" height="724" rx="24" fill="#0A101E" stroke="rgba(255,255,255,0.10)" stroke-width="2"/>
+  <g clip-path="url(#plate)">
+    <rect x="8" y="8" width="1184" height="724" fill="url(#grid)"/>
+    <circle cx="180" cy="470" r="240" fill="url(#amberGlow)"/>
+    <circle cx="1090" cy="500" r="220" fill="url(#greenGlow)"/>
+  </g>
+
+  <!-- ============ title ============ -->
+  <text x="44" y="52" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="21" font-weight="700" fill="#F8FAFC">BagOS — architecture</text>
+  <text x="44" y="74" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="13" fill="#94A3B8">Every AI-initiated Solana spend: gated, capped, confirmed on chain.</text>
+
+  <!-- ============ client ============ -->
+  <rect x="44" y="96" width="1112" height="52" rx="12" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.55"/>
+  <text x="600" y="119" text-anchor="middle" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" fill="#CBD5E1">MCP client — Claude Desktop · Claude Code · any MCP client</text>
+  <text x="600" y="138" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#7C8CA3">transport: stdio · Streamable HTTP</text>
+  <line x1="600" y1="148" x2="600" y2="178" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arw)"/>
+
+  <!-- ============ server ============ -->
+  <rect x="44" y="184" width="1112" height="268" rx="16" fill="rgba(245,158,11,0.03)" stroke="#F59E0B" stroke-width="1.5" stroke-opacity="0.5"/>
+  <text x="64" y="213" font-family="'Segoe UI', system-ui, sans-serif" font-size="17" font-weight="700" fill="#F8FAFC">BagOS MCP Server</text>
+  <text x="1136" y="213" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#F59E0B">14 tools · 11 read · 1 gated · 2 write</text>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5">
+    <!-- read -->
+    <rect x="64" y="228" width="500" height="208" rx="10" fill="none" stroke="#34D399" stroke-width="1.2" stroke-opacity="0.45"/>
+    <text x="80" y="253" font-size="12.5" font-weight="700" fill="#34D399">11 READ — never sign, never spend</text>
+    <g fill="#CBD5E1">
+      <text x="80" y="282">bags_heartbeat</text>
+      <text x="80" y="304">bags_authenticate</text>
+      <text x="80" y="326">bags_get_trade_quote</text>
+      <text x="80" y="348">bags_get_token_analytics</text>
+      <text x="80" y="370">bags_get_creators</text>
+      <text x="80" y="392">bags_get_token_creators</text>
+      <text x="320" y="282">bags_get_token_claim_stats</text>
+      <text x="320" y="304">bags_get_token_claim_events</text>
+      <text x="320" y="326">bags_get_claimable_fees</text>
+      <text x="320" y="348">bags_get_partner_stats</text>
+      <text x="320" y="370">bags_resolve_launch_wallet</text>
+    </g>
+    <text x="320" y="404" font-size="10.5" fill="#7C8CA3">Free read-only tier · BAGS_API_KEY</text>
+
+    <!-- gated -->
+    <rect x="584" y="228" width="250" height="208" rx="10" fill="none" stroke="#F59E0B" stroke-width="1.2" stroke-opacity="0.45"/>
+    <text x="600" y="253" font-size="12.5" font-weight="700" fill="#F59E0B">1 GATED</text>
+    <!-- one line: a split identifier reads as a different, wrong tool name -->
+    <text x="600" y="282" font-size="10.8" fill="#CBD5E1">bags_prepare_token_metadata</text>
+    <g font-size="10.5" fill="#7C8CA3">
+      <text x="600" y="330">Reserves a mint and uploads</text>
+      <text x="600" y="346">metadata, then says plainly</text>
+      <text x="600" y="362">that nothing was launched.</text>
+      <text x="600" y="386">Completing a launch needs a</text>
+      <text x="600" y="402">Meteora fee-share split —</text>
+      <text x="600" y="418">your decision, not a model's.</text>
+    </g>
+
+    <!-- write -->
+    <rect x="854" y="228" width="282" height="208" rx="10" fill="none" stroke="#F59E0B" stroke-width="1.2" stroke-opacity="0.75"/>
+    <text x="870" y="253" font-size="12.5" font-weight="700" fill="#F59E0B">2 WRITE — spends real funds</text>
+    <text x="870" y="282" fill="#CBD5E1">bags_execute_trade</text>
+    <text x="870" y="304" fill="#CBD5E1">bags_claim_fees</text>
+    <g font-size="10.5" fill="#7C8CA3">
+      <text x="870" y="334">Mainnet only. The server</text>
+      <text x="870" y="350">defaults to devnet, so an</text>
+      <text x="870" y="366">unconfigured install cannot</text>
+      <text x="870" y="382">spend real money.</text>
+      <text x="870" y="406">Off unless you configure them.</text>
+    </g>
+  </g>
+
+  <!-- ============ the write path ============ -->
+  <text x="44" y="478" font-family="'Segoe UI', system-ui, sans-serif" font-size="15" font-weight="700" fill="#F8FAFC">Every write goes through this — in order, no exceptions</text>
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">
+    <!-- 1 token gate --><rect x="44"   y="500" width="140" height="44" rx="10" fill="rgba(245,158,11,0.07)" stroke="#F59E0B" stroke-width="1.6"/>
+    <text x="114"  y="527" font-size="13" fill="#F59E0B">token gate</text>
+    <text x="114"  y="562" font-size="10.5" fill="#7C8CA3">$BOS balance</text>
+    <text x="114"  y="576" font-size="10.5" fill="#7C8CA3">BOS_REQUIRED_BALANCE</text>
+
+    <!-- 2 spend caps --><rect x="206"  y="500" width="140" height="44" rx="10" fill="rgba(245,158,11,0.07)" stroke="#F59E0B" stroke-width="1.6"/>
+    <text x="276"  y="527" font-size="13" fill="#F59E0B">spend caps</text>
+    <text x="276"  y="562" font-size="10.5" fill="#7C8CA3">0.1 SOL / tx</text>
+    <text x="276"  y="576" font-size="10.5" fill="#7C8CA3">1 SOL / session</text>
+
+    <!-- 3 confirmation --><rect x="368" y="500" width="140" height="44" rx="10" fill="rgba(245,158,11,0.07)" stroke="#F59E0B" stroke-width="1.6"/>
+    <text x="438"  y="527" font-size="13" fill="#F59E0B">confirmation</text>
+    <text x="438"  y="562" font-size="10.5" fill="#7C8CA3">single-use token</text>
+    <text x="438"  y="576" font-size="10.5" fill="#7C8CA3">5 min · arg-bound</text>
+
+    <!-- 4 simulate --><rect x="530"   y="500" width="140" height="44" rx="10" fill="none" stroke="#94A3B8" stroke-width="1.6"/>
+    <text x="600"  y="527" font-size="13" fill="#CBD5E1">simulate</text>
+    <text x="600"  y="562" font-size="10.5" fill="#7C8CA3">runs before signing</text>
+    <text x="600"  y="576" font-size="10.5" fill="#7C8CA3">failure aborts</text>
+
+    <!-- 5 sign --><rect x="692"       y="500" width="140" height="44" rx="10" fill="none" stroke="#94A3B8" stroke-width="1.6"/>
+    <text x="762"  y="527" font-size="13" fill="#CBD5E1">sign</text>
+    <text x="762"  y="562" font-size="10.5" fill="#7C8CA3">local keypair</text>
+    <text x="762"  y="576" font-size="10.5" fill="#7C8CA3">never leaves host</text>
+
+    <!-- 6 send --><rect x="854"       y="500" width="140" height="44" rx="10" fill="none" stroke="#94A3B8" stroke-width="1.6"/>
+    <text x="924"  y="527" font-size="13" fill="#CBD5E1">send</text>
+    <text x="924"  y="562" font-size="10.5" fill="#7C8CA3">submit to RPC</text>
+    <text x="924"  y="576" font-size="10.5" fill="#7C8CA3">mainnet</text>
+
+    <!-- 7 confirm --><rect x="1016"   y="500" width="140" height="44" rx="10" fill="rgba(52,211,153,0.09)" stroke="#34D399" stroke-width="2"/>
+    <text x="1086" y="527" font-size="13" fill="#34D399">confirm</text>
+    <text x="1086" y="562" font-size="10.5" fill="#7C8CA3">confirmed signature</text>
+    <text x="1086" y="576" font-size="10.5" fill="#7C8CA3">or it throws</text>
+  </g>
+  <g stroke="#94A3B8" stroke-width="1.4" marker-end="url(#arw)" opacity="0.75">
+    <line x1="184" y1="522" x2="204" y2="522"/><line x1="346" y1="522" x2="366" y2="522"/>
+    <line x1="508" y1="522" x2="528" y2="522"/><line x1="670" y1="522" x2="690" y2="522"/>
+    <line x1="832" y1="522" x2="852" y2="522"/><line x1="994" y1="522" x2="1014" y2="522"/>
+  </g>
+
+  <text x="600" y="604" text-anchor="middle" font-family="'Segoe UI', system-ui, sans-serif" font-size="12.5" fill="#94A3B8">The first call to a write tool signs nothing — it returns a preview plus a single-use token bound to the exact arguments.</text>
+  <text x="600" y="622" text-anchor="middle" font-family="'Segoe UI', system-ui, sans-serif" font-size="12.5" fill="#94A3B8">A token issued for a small trade cannot authorize a larger one, and caps are enforced before the Bags SDK is ever called.</text>
+
+  <line x1="600" y1="632" x2="600" y2="654" stroke="#94A3B8" stroke-width="1.5" marker-end="url(#arw)"/>
+
+  <!-- ============ externals ============ -->
+  <rect x="44"  y="658" width="546" height="54" rx="12" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+  <text x="64" y="682" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#F8FAFC">Bags SDK</text>
+  <text x="64" y="701" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#7C8CA3">@bagsfm/bags-sdk ^1.3.7 — no devnet deployment</text>
+
+  <rect x="610" y="658" width="546" height="54" rx="12" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1.5"/>
+  <text x="630" y="682" font-family="'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#F8FAFC">Solana</text>
+  <text x="630" y="701" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#7C8CA3">SOLANA_RPC_URL / HELIUS_RPC_URL — writes mainnet, default devnet</text>
+</svg>
