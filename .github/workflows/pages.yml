@@ -10,7 +10,14 @@ on:
     paths:
       - 'site/**'
       - '.github/workflows/pages.yml'
+      # build.mjs stamps the version from package.json into the pages. Without this a
+      # release bumps the version, the site keeps serving the old one, and the release
+      # link and provenance URL point at the previous version indefinitely.
+      - 'package.json'
   workflow_dispatch:
+  # A published release means the version changed; the site must follow it.
+  release:
+    types: [published]
 
 permissions:
   contents: read
