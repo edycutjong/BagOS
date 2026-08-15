@@ -72,6 +72,58 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Audit the tarball BEFORE it is public. npm effectively does not allow unpublish,
+      # so anything wrong here is wrong forever — the remedy is a fast-follow version, not
+      # a fix. Added after 2.0.0 shipped without this check; the retroactive audit came
+      # back clean, which was luck rather than process.
+      - name: Audit the tarball
+        run: |
+          set -euo pipefail
+          npm pack --dry-run --json > /tmp/pack.json
+          node -e '
+            const p = require("/tmp/pack.json")[0];
+            const files = p.files.map(f => f.path);
+            console.log("packed " + files.length + " files:");
+            for (const f of files) console.log("  " + f);
+
+            // Allowlist by prefix. A new top-level entry fails here on purpose — extend
+            // this list deliberately rather than discovering the leak on npm.
+            const ok = [/^build\//, /^package\.json$/, /^README\.md$/, /^LICENSE$/,
+                        /^CHANGELOG\.md$/, /^server\.json$/, /^\.github\/SECURITY\.md$/];
+            const stray = files.filter(f => !ok.some(re => re.test(f)));
+            if (stray.length) {
+              console.error("::error::unexpected files in the tarball: " + stray.join(", "));
+              process.exit(1);
+            }
+
+            // Belt and braces: these must never ship regardless of the allowlist.
+            const banned = /(^|\/)(\.env|\.npmrc)$|__tests__|\.test\.|coverage\//;
+            const bad = files.filter(f => banned.test(f));
+            if (bad.length) {
+              console.error("::error::forbidden files in the tarball: " + bad.join(", "));
+              process.exit(1);
+            }
+            console.log("file allowlist: OK");
+          '
+
+          # R10 gate on the artifact itself. These are the 1.x strings that reported
+          # success for a transaction that was never signed or sent.
+          rm -rf /tmp/audit && mkdir -p /tmp/audit
+          TARBALL=$(npm pack --silent)
+          tar xzf "$TARBALL" -C /tmp/audit
+          if grep -rIqE "Trade Execution Signed|execution signed successfully" /tmp/audit/package/build; then
+            echo "::error::fabricated-success string present in the packed build — this is the 1.x defect"
+            grep -rInE "Trade Execution Signed|execution signed successfully" /tmp/audit/package/build
+            exit 1
+          fi
+          # And the real execution path must actually be in there.
+          for sym in simulateTransaction sendRawTransaction confirmTransaction; do
+            grep -rIq "$sym" /tmp/audit/package/build/lib/execute.js \
+              || { echo "::error::$sym missing from packed execute.js — not the fixed build"; exit 1; }
+          done
+          echo "fabricated-success grep: OK · sign/send/confirm present: OK"
+          rm -f "$TARBALL"
+
       - name: Publish
         run: npm publish --provenance --access public
         env:
