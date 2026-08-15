@@ -47,7 +47,17 @@ for (const page of PAGES) {
   // Only version-shaped strings, so a semver appearing inside prose is untouched.
   const after = before
     .replace(/\bv\d+\.\d+\.\d+\b/g, `v${VERSION}`)
-    .replace(/bagos-mcp-server@\d+\.\d+\.\d+/g, `bagos-mcp-server@${VERSION}`);
+    .replace(/bagos-mcp-server@\d+\.\d+\.\d+/g, `bagos-mcp-server@${VERSION}`)
+    // JSON-LD carries a bare semver with no `v`, so the pattern above never
+    // matched it and softwareVersion sat at 2.0.0 while npm served 2.2.0 —
+    // stale structured data, which is the copy search engines actually read.
+    // Anchored to the key so a bare semver in prose is still untouched.
+    .replace(/("softwareVersion":\s*")\d+\.\d+\.\d+(")/g, `$1${VERSION}$2`)
+    // The explicit marker. Preferred over the shape-matching patterns above for
+    // any new site copy: it says "a version goes here" instead of hoping a
+    // literal semver keeps matching, and an unsubstituted one fails the build
+    // below rather than shipping a stale-but-plausible number.
+    .replace(/__V__/g, VERSION);
   if (after !== before) stamped++;
   writeFileSync(p, after);
 }
@@ -56,8 +66,32 @@ for (const page of PAGES) {
 // substitution silently stopped working — which is exactly the failure it exists to
 // prevent, so fail loudly instead.
 if (stamped === 0 && !readFileSync(join(dist, 'index.html'), 'utf8').includes(`v${VERSION}`)) {
-  console.error(`no version markers found — expected v<semver> or bagos-mcp-server@<semver>`);
+  console.error(`no version markers found — expected v<semver>, bagos-mcp-server@<semver>, or "softwareVersion": "<semver>"`);
   process.exit(1);
+}
+
+// Assert every version-shaped string agrees with package.json. The guard above
+// only proves SOMETHING was stamped; this proves nothing was missed — which is
+// how softwareVersion drifted two minor versions behind without anyone noticing.
+for (const page of PAGES) {
+  const html = readFileSync(join(dist, page), 'utf8');
+  // A surviving marker means the substitution above never ran over this page.
+  // Checked separately because __V__ is not semver-shaped, so the staleness
+  // scan below cannot see it — it would ship as visible copy reading "v__V__".
+  if (html.includes('__V__')) {
+    console.error(`${page}: unsubstituted __V__ marker survived the build`);
+    process.exit(1);
+  }
+  const stale = [
+    ...html.matchAll(/\bv(\d+\.\d+\.\d+)\b/g),
+    ...html.matchAll(/"softwareVersion":\s*"(\d+\.\d+\.\d+)"/g),
+    ...html.matchAll(/bagos-mcp-server@(\d+\.\d+\.\d+)/g),
+  ].filter((m) => m[1] !== VERSION);
+  if (stale.length) {
+    console.error(`${page}: version strings disagree with package.json (${VERSION}): ` +
+      [...new Set(stale.map((m) => m[0]))].join(', '));
+    process.exit(1);
+  }
 }
 console.log(`stamped version ${VERSION} into ${PAGES.length} pages`);
 
