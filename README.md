@@ -51,10 +51,11 @@
 > or submitted. If you used 1.x and believed a trade or claim executed, it did
 > not. See [CHANGELOG.md](CHANGELOG.md).
 >
-> **2.0.0 is live on npm** and is what `npx bagos-mcp-server` installs. It ships with
-> [npm provenance](https://registry.npmjs.org/-/npm/v1/attestations/bagos-mcp-server@2.0.0) —
+> **2.x is live on npm** and is what `npx bagos-mcp-server` installs — see the
+> [latest release](https://github.com/edycutjong/BagOS/releases/latest). Every release ships with
+> [npm provenance](https://www.npmjs.com/package/bagos-mcp-server#provenance) —
 > the tarball is cryptographically attested to this repository and the commit that built it.
-> If you are still on 1.x, upgrade.
+> 1.x is deprecated on npm. If you are still on it, upgrade.
 
 ---
 
@@ -173,7 +174,7 @@ or the spend recorder each makes the suite fail.
 | Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · secret scanning + push protection on · `npm audit` in CI as a **ratchet** — see below |
 | Dependency debt | ⚠️ | **6 advisories, 0 critical** — down from 90. Everything patchable was cleared with version-scoped `overrides` (see [`package.json`](package.json)). The 6 that remain are **one** root cause, `bigint-buffer` [GHSA-3gc7-fjrx-p6mg](https://github.com/advisories/GHSA-3gc7-fjrx-p6mg), counted once at each level of the chain it travels up to `@bagsfm/bags-sdk`. No patched `bigint-buffer` exists — 1.1.5 is the installed version, the latest version, and vulnerable. CI blocks any critical and any increase over [`.audit-baseline.json`](.audit-baseline.json). **Note:** npm honours `overrides` only in a root project, so these protect this repo and CI, not consumers of the published package. |
 | CI | ✅ | 4 stages (Quality → Security ∥ Test → Build) with `cancel-in-progress` concurrency; Node 22 + 24 matrix; packaged-artifact and entrypoint checks |
-| CD | ✅ | Release → tarball audit → `npm publish --provenance` → deprecate the superseded version. A second workflow submits `server.json` to the MCP registry via OIDC. Both gated on the full CI suite. **1.0.0 is not yet deprecated** — 2.0.0 predates that step, so it needs one manual run of `deprecate.yml`. |
+| CD | ✅ | Release → tarball audit → `npm publish --provenance` → deprecate the superseded version. A second workflow submits `server.json` to the MCP registry via OIDC. Both gated on the full CI suite. 1.0.0 is deprecated on npm with a pointer to the defect it carried. |
 | On-chain proof | ⚠️ | `npm run proof:devnet` exists and lands a real devnet transaction, but the public faucet was dry on 2026-08-15 — no signature captured yet. See [DEMO.md](DEMO.md) |
 | Community standards | ✅ | Code of Conduct · Contributing · Security policy · issue + PR templates |
 
