@@ -13,7 +13,21 @@ name: Publish to the MCP registry
 # Changing it would mean republishing npm, because the registry cross-checks server.json
 # `name` against `mcpName` inside the published tarball.
 
+# Trigger note — this is why the registry drifted behind npm.
+#
+# release-please.yml has a `registry` job, but it only runs when that workflow itself
+# created the release (release_created == 'true'). In practice the release event fires
+# on its own and publish.yml picks it up via its own `release: published` trigger, so
+# release-please's publish AND registry jobs are both skipped. npm got 2.1.0 that way;
+# the registry did not, because nothing here listened for the same event. 2.0.0 only
+# landed because someone ran this workflow by hand afterwards.
+#
+# Mirroring publish.yml's trigger closes the gap: whichever path creates the release,
+# both npm and the registry follow. Running twice is harmless — the guard below exits 0
+# when the registry already serves this version.
 on:
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -26,6 +40,21 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Both this workflow and publish.yml fire on `release: published`, so they start
+      # together and npm will not be serving the new version yet. Wait rather than race.
+      # The single-shot `npm view` this replaced would fail instantly on that path.
+      - name: Wait for npm to serve this version
+        run: |
+          set -euo pipefail
+          SRV_VERSION=$(node -p "require('./server.json').version")
+          IDENT=$(node -p "require('./server.json').packages[0].identifier")
+          for i in $(seq 1 30); do
+            npm view "$IDENT@$SRV_VERSION" version >/dev/null 2>&1 \
+              && { echo "npm is serving $IDENT@$SRV_VERSION"; exit 0; }
+            echo "waiting for $IDENT@$SRV_VERSION on npm ($i/30)"; sleep 10
+          done
+          echo "::error::npm did not serve $IDENT@$SRV_VERSION within 5 minutes"; exit 1
+
       # The registry rejects a server.json whose version is not a real published npm
       # version, and verifies package ownership via mcpName inside the tarball. Check
       # both here — a failed submission is slower to diagnose than a failed assertion.
@@ -36,17 +65,36 @@ jobs:
           SRV_NAME=$(node -p "require('./server.json').name")
           IDENT=$(node -p "require('./server.json').packages[0].identifier")
 
-          npm view "$IDENT@$SRV_VERSION" version >/dev/null 2>&1 \
-            || { echo "::error::$IDENT@$SRV_VERSION is not published on npm"; exit 1; }
-
           PUBLISHED_MCPNAME=$(npm view "$IDENT@$SRV_VERSION" mcpName 2>/dev/null || echo "")
           [ "$PUBLISHED_MCPNAME" = "$SRV_NAME" ] \
             || { echo "::error::published mcpName ('$PUBLISHED_MCPNAME') != server.json name ('$SRV_NAME')"; exit 1; }
           echo "npm backs it: $IDENT@$SRV_VERSION with mcpName $PUBLISHED_MCPNAME"
 
+      # Idempotence guard. release-please's registry job and this workflow can both fire
+      # for the same release; the second one should be a no-op, not a failure.
+      - name: Skip if the registry already serves this version
+        id: already
+        run: |
+          set -euo pipefail
+          SRV_VERSION=$(node -p "require('./server.json').version")
+          SRV_NAME=$(node -p "require('./server.json').name")
+          LIVE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos" \
+                 | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+                     try{const j=JSON.parse(s);
+                       const m=(j.servers||[]).find(x=>x.server && x.server.name==='$SRV_NAME');
+                       process.stdout.write(m?m.server.version:'');
+                     }catch(e){process.stdout.write('')}})" || echo "")
+          echo "registry currently serves: '${LIVE:-none}' · this build: $SRV_VERSION"
+          if [ "$LIVE" = "$SRV_VERSION" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Download to a file rather than piping curl into tar. The piped form failed on the
       # runner: GitHub's release redirect makes the stream unseekable and tar exits 2.
       - name: Install mcp-publisher
+        if: steps.already.outputs.skip == 'false'
         run: |
           set -euo pipefail
           curl -sSL -o /tmp/mcp-publisher.tar.gz \
@@ -57,19 +105,34 @@ jobs:
           /tmp/mcp-publisher --version
 
       - name: Validate server.json
+        if: steps.already.outputs.skip == 'false'
         run: /tmp/mcp-publisher validate
 
       - name: Login via OIDC
+        if: steps.already.outputs.skip == 'false'
         run: /tmp/mcp-publisher login github-oidc
 
       - name: Publish
+        if: steps.already.outputs.skip == 'false'
         run: /tmp/mcp-publisher publish
 
-      - name: Verify it is listed
+      # Assert the VERSION, not just the name. The previous check grepped for the server
+      # name, which stays present across every release — so it passed while the registry
+      # sat on 2.0.0 and npm moved to 2.1.0. A green check that cannot observe the thing
+      # it is checking is worse than no check.
+      - name: Verify the registry serves this version
         run: |
-          sleep 15
-          NAME=$(node -p "require('./server.json').name")
-          curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos" \
-            | grep -q "$NAME" \
-            && echo "listed: $NAME" \
-            || { echo "::error::not found in the registry after publish"; exit 1; }
+          set -euo pipefail
+          SRV_VERSION=$(node -p "require('./server.json').version")
+          SRV_NAME=$(node -p "require('./server.json').name")
+          for i in $(seq 1 10); do
+            LIVE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=bagos" \
+                   | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+                       try{const j=JSON.parse(s);
+                         const m=(j.servers||[]).find(x=>x.server && x.server.name==='$SRV_NAME');
+                         process.stdout.write(m?m.server.version:'');
+                       }catch(e){process.stdout.write('')}})" || echo "")
+            [ "$LIVE" = "$SRV_VERSION" ] && { echo "registry serves $SRV_NAME@$SRV_VERSION"; exit 0; }
+            echo "registry has '${LIVE:-none}', want $SRV_VERSION ($i/10)"; sleep 10
+          done
+          echo "::error::registry did not serve $SRV_VERSION within 100s"; exit 1
