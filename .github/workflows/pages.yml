@@ -1,0 +1,53 @@
+name: Pages
+
+# Deploys the product site (site/dist → bagos.edycu.dev) via GitHub Pages.
+# The site is static HTML built by a zero-dependency node script, so this
+# workflow never runs npm install and cannot be broken by the package's
+# dependency tree. Path-filtered: a code-only push does not redeploy the site.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deployment at a time. Unlike CI, in-flight runs are NOT cancelled —
+# interrupting a deployment mid-flight can leave Pages serving a broken state.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # ── Build ─────────────────────────────────────────────────────
+  # Copies site/src into site/dist and stamps CNAME + .nojekyll. The build
+  # script exits nonzero if the CNAME is missing or wrong, so a bad deploy
+  # fails here rather than silently dropping the custom domain.
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build (zero-dependency copy)
+        run: node site/build.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/dist
+
+  # ── Deploy ────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

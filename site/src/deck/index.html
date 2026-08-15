@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>BagOS — Pitch Deck</title>
+  <meta name="description" content="The BagOS pitch deck: why an MCP server that can move money needs a gate, how the seven-stage pipeline works, and what ships in v2.0.0. Arrow keys to navigate, F for full screen.">
+  <link rel="canonical" href="https://bagos.edycu.dev/deck/">
+
+  <!-- Icons -->
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <!-- Theme color, both schemes -->
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BagOS">
+  <meta property="og:title" content="BagOS — Pitch Deck">
+  <meta property="og:description" content="Every AI-initiated Solana spend: gated, capped, confirmed on chain. The product deck.">
+  <meta property="og:url" content="https://bagos.edycu.dev/deck/">
+  <meta property="og:image" content="https://bagos.edycu.dev/og-image.png">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1260">
+  <meta property="og:image:alt" content="BagOS — the gate pipeline: token gate, spend caps, confirmation, simulate, sign, send, confirm">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BagOS — Pitch Deck">
+  <meta name="twitter:description" content="Every AI-initiated Solana spend: gated, capped, confirmed on chain. The product deck.">
+  <meta name="twitter:image" content="https://bagos.edycu.dev/og-image.png">
+  <meta name="twitter:image:alt" content="BagOS — the gate pipeline: token gate, spend caps, confirmation, simulate, sign, send, confirm">
+
+  <style>
+    /* ── Tokens (same language as the landing page) ─────────── */
+    :root {
+      --bg: #f8fafc;
+      --bg-raise: #ffffff;
+      --bg-inset: #eef2f7;
+      --ink: #0f172a;
+      --ink-muted: #46566e;
+      --line: #dbe3ec;
+      --amber: #92610b;
+      --amber-soft: #fdf3e0;
+      --green: #067352;
+      --green-soft: #e3f6ee;
+      --link: #0b5ec9;
+      --code-bg: #0f172a;
+      --code-ink: #e2e8f0;
+      --code-amber: #fbbf24;
+      --code-green: #34d399;
+      --code-red: #f87171;
+      --code-muted: #94a3b8;
+      --focus: #0b5ec9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --bg-raise: #101a2e;
+        --bg-inset: #0d1526;
+        --ink: #e6ecf4;
+        --ink-muted: #9fb0c7;
+        --line: #24324a;
+        --amber: #fbbf24;
+        --amber-soft: #2a2109;
+        --green: #34d399;
+        --green-soft: #06281d;
+        --link: #79b3f7;
+        --focus: #79b3f7;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+    body {
+      background: var(--bg); color: var(--ink);
+      font: 400 clamp(1rem, 1.6vmin + .6rem, 1.35rem)/1.6
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    code, pre, kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    a { color: var(--link); text-underline-offset: 2px; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+    .skip-link {
+      position: absolute; left: 1rem; top: -4rem; z-index: 100;
+      background: var(--bg-raise); color: var(--ink); border: 1px solid var(--line);
+      padding: .5rem 1rem; border-radius: .5rem; transition: top .15s ease;
+    }
+    .skip-link:focus { top: 1rem; }
+
+    /* ── Slides: no JS → stacked, scrollable; JS → one at a time ── */
+    .slide {
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 4.5rem clamp(1.25rem, 6vw, 6rem) 5rem;
+      border-bottom: 1px solid var(--line);
+    }
+    html.js .slide { display: none; }
+    html.js .slide.current { display: flex; }
+
+    .slide .kicker {
+      font-size: .72em; letter-spacing: .12em; text-transform: uppercase;
+      font-weight: 700; color: var(--ink-muted); margin-bottom: .8rem;
+    }
+    .slide h1 { font-size: clamp(2.2rem, 6vmin, 4rem); line-height: 1.12; letter-spacing: -.02em; font-weight: 800; max-width: 22ch; }
+    .slide h2 { font-size: clamp(1.7rem, 4.5vmin, 3rem); line-height: 1.15; letter-spacing: -.02em; font-weight: 800; max-width: 26ch; margin-bottom: 1.2rem; }
+    .slide p.lede { color: var(--ink-muted); max-width: 46ch; font-size: 1.1em; }
+    .slide p + p.lede, .slide p.lede + p.lede { margin-top: .8rem; }
+    .held { color: var(--amber); }
+    .landed { color: var(--green); }
+
+    ul.points { margin: 1.4rem 0 0 1.2rem; max-width: 52ch; }
+    ul.points li { margin: .55rem 0; }
+    ul.points li::marker { color: var(--ink-muted); }
+    ul.points strong { font-weight: 700; }
+
+    .pipeline {
+      display: flex; flex-wrap: wrap; align-items: center; gap: .45em;
+      margin-top: 2rem; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(.85rem, 1.8vmin, 1.15rem);
+    }
+    .pipeline .stage {
+      padding: .35em .75em; border-radius: .45em; white-space: nowrap;
+      border: 1px solid var(--line); background: var(--bg-raise); color: var(--ink);
+    }
+    .pipeline .stage.gate { background: var(--amber-soft); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); color: var(--amber); font-weight: 600; }
+    .pipeline .stage.chain { background: var(--green-soft); border-color: color-mix(in srgb, var(--green) 45%, var(--line)); color: var(--green); font-weight: 600; }
+    .pipeline .arrow { color: var(--ink-muted); user-select: none; }
+
+    pre.term {
+      background: var(--code-bg); color: var(--code-ink);
+      border-radius: .7rem; padding: 1.2em 1.4em; margin-top: 1.6rem;
+      overflow-x: auto; line-height: 1.5;
+      font-size: clamp(.72rem, 1.9vmin, 1.05rem);
+      max-width: 100%;
+    }
+    pre.term .warn { color: var(--code-amber); font-weight: 700; }
+    pre.term .net { color: var(--code-red); font-weight: 700; }
+    pre.term .tok { color: var(--code-green); font-weight: 700; }
+    pre.term .dim { color: var(--code-muted); }
+
+    .statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .9rem; margin-top: 2rem; max-width: 60rem; }
+    .stat { border: 1px solid var(--line); background: var(--bg-raise); border-radius: .7rem; padding: 1rem 1.2rem; }
+    .stat .big { font-size: 1.6em; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .stat p { color: var(--ink-muted); font-size: .82em; margin-top: .2rem; }
+    .stat code { font-size: .85em; }
+
+    .titlecard { align-items: center; text-align: center; }
+    .titlecard h1 { margin: 1.2rem auto 0; }
+    .titlecard img { width: clamp(5rem, 14vmin, 8rem); height: auto; }
+    .titlecard .cmd {
+      display: inline-block; margin-top: 2rem; background: var(--code-bg); color: var(--code-ink);
+      border-radius: .6rem; padding: .7em 1.3em; font-size: .95em;
+    }
+    .titlecard .cmd .p { color: var(--code-green); }
+
+    .callout {
+      margin-top: 1.8rem; border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line));
+      border-left: 5px solid var(--amber); background: var(--amber-soft);
+      border-radius: .6rem; padding: 1.1em 1.3em; max-width: 56ch;
+    }
+    .callout strong { color: var(--amber); }
+
+    /* ── Controls (JS only) ─────────────────────────────────── */
+    .controls {
+      position: fixed; right: 1rem; bottom: 1rem; z-index: 40;
+      display: none; align-items: center; gap: .5rem;
+      background: color-mix(in srgb, var(--bg-raise) 92%, transparent);
+      border: 1px solid var(--line); border-radius: .7rem; padding: .35rem .6rem;
+    }
+    html.js .controls { display: flex; }
+    .controls button {
+      font: inherit; font-size: .95rem; color: var(--ink);
+      background: none; border: 1px solid var(--line); border-radius: .45rem;
+      padding: .25rem .7rem; cursor: pointer;
+    }
+    .controls button:hover { border-color: var(--ink-muted); }
+    .controls .count { font-size: .85rem; color: var(--ink-muted); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: center; }
+    .hint {
+      position: fixed; left: 1rem; bottom: 1rem; z-index: 40; display: none;
+      font-size: .8rem; color: var(--ink-muted);
+    }
+    html.js .hint { display: block; }
+    @media (max-width: 40rem) { .hint { display: none !important; } }
+
+    .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--green); width: 0; z-index: 41; display: none; }
+    html.js .progress { display: block; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#s1">Skip to content</a>
+  <div class="progress" aria-hidden="true"></div>
+
+  <main aria-label="BagOS pitch deck">
+
+    <!-- 1 · Title -->
+    <section class="slide titlecard current" id="s1" aria-label="Slide 1 of 9: title">
+      <img src="/icon.svg" alt="BagOS mark: a transaction packet held at a checkpoint gate">
+      <h1>Every AI-initiated Solana spend:<br>
+        <span class="held">gated</span>, <span class="held">capped</span>, <span class="landed">confirmed on&nbsp;chain</span>.</h1>
+      <p class="lede" style="margin-top:1.2rem">BagOS — an MCP server with a conscience about money.</p>
+      <code class="cmd"><span class="p">$</span> npx bagos-mcp-server</code>
+    </section>
+
+    <!-- 2 · Problem -->
+    <section class="slide" id="s2" aria-label="Slide 2 of 9: the problem">
+      <p class="kicker">The problem</p>
+      <h2>An MCP server that can move money hands the model a signing key</h2>
+      <p class="lede">The assistant decides, and the transaction is on chain before a human
+        reads about it.</p>
+      <p class="lede">Nothing in the protocol makes the model pause. Nothing bounds what one
+        misunderstood instruction can spend.</p>
+    </section>
+
+    <!-- 3 · Mechanism -->
+    <section class="slide" id="s3" aria-label="Slide 3 of 9: the mechanism">
+      <p class="kicker">The mechanism</p>
+      <h2>Seven stages between an instruction and a signature</h2>
+      <p class="lede">Every write goes through this, in order. The model cannot skip a stage —
+        only you can, explicitly, in configuration.</p>
+      <div class="pipeline" role="img" aria-label="Pipeline: token gate, then spend caps, then confirmation, then simulate, then sign, then send, then confirm">
+        <span class="stage gate">token gate</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="stage gate">spend caps</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="stage gate">confirmation</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="stage">simulate</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="stage">sign</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="stage">send</span><span class="arrow" aria-hidden="true">→</span>
+        <span class="stage chain">confirm</span>
+      </div>
+      <ul class="points">
+        <li>Hard caps: <strong>0.1 SOL per transaction</strong>, <strong>1.0 SOL per session</strong> — by default.</li>
+        <li>Writes are mainnet-only; the default network is devnet, so an unconfigured install cannot spend real money.</li>
+        <li>If the RPC cluster disagrees with <code>BAGS_NETWORK</code>, the server refuses to start.</li>
+      </ul>
+    </section>
+
+    <!-- 4 · Gate walkthrough -->
+    <section class="slide" id="s4" aria-label="Slide 4 of 9: the gate walkthrough">
+      <p class="kicker">The gate, live</p>
+      <h2>The first call to a write tool signs nothing</h2>
+      <pre class="term"><code><span class="warn">⚠️  CONFIRMATION REQUIRED — nothing has been signed or sent.</span>
+
+Action:  Swap 0.05 of So1111…1112
+         for       EkJuyY…dBAGS
+         expect    4823917722 <span class="dim">(min 4679199990)</span>
+         slippage  3%
+         network   <span class="net">🔴 MAINNET — real funds</span>
+
+Spend:   0.05 SOL
+Caps:    0.1 SOL/tx · 0/1 SOL used this session
+
+To execute, call bags_execute_trade again with the identical arguments plus:
+  confirm: <span class="tok">"kR3nT9xQm2vP"</span></code></pre>
+    </section>
+
+    <!-- 5 · Token properties -->
+    <section class="slide" id="s5" aria-label="Slide 5 of 9: why the token is safe">
+      <p class="kicker">Why that token is safe</p>
+      <h2>Fingerprinted, single-use, five minutes</h2>
+      <ul class="points">
+        <li><strong>Fingerprinted to the exact arguments.</strong> A token issued for a
+          0.01&nbsp;SOL swap cannot authorize a 10&nbsp;SOL one.</li>
+        <li><strong>Expires in 5 minutes</strong> and is consumed on every outcome, so it cannot
+          be replayed.</li>
+        <li><strong>Confirmed means on chain.</strong> Success comes with a real signature and
+          explorer link — never a success message for a transaction that did not land.</li>
+      </ul>
+    </section>
+
+    <!-- 6 · What ships -->
+    <section class="slide" id="s6" aria-label="Slide 6 of 9: what ships">
+      <p class="kicker">What ships</p>
+      <h2>14 tools, and the numbers behind them</h2>
+      <div class="statgrid">
+        <div class="stat"><span class="big">14 tools</span><p>10 read, 2 gated/write, plus heartbeat and authenticate</p></div>
+        <div class="stat"><span class="big">212 tests</span><p>100% coverage — statements, branches, functions, lines — enforced in CI</p></div>
+        <div class="stat"><span class="big">v2.0.0</span><p>Live on npm as <code>bagos-mcp-server</code>, with SLSA provenance</p></div>
+        <div class="stat"><span class="big">Registry-listed</span><p>Active in the official MCP registry as <code>io.github.edycutjong/bagos</code></p></div>
+        <div class="stat"><span class="big">0.1 / 1.0 SOL</span><p>Default hard caps per transaction / per session</p></div>
+        <div class="stat"><span class="big">Devnet default</span><p>Writes are mainnet-only; an unconfigured install cannot spend real money</p></div>
+      </div>
+    </section>
+
+    <!-- 7 · Honesty -->
+    <section class="slide" id="s7" aria-label="Slide 7 of 9: the honest slide">
+      <p class="kicker">The honest slide</p>
+      <h2>v1.x claimed success for transactions that never existed</h2>
+      <p class="lede">The whole thesis of this product is not overclaiming. So:</p>
+      <div class="callout">
+        <p><strong>v1.x had a defect</strong> — the write tools built transactions, discarded
+          them, and reported success. v2.0.0 fixes it: success is only reported after the
+          confirmed signature is re-fetched from the chain. Full account in the
+          <a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener">changelog</a>.</p>
+      </div>
+    </section>
+
+    <!-- 8 · Install -->
+    <section class="slide" id="s8" aria-label="Slide 8 of 9: install">
+      <p class="kicker">Install</p>
+      <h2>One command, or one config block</h2>
+      <pre class="term"><code><span class="dim"># anywhere</span>
+npx bagos-mcp-server
+
+<span class="dim"># Claude Code</span>
+claude mcp add bagos --env BAGS_API_KEY=your-key-here -- npx -y bagos-mcp-server</code></pre>
+      <p class="lede" style="margin-top:1.2rem">A Bags API key from
+        <a href="https://dev.bags.fm" rel="noopener">dev.bags.fm</a> enables the read tools.
+        Writes stay off until you configure mainnet, a keypair, and the gating token.</p>
+    </section>
+
+    <!-- 9 · Links -->
+    <section class="slide titlecard" id="s9" aria-label="Slide 9 of 9: links">
+      <img src="/icon.svg" alt="">
+      <h2 style="margin-top:1.2rem">Point your assistant at it</h2>
+      <ul class="points" style="list-style:none; margin-left:0; text-align:center">
+        <li><a href="https://bagos.edycu.dev/">bagos.edycu.dev</a></li>
+        <li><a href="https://github.com/edycutjong/BagOS" rel="noopener">github.com/edycutjong/BagOS</a></li>
+        <li><a href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener">npmjs.com/package/bagos-mcp-server</a></li>
+      </ul>
+      <code class="cmd"><span class="p">$</span> npx bagos-mcp-server</code>
+    </section>
+  </main>
+
+  <p class="hint" aria-hidden="true">← → navigate · F full screen</p>
+
+  <div class="controls" role="group" aria-label="Deck controls">
+    <button type="button" data-act="prev" aria-label="Previous slide">←</button>
+    <span class="count" aria-live="polite">1 / 9</span>
+    <button type="button" data-act="next" aria-label="Next slide">→</button>
+    <button type="button" data-act="full" aria-label="Toggle full screen">⛶</button>
+    <a href="/" style="font-size:.85rem; margin-left:.3rem">exit</a>
+  </div>
+
+  <script>
+    // Progressive enhancement: without JS the deck is a scrollable document.
+    document.documentElement.classList.add('js');
+    (function () {
+      var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+      var count = document.querySelector('.count');
+      var bar = document.querySelector('.progress');
+      var i = 0;
+
+      var fromHash = parseInt((location.hash.match(/^#s(\d+)$/) || [])[1], 10);
+      if (fromHash >= 1 && fromHash <= slides.length) i = fromHash - 1;
+
+      function show(n, pushHash) {
+        i = Math.max(0, Math.min(slides.length - 1, n));
+        slides.forEach(function (s, k) {
+          s.classList.toggle('current', k === i);
+        });
+        count.textContent = (i + 1) + ' / ' + slides.length;
+        bar.style.width = ((i + 1) / slides.length * 100) + '%';
+        if (pushHash !== false) history.replaceState(null, '', '#s' + (i + 1));
+        window.scrollTo(0, 0);
+      }
+
+      function fullscreen() {
+        if (document.fullscreenElement) { document.exitFullscreen(); }
+        else { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); }
+      }
+
+      document.addEventListener('keydown', function (e) {
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+        switch (e.key) {
+          case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown':
+            e.preventDefault(); show(i + 1); break;
+          case 'ArrowLeft': case 'ArrowUp': case 'PageUp':
+            e.preventDefault(); show(i - 1); break;
+          case 'Home': e.preventDefault(); show(0); break;
+          case 'End': e.preventDefault(); show(slides.length - 1); break;
+          case 'f': case 'F': e.preventDefault(); fullscreen(); break;
+        }
+      });
+
+      document.querySelector('.controls').addEventListener('click', function (e) {
+        var act = e.target.getAttribute && e.target.getAttribute('data-act');
+        if (act === 'prev') show(i - 1);
+        else if (act === 'next') show(i + 1);
+        else if (act === 'full') fullscreen();
+      });
+
+      window.addEventListener('hashchange', function () {
+        var n = parseInt((location.hash.match(/^#s(\d+)$/) || [])[1], 10);
+        if (n >= 1 && n <= slides.length) show(n - 1, false);
+      });
+
+      show(i, false);
+    })();
+  </script>
+</body>
+</html>

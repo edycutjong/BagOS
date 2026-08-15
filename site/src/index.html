@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>BagOS — Every AI-initiated Solana spend: gated, capped, confirmed on chain</title>
+  <meta name="description" content="BagOS is an MCP server that lets an AI assistant read Bags/Solana token data and — only with explicit, single-use confirmation — execute swaps and claim fees. Hard spend caps, mainnet-only writes, 212 tests at 100% coverage.">
+  <link rel="canonical" href="https://bagos.edycu.dev/">
+
+  <!-- Icons -->
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <!-- Theme color, both schemes -->
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="BagOS">
+  <meta property="og:title" content="BagOS — Every AI-initiated Solana spend: gated, capped, confirmed on chain">
+  <meta property="og:description" content="The first call to a write tool signs nothing. It returns a preview and a single-use confirmation token fingerprinted to the exact arguments. Hard caps, mainnet-only writes, 212 tests at 100% coverage.">
+  <meta property="og:url" content="https://bagos.edycu.dev/">
+  <meta property="og:image" content="https://bagos.edycu.dev/og-image.png">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1260">
+  <meta property="og:image:alt" content="BagOS — the gate pipeline: token gate, spend caps, confirmation, simulate, sign, send, confirm">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="BagOS — Every AI-initiated Solana spend: gated, capped, confirmed on chain">
+  <meta name="twitter:description" content="The first call to a write tool signs nothing. Single-use confirmation tokens, hard spend caps, mainnet-only writes, 212 tests at 100% coverage.">
+  <meta name="twitter:image" content="https://bagos.edycu.dev/og-image.png">
+  <meta name="twitter:image:alt" content="BagOS — the gate pipeline: token gate, spend caps, confirmation, simulate, sign, send, confirm">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "BagOS",
+    "alternateName": "bagos-mcp-server",
+    "description": "MCP server for Bags on Solana: token analytics, trade quotes, and gated write operations. Every AI-initiated spend is gated, capped, and confirmed on chain.",
+    "url": "https://bagos.edycu.dev/",
+    "image": "https://bagos.edycu.dev/og-image.png",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Windows, Linux",
+    "softwareVersion": "2.0.0",
+    "downloadUrl": "https://www.npmjs.com/package/bagos-mcp-server",
+    "installUrl": "https://www.npmjs.com/package/bagos-mcp-server",
+    "codeRepository": "https://github.com/edycutjong/BagOS",
+    "license": "https://github.com/edycutjong/BagOS/blob/main/LICENSE",
+    "author": { "@type": "Person", "name": "Edy Cu Tjong" },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --bg: #f8fafc;
+      --bg-raise: #ffffff;
+      --bg-inset: #eef2f7;
+      --ink: #0f172a;
+      --ink-muted: #46566e;
+      --line: #dbe3ec;
+      --amber: #92610b;         /* "held" accent, AA on light bg */
+      --amber-soft: #fdf3e0;
+      --green: #067352;         /* "confirmed" accent, AA on light bg */
+      --green-soft: #e3f6ee;
+      --link: #0b5ec9;
+      --code-bg: #0f172a;       /* terminal blocks stay dark in both schemes */
+      --code-ink: #e2e8f0;
+      --code-amber: #fbbf24;
+      --code-green: #34d399;
+      --code-red: #f87171;
+      --code-muted: #94a3b8;
+      --focus: #0b5ec9;
+      --shadow: 0 1px 2px rgb(15 23 42 / .06), 0 8px 24px rgb(15 23 42 / .07);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --bg-raise: #101a2e;
+        --bg-inset: #0d1526;
+        --ink: #e6ecf4;
+        --ink-muted: #9fb0c7;
+        --line: #24324a;
+        --amber: #fbbf24;
+        --amber-soft: #2a2109;
+        --green: #34d399;
+        --green-soft: #06281d;
+        --link: #79b3f7;
+        --focus: #79b3f7;
+        --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35);
+      }
+    }
+
+    /* ── Base ───────────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 1.0625rem/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    code, pre, kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    a:hover { text-decoration-thickness: 2px; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
+    .wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
+
+    .skip-link {
+      position: absolute; left: 1rem; top: -4rem; z-index: 100;
+      background: var(--bg-raise); color: var(--ink); border: 1px solid var(--line);
+      padding: .5rem 1rem; border-radius: .5rem; transition: top .15s ease;
+    }
+    .skip-link:focus { top: 1rem; }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header.site {
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(8px);
+    }
+    header.site .wrap {
+      display: flex; align-items: center; gap: 1rem;
+      min-height: 3.5rem; flex-wrap: wrap; padding-top: .5rem; padding-bottom: .5rem;
+    }
+    .brand { display: flex; align-items: center; gap: .55rem; font-weight: 700; font-size: 1.1rem; color: var(--ink); text-decoration: none; }
+    .brand img { width: 1.75rem; height: 1.75rem; }
+    header.site nav { margin-left: auto; }
+    header.site nav ul { display: flex; gap: .25rem 1.1rem; list-style: none; flex-wrap: wrap; }
+    header.site nav a { color: var(--ink-muted); text-decoration: none; font-size: .95rem; }
+    header.site nav a:hover { color: var(--ink); text-decoration: underline; }
+
+    /* ── Hero ───────────────────────────────────────────────── */
+    .hero { padding: 4.5rem 0 3.5rem; text-align: center; }
+    .hero img.mark { width: 6rem; height: 6rem; margin-bottom: 1.25rem; }
+    .hero h1 {
+      font-size: clamp(2rem, 5.5vw, 3.1rem);
+      line-height: 1.15; letter-spacing: -.02em; font-weight: 800;
+      max-width: 42rem; margin: 0 auto;
+    }
+    .hero h1 .held { color: var(--amber); }
+    .hero h1 .landed { color: var(--green); }
+    .hero .sub {
+      max-width: 40rem; margin: 1.25rem auto 0; color: var(--ink-muted); font-size: 1.15rem;
+    }
+    .hero .install-line {
+      display: inline-block; margin-top: 1.75rem;
+      background: var(--code-bg); color: var(--code-ink);
+      border-radius: .6rem; padding: .8rem 1.4rem;
+      font-size: 1.05rem; box-shadow: var(--shadow);
+    }
+    .hero .install-line .p { color: var(--code-green); user-select: none; }
+    .cta { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+    .btn {
+      display: inline-block; padding: .65rem 1.3rem; border-radius: .55rem;
+      font-weight: 600; text-decoration: none; border: 1px solid var(--line);
+      color: var(--ink); background: var(--bg-raise);
+    }
+    .btn:hover { border-color: var(--ink-muted); }
+    .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+    @media (prefers-color-scheme: dark) { .btn.primary { background: #e6ecf4; color: #0b1220; border-color: #e6ecf4; } }
+    .btn.primary:hover { opacity: .92; }
+
+    /* Fact strip */
+    .facts { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--bg-inset); }
+    .facts ul {
+      list-style: none; display: flex; flex-wrap: wrap; justify-content: center;
+      gap: .5rem 2.25rem; padding: 1rem 0; font-size: .95rem; color: var(--ink-muted);
+    }
+    .facts li strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+    /* ── Sections ───────────────────────────────────────────── */
+    section { padding: 3.75rem 0; }
+    section + section { border-top: 1px solid var(--line); }
+    .kicker {
+      font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+      font-weight: 700; color: var(--ink-muted); margin-bottom: .6rem;
+    }
+    section h2 { font-size: clamp(1.5rem, 3.5vw, 2rem); letter-spacing: -.015em; margin-bottom: 1rem; }
+    section .lede { max-width: 44rem; color: var(--ink-muted); font-size: 1.08rem; }
+    section p + p { margin-top: .9rem; }
+
+    /* Pipeline */
+    .pipeline {
+      display: flex; flex-wrap: wrap; align-items: center; gap: .45rem;
+      margin: 2rem 0 1.5rem; padding: 1.15rem 1.25rem;
+      background: var(--bg-raise); border: 1px solid var(--line); border-radius: .8rem;
+      box-shadow: var(--shadow);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .92rem;
+    }
+    .pipeline .stage {
+      padding: .3rem .7rem; border-radius: .45rem; white-space: nowrap;
+      border: 1px solid var(--line); background: var(--bg-inset); color: var(--ink);
+    }
+    .pipeline .stage.gate { background: var(--amber-soft); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); color: var(--amber); font-weight: 600; }
+    .pipeline .stage.chain { background: var(--green-soft); border-color: color-mix(in srgb, var(--green) 45%, var(--line)); color: var(--green); font-weight: 600; }
+    .pipeline .arrow { color: var(--ink-muted); user-select: none; }
+
+    /* Terminal block */
+    figure.term { margin: 2rem 0 0; }
+    figure.term figcaption { font-size: .9rem; color: var(--ink-muted); margin-bottom: .6rem; }
+    .term pre {
+      background: var(--code-bg); color: var(--code-ink);
+      border-radius: .8rem; padding: 1.25rem 1.4rem;
+      overflow-x: auto; line-height: 1.55; font-size: .92rem;
+      box-shadow: var(--shadow);
+    }
+    .term pre .warn { color: var(--code-amber); font-weight: 700; }
+    .term pre .net { color: var(--code-red); font-weight: 700; }
+    .term pre .tok { color: var(--code-green); font-weight: 700; }
+    .term pre .dim { color: var(--code-muted); }
+
+    /* Cards */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card {
+      background: var(--bg-raise); border: 1px solid var(--line); border-radius: .8rem;
+      padding: 1.25rem 1.35rem; box-shadow: var(--shadow);
+    }
+    .card h3 { font-size: 1.05rem; margin-bottom: .45rem; }
+    .card p { font-size: .95rem; color: var(--ink-muted); }
+    .card .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .card code { font-size: .85em; background: var(--bg-inset); border: 1px solid var(--line); border-radius: .3rem; padding: .05rem .35rem; }
+
+    /* Table */
+    .tablewrap { overflow-x: auto; margin-top: 2rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--bg-raise); box-shadow: var(--shadow); }
+    table { border-collapse: collapse; width: 100%; font-size: .95rem; min-width: 34rem; }
+    caption { text-align: left; padding: 1rem 1.25rem .25rem; font-weight: 700; }
+    th, td { text-align: left; padding: .6rem 1.25rem; border-top: 1px solid var(--line); vertical-align: top; }
+    thead th { border-top: 0; color: var(--ink-muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; }
+    td code { white-space: nowrap; }
+    .pill {
+      display: inline-block; font-size: .78rem; font-weight: 700; border-radius: 99px;
+      padding: .1rem .6rem; border: 1px solid var(--line); background: var(--bg-inset); color: var(--ink-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .pill.gated { background: var(--amber-soft); color: var(--amber); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); }
+    .pill.write { background: var(--green-soft); color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, var(--line)); }
+
+    /* Honesty callout */
+    .callout {
+      margin-top: 2rem; border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line));
+      border-left: 4px solid var(--amber); background: var(--amber-soft);
+      border-radius: .6rem; padding: 1.2rem 1.4rem; max-width: 44rem;
+    }
+    .callout strong { color: var(--amber); }
+
+    /* Install blocks */
+    .install h3 { margin: 2.25rem 0 .5rem; font-size: 1.1rem; }
+    /* Long pathnames in prose (claude_desktop_config.json etc.) must be allowed
+       to break, or they widen the page on phones. */
+    .install p code { overflow-wrap: anywhere; }
+    .install h3:first-of-type { margin-top: 2rem; }
+    .install p.note { font-size: .95rem; color: var(--ink-muted); margin-bottom: .6rem; }
+
+    /* Footer */
+    footer.site { border-top: 1px solid var(--line); background: var(--bg-inset); padding: 2.5rem 0 3rem; }
+    footer.site .cols { display: flex; flex-wrap: wrap; gap: 2rem 4rem; }
+    footer.site h2 { font-size: .85rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-muted); margin-bottom: .6rem; }
+    footer.site ul { list-style: none; }
+    footer.site li { margin: .3rem 0; }
+    footer.site a { color: var(--ink); }
+    footer.site .fine { margin-top: 2rem; font-size: .85rem; color: var(--ink-muted); max-width: 44rem; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/icon.svg" alt="" width="28" height="28">BagOS</a>
+      <nav aria-label="Site">
+        <ul>
+          <li><a href="#mechanism">Mechanism</a></li>
+          <li><a href="#ships">What ships</a></li>
+          <li><a href="#install">Install</a></li>
+          <li><a href="/deck/">Deck</a></li>
+          <li><a href="https://github.com/edycutjong/BagOS" rel="noopener">GitHub</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ── Hero ── -->
+    <section class="hero" aria-labelledby="hero-h">
+      <div class="wrap">
+        <img class="mark" src="/icon.svg" alt="" width="96" height="96">
+        <h1 id="hero-h">Every AI-initiated Solana spend:<br>
+          <span class="held">gated</span>, <span class="held">capped</span>, <span class="landed">confirmed on&nbsp;chain</span>.</h1>
+        <p class="sub">BagOS is an MCP server that lets an AI assistant read Bags/Solana token data
+          and — only with explicit confirmation — execute swaps and claim creator fees.
+          The first call to a write tool <strong>signs nothing</strong>.</p>
+        <p><code class="install-line"><span class="p">$</span> npx bagos-mcp-server</code></p>
+        <div class="cta">
+          <a class="btn primary" href="#mechanism">See the gate</a>
+          <a class="btn" href="/deck/">View the deck</a>
+          <a class="btn" href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener">npm&nbsp;·&nbsp;v2.0.0</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="facts" role="group" aria-label="Key facts">
+      <div class="wrap">
+        <ul>
+          <li><strong>14</strong> MCP tools</li>
+          <li><strong>212</strong> tests · <strong>100%</strong> coverage</li>
+          <li><strong>0.1&nbsp;SOL</strong>/tx · <strong>1.0&nbsp;SOL</strong>/session caps</li>
+          <li><strong>v2.0.0</strong> on npm, SLSA provenance</li>
+          <li><strong>Active</strong> in the MCP registry</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ── Problem ── -->
+    <section id="problem" aria-labelledby="problem-h">
+      <div class="wrap">
+        <p class="kicker">The problem</p>
+        <h2 id="problem-h">An MCP server that can move money hands the model a signing key</h2>
+        <p class="lede">The assistant decides, and the transaction is on chain before a human reads
+          about it. Nothing in the protocol makes the model pause, and nothing bounds what one
+          misunderstood instruction can spend.</p>
+        <p class="lede">BagOS treats that as the design problem, not a footnote. Reads are free.
+          Every write has to pass a gate the model cannot talk its way around.</p>
+      </div>
+    </section>
+
+    <!-- ── Mechanism ── -->
+    <section id="mechanism" aria-labelledby="mechanism-h">
+      <div class="wrap">
+        <p class="kicker">The mechanism</p>
+        <h2 id="mechanism-h">Seven stages between an instruction and a signature</h2>
+        <p class="lede">Every write goes through this, in order. No stage can be skipped by
+          the model — only by you, explicitly, in configuration.</p>
+
+        <div class="pipeline" role="img" aria-label="Pipeline: token gate, then spend caps, then confirmation, then simulate, then sign, then send, then confirm">
+          <span class="stage gate">token gate</span><span class="arrow" aria-hidden="true">→</span>
+          <span class="stage gate">spend caps</span><span class="arrow" aria-hidden="true">→</span>
+          <span class="stage gate">confirmation</span><span class="arrow" aria-hidden="true">→</span>
+          <span class="stage">simulate</span><span class="arrow" aria-hidden="true">→</span>
+          <span class="stage">sign</span><span class="arrow" aria-hidden="true">→</span>
+          <span class="stage">send</span><span class="arrow" aria-hidden="true">→</span>
+          <span class="stage chain">confirm</span>
+        </div>
+
+        <p>The first call to a write tool <strong>signs nothing</strong>. It returns a preview and a
+          single-use confirmation token:</p>
+
+        <figure class="term">
+          <pre><code><span class="warn">⚠️  CONFIRMATION REQUIRED — nothing has been signed or sent.</span>
+
+Action:  Swap 0.05 of So1111…1112
+         for       EkJuyY…dBAGS
+         expect    4823917722 <span class="dim">(min 4679199990)</span>
+         slippage  3%
+         network   <span class="net">🔴 MAINNET — real funds</span>
+
+Spend:   0.05 SOL
+Caps:    0.1 SOL/tx · 0/1 SOL used this session
+
+To execute, call bags_execute_trade again with the identical arguments plus:
+  confirm: <span class="tok">"kR3nT9xQm2vP"</span></code></pre>
+          <figcaption>What the assistant — and you, reading over its shoulder — actually sees before any money moves.</figcaption>
+        </figure>
+
+        <div class="cards">
+          <div class="card">
+            <h3>Fingerprinted to the arguments</h3>
+            <p>The token is a fingerprint of the tool name plus the exact arguments. A token issued
+              for a 0.01&nbsp;SOL swap cannot authorize a 10&nbsp;SOL one.</p>
+          </div>
+          <div class="card">
+            <h3>Single use, five minutes</h3>
+            <p>It expires in 5 minutes and is consumed on every outcome — success, failure, or
+              refusal — so it cannot be replayed.</p>
+          </div>
+          <div class="card">
+            <h3>Confirmed means on chain</h3>
+            <p>On success you get a real signature and explorer link — never a success message for
+              a transaction that did not land.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Safe defaults ── -->
+    <section id="defaults" aria-labelledby="defaults-h">
+      <div class="wrap">
+        <p class="kicker">Safe by default</p>
+        <h2 id="defaults-h">An unconfigured install cannot spend real money</h2>
+        <div class="cards">
+          <div class="card">
+            <h3>Writes are mainnet-only, default is devnet</h3>
+            <p>Writes are off unless you configure them, and they are mainnet-only. The server
+              defaults to <strong>devnet</strong>, so an unconfigured install cannot spend real money.</p>
+          </div>
+          <div class="card">
+            <h3>Refuses to start on a network mismatch</h3>
+            <p>If the RPC endpoint's cluster disagrees with <code>BAGS_NETWORK</code>, the server
+              refuses to start rather than sign mainnet transactions under a devnet banner.</p>
+          </div>
+          <div class="card">
+            <h3>Hard caps on every path</h3>
+            <p><code>BAGS_MAX_SOL_PER_TX</code> defaults to <strong>0.1&nbsp;SOL</strong>;
+              <code>BAGS_MAX_SOL_PER_SESSION</code> to <strong>1.0&nbsp;SOL</strong>. The caps apply
+              even if you disable the confirmation step.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── What ships ── -->
+    <section id="ships" aria-labelledby="ships-h">
+      <div class="wrap">
+        <p class="kicker">What ships</p>
+        <h2 id="ships-h">14 tools, and the numbers behind them</h2>
+        <div class="cards">
+          <div class="card">
+            <p class="big">212 tests</p>
+            <p>100% coverage — statements, branches, functions, lines — enforced in CI.</p>
+          </div>
+          <div class="card">
+            <p class="big">v2.0.0</p>
+            <p>Live on npm as <code>bagos-mcp-server</code> with SLSA provenance.</p>
+          </div>
+          <div class="card">
+            <p class="big">Registry-listed</p>
+            <p>Active in the official MCP registry as <code>io.github.edycutjong/bagos</code>.</p>
+          </div>
+        </div>
+
+        <div class="tablewrap" tabindex="0">
+          <table>
+            <caption>The full toolset — 10 read, 2 gated/write, plus heartbeat and authenticate</caption>
+            <thead>
+              <tr><th scope="col">Tool</th><th scope="col">Type</th><th scope="col">What it does</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>bags_heartbeat</code></td><td><span class="pill">read</span></td><td>Server status and wallet reachability</td></tr>
+              <tr><td><code>bags_get_token_analytics</code></td><td><span class="pill">read</span></td><td>Lifetime fee data for a token mint</td></tr>
+              <tr><td><code>bags_get_creators</code></td><td><span class="pill">read</span></td><td>Top token creators by lifetime fees</td></tr>
+              <tr><td><code>bags_get_trade_quote</code></td><td><span class="pill">read</span></td><td>Price quote for a swap. Does not trade.</td></tr>
+              <tr><td><code>bags_get_claimable_fees</code></td><td><span class="pill">read</span></td><td>Fees currently claimable by your wallet</td></tr>
+              <tr><td><code>bags_get_partner_stats</code></td><td><span class="pill">read</span></td><td>Partner config claim statistics</td></tr>
+              <tr><td><code>bags_get_token_claim_stats</code></td><td><span class="pill">read</span></td><td>Per-creator claim totals — the royalty roster with amounts claimed</td></tr>
+              <tr><td><code>bags_get_token_claim_events</code></td><td><span class="pill">read</span></td><td>The claim audit trail for a token, paginated</td></tr>
+              <tr><td><code>bags_get_token_creators</code></td><td><span class="pill">read</span></td><td>Who shares a token's fees, and in what proportion</td></tr>
+              <tr><td><code>bags_resolve_launch_wallet</code></td><td><span class="pill">read</span></td><td>Social handle (twitter/tiktok/kick/github) → fee-share wallet</td></tr>
+              <tr><td><code>bags_authenticate</code></td><td><span class="pill">read</span></td><td>Verify wallet ownership via Ed25519 signature</td></tr>
+              <tr><td><code>bags_prepare_token_metadata</code></td><td><span class="pill gated">gated</span></td><td>Creates token info + metadata. <strong>Does not launch a token.</strong></td></tr>
+              <tr><td><code>bags_execute_trade</code></td><td><span class="pill write">write</span></td><td>Swap tokens. Signs and submits.</td></tr>
+              <tr><td><code>bags_claim_fees</code></td><td><span class="pill write">write</span></td><td>Claim creator/LP fees. Signs and submits.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Honesty ── -->
+    <section id="honesty" aria-labelledby="honesty-h">
+      <div class="wrap">
+        <p class="kicker">Why the pipeline ends at "confirm"</p>
+        <h2 id="honesty-h">v1.x claimed success for transactions that never existed</h2>
+        <p class="lede">This project's whole thesis is not overclaiming — so here is ours.</p>
+        <div class="callout">
+          <p><strong>v1.x had a defect:</strong> the write tools built transactions, discarded them,
+            and reported success. Nothing was ever signed or submitted. v2.0.0 fixes it — a write
+            now returns success only after the confirmed signature is re-fetched from the chain.
+            The full account is in the
+            <a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener">changelog</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Install ── -->
+    <section id="install" class="install" aria-labelledby="install-h">
+      <div class="wrap">
+        <p class="kicker">Install</p>
+        <h2 id="install-h">One command, or one config block</h2>
+        <p class="lede">You need a Bags API key from
+          <a href="https://dev.bags.fm" rel="noopener">dev.bags.fm</a> — that alone enables the
+          read-only tools. Writes stay off until you configure them.</p>
+
+        <h3>Run it</h3>
+        <div class="term"><pre><code>npx bagos-mcp-server</code></pre></div>
+
+        <h3>Claude Desktop</h3>
+        <p class="note"><code>~/Library/Application Support/Claude/claude_desktop_config.json</code> (macOS)
+          or <code>%APPDATA%\Claude\claude_desktop_config.json</code> (Windows):</p>
+        <div class="term"><pre><code>{
+  "mcpServers": {
+    "bagos": {
+      "command": "npx",
+      "args": ["-y", "bagos-mcp-server"],
+      "env": {
+        "BAGS_API_KEY": "your-key-here"
+      }
+    }
+  }
+}</code></pre></div>
+
+        <h3>Claude Code</h3>
+        <div class="term"><pre><code>claude mcp add bagos --env BAGS_API_KEY=your-key-here -- npx -y bagos-mcp-server</code></pre></div>
+
+        <p style="margin-top:1.5rem">Restart the client, then ask it: <em>"check the bagos heartbeat"</em>.
+          The server prints a configuration report on startup; if something is missing it tells you
+          which variable and why. To enable writes — mainnet, keypair, gating token, caps — follow
+          the <a href="https://github.com/edycutjong/BagOS#-write-tools--spend-controls" rel="noopener">write-tools guide in the README</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap">
+      <div class="cols">
+        <div>
+          <h2>Project</h2>
+          <ul>
+            <li><a href="https://github.com/edycutjong/BagOS" rel="noopener">GitHub — edycutjong/BagOS</a></li>
+            <li><a href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener">npm — bagos-mcp-server</a></li>
+            <li><a href="https://registry.modelcontextprotocol.io" rel="noopener">MCP registry — io.github.edycutjong/bagos</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Read</h2>
+          <ul>
+            <li><a href="/deck/">Pitch deck</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener">Changelog</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/blob/main/.github/SECURITY.md" rel="noopener">Security policy</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/blob/main/LICENSE" rel="noopener">MIT license</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="fine">BagOS reads your private key from disk to sign; it is never logged, never sent
+        anywhere, and never placed in an error message. Read the security policy before pointing a
+        funded wallet at it.</p>
+      <p class="fine">© 2026 Edy Cu Tjong · MIT</p>
+    </div>
+  </footer>
+</body>
+</html>
