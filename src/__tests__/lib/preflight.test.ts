@@ -55,11 +55,18 @@ function line(lines: string[], label: string): string {
 }
 
 describe("preflight — BAGS_API_KEY", () => {
-  it("is fatal when missing, because every tool needs it", () => {
+  // Deliberately NOT fatal. A missing key makes the server useless, not
+  // dangerous, and only the second justifies refusing to start: aborting here
+  // meant no client could list the tools before being configured, which is the
+  // order MCP clients actually work in. It also left Smithery indexing the
+  // server with zero tools. The two genuinely dangerous misconfigurations —
+  // a cluster/RPC mismatch and an unparseable spend cap — stay fatal, and the
+  // tests below hold that line.
+  it("warns but still starts when missing, so tools stay discoverable", () => {
     const { ok, lines } = preflight();
-    expect(line(lines, "BAGS_API_KEY")).toContain("[FAIL]");
+    expect(line(lines, "BAGS_API_KEY")).toContain("[WARN]");
     expect(line(lines, "BAGS_API_KEY")).toContain("dev.bags.fm");
-    expect(ok).toBe(false);
+    expect(ok).toBe(true);
   });
 
   it("passes when set, and never echoes the value", () => {
@@ -326,7 +333,9 @@ describe("preflight — report shape", () => {
     process.env["BAGS_NETWORK"] = "testnet";
     process.env["BAGS_MAX_SOL_PER_TX"] = "abc";
     const { ok, lines } = preflight();
-    expect(lines.filter((l) => l.includes("[FAIL]"))).toHaveLength(3);
+    // Two, not three: a missing BAGS_API_KEY is a [WARN] now, so the only
+    // fatals left are the two that can misdirect real money.
+    expect(lines.filter((l) => l.includes("[FAIL]"))).toHaveLength(2);
     expect(ok).toBe(false);
   });
 });
@@ -358,6 +367,8 @@ describe("reportPreflight", () => {
   });
 
   it("returns false and explains how to recover when a check is fatal", () => {
+    // An unparseable spend cap, because a missing API key no longer aborts.
+    process.env["BAGS_MAX_SOL_PER_TX"] = "abc";
     const ok = reportPreflight();
     expect(ok).toBe(false);
     expect(logSpy).not.toHaveBeenCalled();

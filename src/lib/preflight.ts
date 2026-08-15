@@ -28,12 +28,25 @@ export function preflight(): PreflightReport {
 
   lines.push('BagOS MCP server — configuration');
 
-  // --- required for every tool ---
+  // --- required for every tool, but NOT fatal ---
+  //
+  // A missing key makes the server useless; it does not make it dangerous. Those
+  // are different things, and only the second justifies refusing to start.
+  //
+  // Aborting here blinded every client that asks what this server offers before
+  // being configured. An MCP client lists tools first and collects credentials
+  // second, and a directory that indexes servers by launching them and calling
+  // tools/list got nothing at all: Smithery listed BagOS with zero tools and
+  // scored its entire capability section 0/40, not because the tools lack
+  // descriptions — they have them — but because nothing could enumerate them.
+  //
+  // So: start, advertise all 14 tools, and let each call fail with a clear
+  // message. Contrast the two cases below, which stay fatal because a wrong
+  // cluster or an unparseable spend cap can move real money the wrong way.
   if (process.env['BAGS_API_KEY']) {
     lines.push('  [ok]   BAGS_API_KEY               set');
   } else {
-    lines.push('  [FAIL] BAGS_API_KEY               missing — get one at https://dev.bags.fm');
-    fatal = true;
+    lines.push('  [WARN] BAGS_API_KEY               missing — tools are listed but every call will fail. Get one at https://dev.bags.fm');
   }
 
   // --- cluster ---

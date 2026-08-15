@@ -49,8 +49,8 @@
     "bags_api_key": {
       "type": "string",
       "title": "Bags API key",
-      "description": "Required for every tool. Create one at https://dev.bags.fm under API Keys.",
-      "required": true,
+      "description": "Needed before any tool can return data — every call fails without it. Left optional so the server installs and lists its tools first, and you can add the key once you have one. Create one at https://dev.bags.fm under API Keys.",
+      "required": false,
       "sensitive": true
     },
     "bags_network": {
