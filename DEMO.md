@@ -121,10 +121,14 @@ It could not complete on 2026-08-15: the public Solana faucet returned
 faucet has run dry` across four attempts. The script failed honestly and printed the
 address to fund manually.
 
-To fill this in, fund the printed address from <https://faucet.solana.com> and re-run:
+To fill this in, run it once to print (and save) the payer address, fund that address
+on **devnet** — not testnet — then re-run. The keypair is persisted to `.proof/`
+(gitignored), so the second run reuses the same address and sees the funds:
 
 ```bash
-npm run proof:devnet
+npm run proof:devnet                 # prints the address, saves the keypair
+solana airdrop 0.1 <address> --url devnet   # or https://faucet.solana.com, network = Devnet
+npm run proof:devnet                 # same address, now funded
 ```
 
 Then paste the signature and its explorer link here. **Do not** substitute a mainnet

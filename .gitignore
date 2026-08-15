@@ -33,3 +33,6 @@ build/
 dist-mcpb/
 .mcpb-stage/
 *.mcpb
+
+# Devnet proof payer keypair — throwaway, valueless devnet tokens, never committed
+.proof/

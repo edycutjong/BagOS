@@ -13,6 +13,9 @@
  * than asserting it against a mock.
  */
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   Keypair,
   LAMPORTS_PER_SOL,
@@ -29,14 +32,32 @@ const { getConnection, getRpcUrl, explorerUrl } = await import('../src/lib/netwo
 const { Executor } = await import('../src/lib/execute.js');
 
 const TRANSFER_LAMPORTS = 1_000;
+const PROOF_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '.proof');
 
 async function main() {
   const connection = getConnection();
   console.log(`network   devnet`);
   console.log(`rpc       ${getRpcUrl()}`);
 
-  const payer = Keypair.generate();
-  console.log(`keypair   ${payer.publicKey.toBase58()} (throwaway, generated now)`);
+  // Persisted, not regenerated. This script used to call Keypair.generate() on
+  // every run, which made its own recovery advice impossible to follow: when the
+  // faucet is rate limited it prints "fund this address and re-run", but the
+  // re-run generated a DIFFERENT address and never saw the SOL. The key is kept
+  // so a manually funded address survives to the next attempt.
+  //
+  // Still throwaway and still devnet-only — it holds valueless tokens and is
+  // gitignored — but it has to be the SAME throwaway twice.
+  const keyPath = process.env['PROOF_KEYPAIR_PATH'] || join(PROOF_DIR, 'devnet-payer.json');
+  let payer: Keypair;
+  if (existsSync(keyPath)) {
+    payer = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(keyPath, 'utf8'))));
+    console.log(`keypair   ${payer.publicKey.toBase58()} (reused from ${keyPath})`);
+  } else {
+    payer = Keypair.generate();
+    mkdirSync(dirname(keyPath), { recursive: true });
+    writeFileSync(keyPath, JSON.stringify(Array.from(payer.secretKey)), { mode: 0o600 });
+    console.log(`keypair   ${payer.publicKey.toBase58()} (new throwaway, saved to ${keyPath})`);
+  }
 
   console.log(`\nRequesting devnet airdrop…`);
   let balance = 0;
@@ -52,8 +73,12 @@ async function main() {
   } catch (err) {
     console.error(`\nAirdrop failed: ${(err as Error).message}`);
     console.error(
-      `The public devnet faucet is rate limited. Retry later, or fund\n` +
-      `${payer.publicKey.toBase58()} manually and re-run.`
+      `The public devnet faucet is rate limited. Retry later, or fund this\n` +
+      `DEVNET address manually and re-run — the keypair is saved, so the same\n` +
+      `address is reused and will see the funds:\n\n` +
+      `  ${payer.publicKey.toBase58()}\n\n` +
+      `  https://faucet.solana.com  (select Devnet — NOT testnet)\n` +
+      `  or: solana airdrop 0.1 ${payer.publicKey.toBase58()} --url devnet\n`
     );
     process.exit(2);
   }
