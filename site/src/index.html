@@ -6,6 +6,7 @@
 
   <title>BagOS — gated Solana spending for AI agents</title>
   <meta name="description" content="An MCP server that lets an AI assistant read Bags/Solana token data and execute swaps or fee claims — only behind a spend cap and a single-use confirmation.">
+  <link rel="preload" href="/fonts/space-grotesk-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="canonical" href="https://bagos.edycu.dev/">
 
   <!-- Icons -->
@@ -73,6 +74,36 @@
   </script>
 
   <style>
+    /* ── Space Grotesk, self-hosted ───────────────────────────
+       The display face was declared but never loaded, so the wordmark and every
+       heading silently fell back — Avenir Next on a Mac, system-ui elsewhere.
+       A width test confirmed it: "BagOS" at 64px measured identically in
+       'Space Grotesk' and in serif, i.e. the face was never resolving.
+       (document.fonts.check() returns true regardless; it reports whether
+       SOMETHING can render the string, not whether that face is present.)
+
+       Self-hosted rather than linked: a <link> to fonts.googleapis.com would be
+       the only third-party request on this page and would hand every visitor's
+       IP to a third party for the sake of a wordmark. One variable woff2, latin
+       subset, 22KB, covering the whole 300-700 range — Google serves the same
+       file for every weight, so asking for two was asking for one twice.
+       Licence and provenance in fonts/OFL.txt. */
+    @font-face {
+      font-family: 'Space Grotesk';
+      /* format('woff2'), not format('woff2-variations'). The -variations form
+         is a deprecated draft syntax that several engines reject outright, and
+         a rejected @font-face fails silently to the fallback — which is exactly
+         the bug this file is fixing. Plain woff2 loads variable fonts fine; the
+         range below is what makes it variable. */
+      src: url('/fonts/space-grotesk-var.woff2') format('woff2');
+      font-weight: 300 700;
+      font-style: normal;
+      font-display: swap;
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6,
+        U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
     /* ── Tokens ─────────────────────────────────────────────────
        These ARE ../../assets/_tokens.css — the same contract the OG image,
        the README hero and every generated asset already render against.
