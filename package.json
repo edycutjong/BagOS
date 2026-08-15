@@ -1,6 +1,6 @@
 {
   "name": "bagos-mcp-server",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "MCP server for Bags on Solana: token analytics, trade quotes, and gated write operations.",
   "mcpName": "io.github.edycutjong/bagos",
   "type": "module",

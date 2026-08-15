@@ -3,6 +3,49 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.1.0](https://github.com/edycutjong/BagOS/compare/v2.0.0...v2.1.0) (2026-08-15)
+
+
+### Features
+
+* **site:** make the gate the hero, add release provenance and inline marks ([140d07b](https://github.com/edycutjong/BagOS/commit/140d07bfb509094d2792327ee2a97cedacba7b39))
+
+
+### Bug Fixes
+
+* **ci:** download mcp-publisher to a file instead of piping curl into tar ([e7cda82](https://github.com/edycutjong/BagOS/commit/e7cda828d2b5209d0d222f27b2247cd4a9725127))
+* **ci:** grant id-token at the caller so the reusable publish can request it ([6bcf515](https://github.com/edycutjong/BagOS/commit/6bcf5154a521b32ace88219ce33205d4e9154da0))
+* **ci:** replace the unpassable npm audit gate with a ratchet ([3d1daf0](https://github.com/edycutjong/BagOS/commit/3d1daf04e82bf5ed19d38516cdbb90d84161e6b5))
+* **security:** clear every patchable advisory via version-scoped overrides ([089541e](https://github.com/edycutjong/BagOS/commit/089541e5a02d4f6f5b6e860c09feaed238e8718c))
+* **security:** override the SDK's exact pins to patched transitives ([97c03d7](https://github.com/edycutjong/BagOS/commit/97c03d7f8c0194d4ed01d1e944020b5390e89ae6))
+* **security:** validate the auth callback before writing it to disk ([a374c6a](https://github.com/edycutjong/BagOS/commit/a374c6a0fdd61d20081c2f8c9aa5bbe7d0b8be1b))
+* **site:** stamp the version at build time so releases do not strand it ([82f0789](https://github.com/edycutjong/BagOS/commit/82f0789e2c2b6153b0a3e749ad065ccbfb1032cd))
+
+
+### Documentation
+
+* 2.0.0 is live on npm — drop the install-from-source workaround ([8c419bb](https://github.com/edycutjong/BagOS/commit/8c419bb523075ef96209e4a55bc027d420bdd126))
+* three factual corrections found in a full README audit ([0e2663c](https://github.com/edycutjong/BagOS/commit/0e2663c4a0e8243c21efb8e2e9197223fe614899))
+
+
+### Build System
+
+* **deps:** bump @hono/node-server from 1.19.14 to 1.19.17 ([#5](https://github.com/edycutjong/BagOS/issues/5)) ([4a37bc9](https://github.com/edycutjong/BagOS/commit/4a37bc9351909e81fea61f269befaf93fd44582e))
+* **deps:** bump brace-expansion ([#8](https://github.com/edycutjong/BagOS/issues/8)) ([fc51ec0](https://github.com/edycutjong/BagOS/commit/fc51ec09205395ab1024ea24b9ba35f99084f874))
+* **deps:** bump fast-uri from 3.1.0 to 3.1.5 ([#6](https://github.com/edycutjong/BagOS/issues/6)) ([23d86a1](https://github.com/edycutjong/BagOS/commit/23d86a1da8055612d957ddc21a5034d0f1fd26ee))
+* **deps:** bump hono from 4.12.14 to 4.13.2 ([#4](https://github.com/edycutjong/BagOS/issues/4)) ([5650213](https://github.com/edycutjong/BagOS/commit/56502131bca094b4631cc09ebb11a5f8d6a90ae9))
+* **deps:** bump the actions group across 1 directory with 3 updates ([#3](https://github.com/edycutjong/BagOS/issues/3)) ([f8e99b5](https://github.com/edycutjong/BagOS/commit/f8e99b5c61d2253420e33e61c0c9afa746221e16))
+* **deps:** bump the minor-and-patch group across 1 directory with 9 updates ([#2](https://github.com/edycutjong/BagOS/issues/2)) ([0afe599](https://github.com/edycutjong/BagOS/commit/0afe599d26c88d06568b206f1b716c1aa0a8766f))
+
+
+### CI/CD
+
+* automate semantic versioning with release-please ([b3469aa](https://github.com/edycutjong/BagOS/commit/b3469aa3876da162d6fd27c469524b5cc8b2b728))
+* drop EOL Node 20, Solana badge to brand purple ([54870a6](https://github.com/edycutjong/BagOS/commit/54870a69750a32d89198fb2f9cf93cfd87180cd4))
+* gate publish on a tarball audit ([c6894f2](https://github.com/edycutjong/BagOS/commit/c6894f2087ae151bb926b79fad9ad95f6a0b5f2b))
+* guard against republishing, and move npm deprecate into CI ([2161003](https://github.com/edycutjong/BagOS/commit/2161003e00a8351b82948a9b57e238b9c9d91efc))
+* submit server.json to the MCP registry via OIDC ([4bd8eb6](https://github.com/edycutjong/BagOS/commit/4bd8eb62666a5fe67d48a06edd0de21d4367ef66))
+
 ## [2.0.0] — 2026-08-15
 
 ### Fixed — the write tools never wrote
