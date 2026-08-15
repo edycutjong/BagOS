@@ -27,6 +27,40 @@ cpSync(src, dist, { recursive: true });
 // tool that prunes "empty" dotfiles from src/.
 writeFileSync(join(dist, '.nojekyll'), '');
 
+// Stamp the version from package.json into the built HTML.
+//
+// The pages name the current release in ~15 places — the release link, the npm
+// attestation URL, the install line. Hard-coding those was fine while releases were
+// manual and rare. Now that release-please bumps the version automatically, a
+// hard-coded site goes stale on the very first automated release and starts linking a
+// GitHub release and an attestation that describe the previous version.
+//
+// Substitution at build time rather than a fetch at runtime: the site makes zero
+// external requests by design, and a version that changes only when the package
+// changes is a build input, not live data.
+const VERSION = JSON.parse(readFileSync(join(site, '..', 'package.json'), 'utf8')).version;
+const PAGES = ['index.html', join('deck', 'index.html')];
+let stamped = 0;
+for (const page of PAGES) {
+  const p = join(dist, page);
+  const before = readFileSync(p, 'utf8');
+  // Only version-shaped strings, so a semver appearing inside prose is untouched.
+  const after = before
+    .replace(/\bv\d+\.\d+\.\d+\b/g, `v${VERSION}`)
+    .replace(/bagos-mcp-server@\d+\.\d+\.\d+/g, `bagos-mcp-server@${VERSION}`);
+  if (after !== before) stamped++;
+  writeFileSync(p, after);
+}
+
+// A page that mentions no version at all means the markers were renamed and this
+// substitution silently stopped working — which is exactly the failure it exists to
+// prevent, so fail loudly instead.
+if (stamped === 0 && !readFileSync(join(dist, 'index.html'), 'utf8').includes(`v${VERSION}`)) {
+  console.error(`no version markers found — expected v<semver> or bagos-mcp-server@<semver>`);
+  process.exit(1);
+}
+console.log(`stamped version ${VERSION} into ${PAGES.length} pages`);
+
 // Fail the build (and therefore the Pages deploy) if the domain file is wrong —
 // a missing or mangled CNAME silently drops the custom domain on next deploy.
 const cname = readFileSync(join(dist, 'CNAME'), 'utf8').trim();
