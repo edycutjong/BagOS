@@ -115,8 +115,35 @@ jobs:
               gh pr edit "$n" --repo "$GITHUB_REPOSITORY" \
                 --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'
             else
-              echo "::error::PR #${n} is merged and pending, but v${version} was never tagged. release-please did NOT cut the release, and will refuse to open the next PR until this is resolved. Create the release from the merge commit, then re-run."
-              exit 1
+              # release-please did not cut the release. This is not hypothetical:
+              # it happened for v2.3.0, v2.4.0 and v2.4.1, and its log shows it
+              # never even attempts the release phase — it goes straight to
+              # building a PR, finds the merged one outstanding, and aborts. Each
+              # of those was tagged by hand, which is not a pipeline.
+              #
+              # So the workflow owns the outcome instead of hoping. release-please
+              # stays the preferred path; when it declines, this cuts exactly the
+              # release it should have: the manifest version, on the merge commit
+              # of the PR that bumped it, with that version's changelog section as
+              # the notes. Then it labels it tagged, which is what unjams the next
+              # run.
+              echo "::warning::release-please did not cut v${version} for PR #${n} — creating it here."
+              sha=$(gh pr view "$n" --repo "$GITHUB_REPOSITORY" --json mergeCommit --jq '.mergeCommit.oid')
+              gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md" --jq '.content' \
+                | base64 -d > /tmp/CHANGELOG.md
+              # This version's section only, up to the next H2. Matched as a
+              # literal prefix rather than a regex: awk -v mangles the backslashes
+              # in "## \[2.4.1\]" and the pattern silently matches nothing, which
+              # would ship every release with empty notes.
+              awk -v v="## [${version}]" '
+                index($0,v)==1 {f=1; print; next} f && /^## \[/ {exit} f {print}
+              ' /tmp/CHANGELOG.md > /tmp/notes.md
+              [ -s /tmp/notes.md ] || echo "Release v${version}" > /tmp/notes.md
+              gh release create "v${version}" --repo "$GITHUB_REPOSITORY" \
+                --target "$sha" --title "v${version}" --notes-file /tmp/notes.md
+              echo "Created v${version} at ${sha}."
+              gh pr edit "$n" --repo "$GITHUB_REPOSITORY" \
+                --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'
             fi
           done
 
