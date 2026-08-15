@@ -137,6 +137,11 @@
     body::before {
       content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
       background: var(--grid-bg);
+      /* Parallax drift, driven by --grid-y from the script. A fixed plane gives
+         depth but no feedback while scrolling; drifting it slower than the
+         content keeps the depth and makes the scroll feel connected.
+         transform only, so it stays on the compositor and never triggers layout. */
+      transform: translate3d(0, var(--grid-y, 0px), 0);
     }
     body > * { position: relative; z-index: 1; }
 
@@ -180,6 +185,15 @@
       min-height: 3.5rem; flex-wrap: wrap; padding-top: .5rem; padding-bottom: .5rem;
     }
     .brand { display: flex; align-items: center; gap: .55rem; font-weight: 700; font-size: 1.1rem; color: var(--ink); text-decoration: none; }
+    /* The wordmark, matched to .app-name in assets/generate-og-image.html:
+       display face, 700, tightened tracking, and the "OS" in the landed green.
+       It is the same lockup people meet on the social card and in the README
+       hero — a header that set it in the body font read as a different mark. */
+    .brand .wordmark {
+      font-family: var(--font-display); font-weight: 700;
+      font-size: 1.35rem; letter-spacing: -.03em; color: var(--ink);
+    }
+    .brand .wordmark .os { color: var(--landed); }
     .brand img { width: 1.75rem; height: 1.75rem; }
     header.site nav { margin-left: auto; }
     header.site nav ul { display: flex; gap: .25rem 1.1rem; list-style: none; flex-wrap: wrap; }
@@ -575,7 +589,7 @@
 
   <header class="site">
     <div class="wrap">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="28" height="28">BagOS</a>
+      <a class="brand" href="/"><img src="/icon.svg" alt="" width="28" height="28"><span class="wordmark">Bag<span class="os">OS</span></span></a>
       <nav aria-label="Site">
         <ul>
           <li><a href="#mechanism">Mechanism</a></li>
@@ -892,11 +906,15 @@ identical arguments plus:
    * bookkeeping — `.stage` and `.arrow` interleave naturally left to right.
    */
   (function () {
+    // Guarded on IntersectionObserver and motion preference only. The pipeline
+    // player below is additionally guarded on `pipe`, because the grid parallax
+    // and the scroll reveals are page-wide behaviour and must not disappear if
+    // the mechanism section is ever removed or renamed.
     var pipe = document.querySelector('.pipeline');
-    if (!pipe || !window.IntersectionObserver) return;
+    if (!window.IntersectionObserver) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    var steps = Array.prototype.slice.call(pipe.querySelectorAll('.stage, .arrow'));
+    var steps = pipe ? Array.prototype.slice.call(pipe.querySelectorAll('.stage, .arrow')) : [];
     var timers = [];
     var playing = false;
 
@@ -941,7 +959,27 @@ identical arguments plus:
       }, t + 900));
     }
 
-    pipe.classList.add('seq');
+    if (pipe) pipe.classList.add('seq');
+
+    // Grid parallax.
+    //
+    // The offset is taken modulo the 48px grid pitch, which is the whole trick:
+    // translating a periodic pattern by exactly one period is indistinguishable
+    // from translating it by zero, so the drift wraps invisibly and never runs
+    // out. Without the modulo this would need a plane tall enough for the
+    // largest offset on the longest page, and would still eventually show an edge.
+    var GRID_PITCH = 48, GRID_RATE = 0.15, ticking = false;
+    function driftGrid() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        var y = -((window.scrollY * GRID_RATE) % GRID_PITCH);
+        document.body.style.setProperty('--grid-y', y.toFixed(2) + 'px');
+        ticking = false;
+      });
+    }
+    window.addEventListener('scroll', driftGrid, { passive: true });
+    driftGrid();
 
     // Scroll reveal for every section body. Added here so no-JS and
     // reduced-motion readers never meet an invisible page.
@@ -967,15 +1005,16 @@ identical arguments plus:
     }, 4000);
 
     var seen = false;
-    new IntersectionObserver(function (entries, obs) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting && !seen) { seen = true; play(); obs.disconnect(); }
-      });
-    }, { threshold: 0.35 }).observe(pipe);
-
-    // Replay, for anyone who looked away during the one beat that matters.
-    pipe.addEventListener('click', play);
-    var legend = document.querySelector('.pipeline-legend');
+    if (pipe) {
+      new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting && !seen) { seen = true; play(); obs.disconnect(); }
+        });
+      }, { threshold: 0.35 }).observe(pipe);
+      // Replay, for anyone who looked away during the one beat that matters.
+      pipe.addEventListener('click', play);
+    }
+    var legend = pipe && document.querySelector('.pipeline-legend');
     if (legend) {
       var btn = document.createElement('button');
       btn.type = 'button';
