@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "bagos",
   "display_name": "BagOS",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Every AI-initiated Solana spend: gated, capped, confirmed on chain.",
   "long_description": "MCP server for Bags on Solana. Read tools cover token analytics, creator-fee rosters, claim audit trails and trade quotes. The two write tools execute swaps and claim creator fees, but the first call to either signs nothing: it returns a preview and a single-use confirmation token fingerprinted to the exact arguments, so a token issued for a 0.01 SOL swap cannot authorize a 10 SOL one. Every write passes a token gate, a hard SOL spend cap per transaction and per session, and a simulation, before it is signed and submitted. Writes are off unless a keypair is configured and are mainnet-only; the server defaults to devnet so an unconfigured install cannot spend real money.",
   "author": {
@@ -49,14 +49,14 @@
     "bags_api_key": {
       "type": "string",
       "title": "Bags API key",
-      "description": "Needed before any tool can return data \u2014 every call fails without it. Left optional so the server installs and lists its tools first, and you can add the key once you have one. Create one at https://dev.bags.fm under API Keys.",
+      "description": "Needed before any tool can return data — every call fails without it. Left optional so the server installs and lists its tools first, and you can add the key once you have one. Create one at https://dev.bags.fm under API Keys.",
       "required": false,
       "sensitive": true
     },
     "bags_network": {
       "type": "string",
       "title": "Solana cluster",
-      "description": "devnet or mainnet. Bags has no devnet deployment, so trading and fee claims require mainnet \u2014 but devnet is the default so an unconfigured install cannot spend real money.",
+      "description": "devnet or mainnet. Bags has no devnet deployment, so trading and fee claims require mainnet — but devnet is the default so an unconfigured install cannot spend real money.",
       "required": false,
       "default": "devnet"
     },
