@@ -81,6 +81,23 @@ export function preflight(): PreflightReport {
     lines.push('  [WARN] confirmation               DISABLED via BAGS_ALLOW_UNCONFIRMED');
   }
 
+  // Every other flag here changes what the server is ALLOWED to do. This one
+  // changes what it SAYS: with it on, bags_get_claimable_fees returns invented
+  // balances instead of querying the chain (see tools/GetClaimableFees.ts). A
+  // preflight that reports the spend caps but stays silent about fabricated
+  // balances tells the operator the least useful truth. [WARN], same as the
+  // other footguns, because a mock left on in a real deployment reads as real.
+  //
+  // The test is `=== 'true'` and not a looser truthy check on purpose: it must
+  // mirror GetClaimableFees exactly. If this said "ON" for USE_MOCK_DATA=1
+  // while the tool still returned live data, the report would be lying in the
+  // opposite direction.
+  if (process.env['USE_MOCK_DATA'] === 'true') {
+    lines.push('  [WARN] USE_MOCK_DATA              ON — bags_get_claimable_fees returns FABRICATED balances');
+  } else {
+    lines.push('  [ok]   USE_MOCK_DATA              off — tools report real data');
+  }
+
   return { ok: !fatal, lines };
 }
 
