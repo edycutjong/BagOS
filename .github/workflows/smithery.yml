@@ -23,6 +23,13 @@ on:
 permissions:
   contents: read
 
+# One place for the qualified name. It was previously repeated across the publish
+# flag, the verify URL and three log lines, so renaming the namespace meant finding
+# five literals — and missing one leaves the workflow publishing to one namespace
+# while telling you to check another.
+env:
+  SMITHERY_NS: edycutjong/bagos
+
 concurrency:
   group: smithery-publish
   cancel-in-progress: false
@@ -97,12 +104,12 @@ jobs:
         env:
           # The CLI reads this directly; there is no interactive login in CI.
           # Mint a RESTRICTED token, never an account key:
-          #   smithery auth token --policy '{"resources":"servers","operations":["read","write"],"namespaces":"edy-cu"}'
+          #   smithery auth token --policy '{"resources":"servers","operations":["read","write"],"namespaces":"edycutjong"}'
           SMITHERY_API_KEY: ${{ secrets.SMITHERY_API_KEY }}
         run: |
           npx -y @smithery/cli@4.11.1 mcp publish \
             "${{ steps.bundle.outputs.path }}" \
-            -n edy-cu/bagos
+            -n "${SMITHERY_NS}"
 
       # PRESENCE CHECK ONLY — and that limitation is deliberate, not an oversight.
       #
@@ -117,18 +124,31 @@ jobs:
       # So this confirms the server resolves and says plainly in the log that it
       # cannot confirm which version. Do not upgrade the wording to imply more
       # than it checks. If Smithery later exposes a version, tighten this.
+      #
+      # The API alone is not enough, and that was measured rather than assumed:
+      # after edy-cu/bagos was deleted, registry.smithery.ai kept returning a full
+      # 200 record for it for at least hours, while smithery.ai/servers/edy-cu/bagos
+      # returned 404. A check against the API only would have gone green for a
+      # listing no user could open. So the canonical page is checked too, and it is
+      # the one whose failure gets reported.
       - name: Verify the server resolves (presence only)
         if: steps.gate.outputs.skip == 'false'
         run: |
           set -euo pipefail
           WANT="${{ steps.bundle.outputs.version }}"
+          API="https://registry.smithery.ai/servers/${SMITHERY_NS}"
+          # /servers/ is canonical; /server/ 308-redirects to it.
+          PAGE="https://smithery.ai/servers/${SMITHERY_NS}"
           for i in $(seq 1 6); do
-            if curl -sf "https://registry.smithery.ai/servers/edy-cu/bagos" \
-                 | grep -q '"qualifiedName"'; then
-              echo "Smithery resolves edy-cu/bagos."
-              echo "::notice::Published ${WANT}. Smithery's public API exposes no version field, so this step confirms the listing exists, NOT that it serves ${WANT}. Confirm at https://smithery.ai/server/edy-cu/bagos"
+            if curl -sf "$API" | grep -q '"qualifiedName"'; then
+              echo "Smithery API resolves ${SMITHERY_NS}."
+              if curl -sfL -o /dev/null "$PAGE"; then
+                echo "::notice::Published ${WANT}. Smithery exposes no version field, so this confirms the listing EXISTS, not that it serves ${WANT}. Page: ${PAGE}"
+                exit 0
+              fi
+              echo "::warning::${SMITHERY_NS} resolves in the API but ${PAGE} did not load. The API index can lag deletes and republishes — open the page before trusting this."
               exit 0
             fi
             echo "not resolving yet ($i/6)"; sleep 10
           done
-          echo "::warning::edy-cu/bagos did not resolve within 60s. The publish step reported success; check https://smithery.ai/server/edy-cu/bagos"
+          echo "::warning::${SMITHERY_NS} did not resolve within 60s. The publish step reported success; check ${PAGE}"
