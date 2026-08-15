@@ -109,27 +109,53 @@ lookup, or the spend recorder each makes the suite fail.
 
 ---
 
-## Not available in this run
+## Receipt 4 — a real transaction, landed on chain and re-fetched
 
-**An on-chain devnet write receipt.** `npm run proof:devnet` generates a throwaway
-keypair, funds it from the public faucet, and pushes a transfer through the same
-simulate → sign → send → confirm path the write tools use, then re-fetches the signature
-from the chain rather than trusting the function's return value.
+`npm run proof:devnet` pushes a transfer through the **same** `simulate → sign → send →
+confirm` path the write tools use (`src/lib/execute.ts`), then re-fetches the signature
+from the chain rather than trusting the function's return value. Captured
+**2026-08-16**:
 
-It could not complete on 2026-08-15: the public Solana faucet returned
-`429 Too Many Requests — you've either reached your airdrop limit today or the airdrop
-faucet has run dry` across four attempts. The script failed honestly and printed the
-address to fund manually.
+```
+network   devnet
+keypair   3nFqw88x51A2sPZvxg7RjkbmsFUmaPM3EakL71MDYhCw
+balance   10 SOL — already funded, skipping the faucet
 
-To fill this in, run it once to print (and save) the payer address, fund that address
-on **devnet** — not testnet — then re-run. The keypair is persisted to `.proof/`
-(gitignored), so the second run reuses the same address and sees the funds:
+--- PROOF -------------------------------------------------
+signature 2kvu25xWAjqCB3wuNzwMRcN2RMqqfYN6TeJjnA888YtCqNJi9EU9CHSxynkq5QdM499e6yKbXYAwXUbzDKY9U5Dm
+slot      484219564
+wall      864 ms (simulate + sign + send + confirm)
+-----------------------------------------------------------
 
-```bash
-npm run proof:devnet                 # prints the address, saves the keypair
-solana airdrop 0.1 <address> --url devnet   # or https://faucet.solana.com, network = Devnet
-npm run proof:devnet                 # same address, now funded
+verified  re-fetched from chain in slot 484219564, err=null
+          fee 5000 lamports
 ```
 
-Then paste the signature and its explorer link here. **Do not** substitute a mainnet
-transaction or a hand-written hash — an unverifiable receipt is worse than an absent one.
+**Verify it yourself** — this is the point of the receipt, and it needs nothing from us:
+
+<https://explorer.solana.com/tx/2kvu25xWAjqCB3wuNzwMRcN2RMqqfYN6TeJjnA888YtCqNJi9EU9CHSxynkq5QdM499e6yKbXYAwXUbzDKY9U5Dm?cluster=devnet>
+
+```bash
+curl -s -X POST https://api.devnet.solana.com \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"getTransaction",
+       "params":["2kvu25xWAjqCB3wuNzwMRcN2RMqqfYN6TeJjnA888YtCqNJi9EU9CHSxynkq5QdM499e6yKbXYAwXUbzDKY9U5Dm",
+                 {"encoding":"json","maxSupportedTransactionVersion":0}]}'
+# → slot 484219564, meta.err null, meta.fee 5000
+```
+
+Why this receipt and not a mainnet one: it is the execution layer that matters here, and
+devnet exercises it identically while costing nothing real. **Do not** substitute a
+mainnet transaction or a hand-written hash — an unverifiable receipt is worse than an
+absent one.
+
+To reproduce from scratch: run it once to print and save the payer address, fund that
+address on **devnet** (not testnet), then run again. The keypair persists to `.proof/`
+(gitignored), so the second run reuses the same address, and it skips the faucet entirely
+when the balance is already there:
+
+```bash
+npm run proof:devnet                        # prints the address, saves the keypair
+solana airdrop 0.1 <address> --url devnet   # or https://faucet.solana.com, network = Devnet
+npm run proof:devnet                        # same address, now funded
+```

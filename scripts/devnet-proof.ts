@@ -59,28 +59,38 @@ async function main() {
     console.log(`keypair   ${payer.publicKey.toBase58()} (new throwaway, saved to ${keyPath})`);
   }
 
-  console.log(`\nRequesting devnet airdrop…`);
-  let balance = 0;
-  try {
-    const sig = await connection.requestAirdrop(payer.publicKey, LAMPORTS_PER_SOL / 10);
-    const latest = await connection.getLatestBlockhash('confirmed');
-    await connection.confirmTransaction(
-      { signature: sig, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
-      'confirmed'
-    );
-    balance = await connection.getBalance(payer.publicKey);
-    console.log(`airdrop   ok — ${balance / LAMPORTS_PER_SOL} SOL`);
-  } catch (err) {
-    console.error(`\nAirdrop failed: ${(err as Error).message}`);
-    console.error(
-      `The public devnet faucet is rate limited. Retry later, or fund this\n` +
-      `DEVNET address manually and re-run — the keypair is saved, so the same\n` +
-      `address is reused and will see the funds:\n\n` +
-      `  ${payer.publicKey.toBase58()}\n\n` +
-      `  https://faucet.solana.com  (select Devnet — NOT testnet)\n` +
-      `  or: solana airdrop 0.1 ${payer.publicKey.toBase58()} --url devnet\n`
-    );
-    process.exit(2);
+  // Check the balance BEFORE asking the faucet for anything. The script used to
+  // airdrop unconditionally and treat a faucet 429 as fatal — which defeated the
+  // manual-funding path entirely: you could fund the address correctly and the
+  // re-run would still abort on the faucet without ever looking at the SOL
+  // sitting there. The faucet is a convenience, not a precondition.
+  let balance = await connection.getBalance(payer.publicKey);
+  if (balance >= TRANSFER_LAMPORTS + 5_000) {
+    console.log(`balance   ${balance / LAMPORTS_PER_SOL} SOL — already funded, skipping the faucet`);
+  } else {
+    console.log(`\nRequesting devnet airdrop…`);
+    try {
+      const sig = await connection.requestAirdrop(payer.publicKey, LAMPORTS_PER_SOL / 10);
+      const latest = await connection.getLatestBlockhash('confirmed');
+      await connection.confirmTransaction(
+        { signature: sig, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
+        'confirmed'
+      );
+      balance = await connection.getBalance(payer.publicKey);
+      console.log(`airdrop   ok — ${balance / LAMPORTS_PER_SOL} SOL`);
+    } catch (err) {
+      console.error(`\nAirdrop failed: ${(err as Error).message}`);
+      console.error(
+        `The public devnet faucet is rate limited. Retry later, or fund this\n` +
+        `DEVNET address manually and re-run — the keypair is saved, so the same\n` +
+        `address is reused and the next run will spend the funds directly\n` +
+        `without touching the faucet:\n\n` +
+        `  ${payer.publicKey.toBase58()}\n\n` +
+        `  https://faucet.solana.com  (select Devnet — NOT testnet)\n` +
+        `  or: solana airdrop 0.1 ${payer.publicKey.toBase58()} --url devnet\n`
+      );
+      process.exit(2);
+    }
   }
 
   if (balance < TRANSFER_LAMPORTS) {

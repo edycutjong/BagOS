@@ -175,7 +175,7 @@ or the spend recorder each makes the suite fail.
 | Dependency debt | ⚠️ | **6 advisories, 0 critical** — down from 90. Everything patchable was cleared with version-scoped `overrides` (see [`package.json`](package.json)). The 6 that remain are **one** root cause, `bigint-buffer` [GHSA-3gc7-fjrx-p6mg](https://github.com/advisories/GHSA-3gc7-fjrx-p6mg), counted once at each level of the chain it travels up to `@bagsfm/bags-sdk`. No patched `bigint-buffer` exists — 1.1.5 is the installed version, the latest version, and vulnerable. CI blocks any critical and any increase over [`.audit-baseline.json`](.audit-baseline.json). **Note:** npm honours `overrides` only in a root project, so these protect this repo and CI, not consumers of the published package. |
 | CI | ✅ | 4 stages (Quality → Security ∥ Test → Build) with `cancel-in-progress` concurrency; Node 22 + 24 matrix; packaged-artifact and entrypoint checks |
 | CD | ✅ | Release → tarball audit → `npm publish --provenance` → deprecate the superseded version. A second workflow submits `server.json` to the MCP registry via OIDC. Both gated on the full CI suite. 1.0.0 is deprecated on npm with a pointer to the defect it carried. |
-| On-chain proof | ⚠️ | `npm run proof:devnet` exists and lands a real devnet transaction, but the public faucet was dry on 2026-08-15 — no signature captured yet. See [DEMO.md](DEMO.md) |
+| On-chain proof | ✅ | `npm run proof:devnet` lands a real transaction through the production write path and re-fetches it from the chain. Captured 2026-08-16: [`2kvu25xW…U5Dm`](https://explorer.solana.com/tx/2kvu25xWAjqCB3wuNzwMRcN2RMqqfYN6TeJjnA888YtCqNJi9EU9CHSxynkq5QdM499e6yKbXYAwXUbzDKY9U5Dm?cluster=devnet), slot 484219564, `err: null`. Anyone can re-verify it — see [DEMO.md](DEMO.md) |
 | Community standards | ✅ | Code of Conduct · Contributing · Security policy · issue + PR templates |
 
 E2E browser tests and Lighthouse budgets are deliberately absent: this is a stdio/HTTP MCP
@@ -274,10 +274,12 @@ npm run inspector     # MCP Inspector against the built server
 npm run proof:devnet  # land a real devnet transaction through the write path
 ```
 
-`proof:devnet` generates a throwaway keypair, funds it from the devnet faucet,
-and pushes a transfer through the same simulate/sign/send/confirm path the write
-tools use — then re-fetches the signature from the chain instead of trusting the
-function's return value. Use it to verify the execution layer end to end.
+`proof:devnet` uses a persisted throwaway keypair (`.proof/`, gitignored), funds
+it from the devnet faucet when needed, and pushes a transfer through the same
+simulate/sign/send/confirm path the write tools use — then re-fetches the
+signature from the chain instead of trusting the function's return value. That
+last step is the whole point: a function returning `success` is a claim, and a
+signature you can open on an explorer is evidence.
 
 ---
 
