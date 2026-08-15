@@ -3,6 +3,32 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.0](https://github.com/edycutjong/BagOS/compare/v2.3.0...v2.4.0) (2026-08-15)
+
+
+### Features
+
+* **proof:** capture the on-chain receipt, and fix the bug that blocked it ([62d41bc](https://github.com/edycutjong/BagOS/commit/62d41bc38509aa5631f544dbd6e9e3e4f786f3ef))
+
+
+### Bug Fixes
+
+* **ci:** clear three failures that were noise, not signal ([c8088a6](https://github.com/edycutjong/BagOS/commit/c8088a6403be2667f5b6f3b1584c88abc895b5ea))
+* **ci:** grant release-please label permission, and fail loudly when it jams ([4fff77b](https://github.com/edycutjong/BagOS/commit/4fff77bd02e6aa369ebfa69927a450093484ee5f))
+* **mcpb:** declare the tool list in the manifest, so registries can read it ([a2301c1](https://github.com/edycutjong/BagOS/commit/a2301c1197a10698b07ab0538fa19c9965118d6e))
+* **mcpb:** include inputSchema in the declared tools ([0b69617](https://github.com/edycutjong/BagOS/commit/0b69617a125a82e28a054b3a665ae8397139f7da))
+* **proof:** persist the devnet payer, so "fund it and re-run" actually works ([e0b2673](https://github.com/edycutjong/BagOS/commit/e0b26733e1e49f1f1d758add7926a6d741d6b7b7))
+
+
+### Reverts
+
+* drop the manifest tool declaration — the two validators disagree ([c4b07cd](https://github.com/edycutjong/BagOS/commit/c4b07cd37a5f0d4f112d618535bfefd1d701719c))
+
+
+### Documentation
+
+* correct two stale claims in the README ([607b6c0](https://github.com/edycutjong/BagOS/commit/607b6c05bdc2927ca5a2293ba2c65b039a68c8d6))
+
 ## [2.3.0](https://github.com/edycutjong/BagOS/compare/v2.2.0...v2.3.0) (2026-08-15)
 
 
