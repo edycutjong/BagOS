@@ -217,21 +217,33 @@
 
     .hero h1 {
       font-family: var(--font-display);
-      font-size: clamp(2.4rem, 5.4vw, 4rem);
-      line-height: 1.04; letter-spacing: -.03em; font-weight: 700;
+      /* 3.8rem, not 4rem: at 4rem "confirmed on chain" wraps and orphans
+         "on chain" onto a fifth line. This is the largest size that keeps
+         the phrase — and therefore the green underline — in one piece. */
+      font-size: clamp(2.4rem, 5.4vw, 3.8rem);
+      line-height: 1.12; letter-spacing: -.03em; font-weight: 700;
       margin-top: 1.4rem;
     }
     .hero h1 .held   { color: var(--held); }
     .hero h1 .landed { color: var(--landed); }
     /* The two words the product is about get an underline that reads as a
-       state change: dashed while held, solid once landed. */
-    .hero h1 .held, .hero h1 .landed { position: relative; white-space: nowrap; }
-    .hero h1 .held::after, .hero h1 .landed::after {
-      content: ""; position: absolute; left: 0; right: 0; bottom: -.11em; height: .09em;
-      border-radius: 2px;
+       state change: dashed while held, solid once landed.
+       Real text-decoration, not an absolutely-positioned ::after. The first
+       version used `bottom: -.11em` on a pseudo-element, and at this heading's
+       line-height there is no gap between lines for it to occupy — the amber
+       rule for "gated, capped" landed on top of the line below and struck
+       through "confirmed on chain". text-decoration lives inside the line box,
+       so it cannot collide with the next line, and it skips descenders. */
+    .hero h1 .held, .hero h1 .landed {
+      /* No nowrap. The pseudo-element version needed it to span correctly and
+         it made "confirmed on chain" overflow its column; text-decoration draws
+         per line box, so wrapping is free. */
+      text-decoration-line: underline;
+      text-decoration-thickness: .06em;
+      text-underline-offset: .13em;
     }
-    .hero h1 .held::after   { background: repeating-linear-gradient(90deg, var(--held) 0 .38em, transparent .38em .72em); opacity: .8; }
-    .hero h1 .landed::after { background: var(--landed); opacity: .9; }
+    .hero h1 .held   { text-decoration-style: dashed; text-decoration-color: color-mix(in srgb, var(--held) 85%, transparent); }
+    .hero h1 .landed { text-decoration-style: solid;  text-decoration-color: var(--landed); }
 
     .hero .sub {
       max-width: 34rem; margin: 1.35rem 0 0; color: var(--ink-muted); font-size: 1.12rem;
