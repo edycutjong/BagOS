@@ -19,20 +19,14 @@ Thumbs.db
 coverage/
 
 # Assets
-# docs/assets/ is the media-dir the asset pipeline syncs into. Everything there is
-# ignored by default (it is also where large demo captures land), then the ten
-# judge-facing files produced by the suite are un-ignored by name.
-docs/assets/*
-!docs/assets/icon.svg
-!docs/assets/icon-animated.svg
-!docs/assets/readme-hero-animated.svg
-!docs/assets/readme-hero.png
-!docs/assets/og-image.png
-!docs/assets/youtube-thumbnail.png
-!docs/assets/devpost-thumbnail.png
-!docs/assets/devpost-gallery.png
-!docs/assets/icon-512.png
-!docs/assets/icon-1024.png
+# docs/assets/ is the media-dir the asset pipeline syncs into, and it is ignored
+# whole. The ten files it held were previously un-ignored by name so the README
+# could reference them — but the README now serves the hero and icon from docs/
+# itself, so nothing in the repo referenced docs/assets/ at all: 6.7 MB of
+# duplicates of docs/ and site/src/, plus submission-platform art (Devpost,
+# YouTube) whose masters live in the project's own assets/ directory. Ignoring
+# the directory whole keeps the sync target working without committing its output.
+docs/assets/
 build/
 
 # MCPB bundle build output (artefact; manifest.json is the source)

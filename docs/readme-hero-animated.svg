@@ -109,7 +109,7 @@
   <text x="48" y="172" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#F59E0B">0.1 SOL/tx cap · 1 SOL/session · single-use confirm<animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="1;0.62;1" keyTimes="0;0.5;1"/></text>
 
   <!-- tech-stack line (mono, faint) -->
-  <text x="48" y="198" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#7C8CA3">MCP · TypeScript · Solana · Bags SDK · 192 tests</text>
+  <text x="48" y="198" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#7C8CA3">MCP · TypeScript · Solana · Bags SDK · 337 tests</text>
 
   <!-- write-path line (mono, the product's one-flow) -->
   <text x="48" y="262" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#7C8CA3">gate → caps → confirm → simulate → sign → send → confirm</text>

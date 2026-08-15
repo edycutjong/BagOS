@@ -1,7 +1,27 @@
 # Examples
 
 Prompts you can type at an assistant connected to BagOS, and what each one
-should actually do. Read-only examples work with just `BAGS_API_KEY`.
+should actually do.
+
+All 14 tools are covered. The 11 read tools work with just `BAGS_API_KEY` and
+never sign anything. The two write tools and the one gated tool are marked.
+
+| | Tool | What it needs |
+|---|---|---|
+| 1 | `bags_heartbeat` | nothing |
+| 2 | `bags_authenticate` | a local keypair |
+| 3 | `bags_get_trade_quote` | `BAGS_API_KEY` |
+| 4 | `bags_get_token_analytics` | `BAGS_API_KEY` |
+| 5 | `bags_get_creators` | `BAGS_API_KEY` |
+| 6 | `bags_get_token_creators` | `BAGS_API_KEY` |
+| 7 | `bags_get_token_claim_stats` | `BAGS_API_KEY` |
+| 8 | `bags_get_token_claim_events` | `BAGS_API_KEY` |
+| 9 | `bags_get_claimable_fees` | `BAGS_API_KEY` |
+| 10 | `bags_get_partner_stats` | `BAGS_API_KEY` |
+| 11 | `bags_resolve_launch_wallet` | `BAGS_API_KEY` |
+| 12 | `bags_prepare_token_metadata` | `BAGS_API_KEY` — gated, launches nothing |
+| 13 | `bags_execute_trade` | mainnet + confirmation — **spends** |
+| 14 | `bags_claim_fees` | mainnet + confirmation — **spends gas** |
 
 ---
 
@@ -17,7 +37,20 @@ check the startup report on stderr.
 
 ---
 
-## 2. Price a swap without trading
+## 2. Authenticate for the endpoints that need it
+
+> **"Authenticate with Bags."**
+
+Calls `bags_authenticate`, which runs the Bags V2 signature challenge and loads
+your local wallet automatically — from `~/.config/bags/keypair.json`, or
+`BAGS_KEYPAIR_PATH` if you set it.
+
+Signing a challenge is not signing a transaction: this proves you hold the key,
+it does not move anything.
+
+---
+
+## 3. Price a swap without trading
 
 > **"What would I get for 0.5 SOL of $BOS right now?"**
 
@@ -30,30 +63,85 @@ the Bags API rather than the chain.
 
 ---
 
-## 3. See what fees you can claim
-
-> **"Do I have any claimable creator fees?"**
-
-Calls `bags_get_claimable_fees` for your configured wallet. Read-only: it lists
-positions and amounts but does not claim them.
-
-Follow up with example 6 to actually claim.
-
----
-
 ## 4. Look up a token
 
 > **"Show me lifetime fee data for mint EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS."**
 
 Calls `bags_get_token_analytics`. Works for any mint, not just yours.
 
+---
+
+## 5. Find creators
+
 > **"Who are the top creators by lifetime fees?"**
 
-Calls `bags_get_creators`.
+Calls `bags_get_creators` — a leaderboard across Bags, paginated with `limit`
+and `offset` (default 10).
+
+> **"Who shares the fees on mint EkJuyY…dBAGS?"**
+
+Calls `bags_get_token_creators`, which is the per-token question rather than the
+global one: every creator sharing that token's fees, their wallet, their social
+provider, and their share in basis points.
 
 ---
 
-## 5. Execute a swap (mainnet, two steps)
+## 6. Audit who has claimed what
+
+> **"What has each creator claimed on mint EkJuyY…dBAGS?"**
+
+Calls `bags_get_token_claim_stats` — per-creator totals, each with its royalty
+split and the amount claimed so far.
+
+> **"Show me the claim history for that mint."**
+
+Calls `bags_get_token_claim_events` — the audit trail behind those totals: who
+claimed, how much, when, and the transaction signature for each. Paginated via
+`limit` and `offset` (default 100), so ask for a page at a time on busy tokens.
+
+Both are read-only, and the signatures they return resolve on any explorer —
+useful when you want to verify a claim independently rather than trust a total.
+
+---
+
+## 7. See your own earnings
+
+> **"Do I have any claimable creator fees?"**
+
+Calls `bags_get_claimable_fees` for your configured wallet. Read-only: it lists
+positions and amounts but does not claim them. Follow up with example 11 to
+actually claim.
+
+> **"What have I earned as a referral partner?"**
+
+Calls `bags_get_partner_stats` for a partner public key.
+
+---
+
+## 8. Resolve a social handle to a wallet
+
+> **"Which Bags wallet does @someone on twitter launch from?"**
+
+Calls `bags_resolve_launch_wallet`. Takes a username (a leading `@` is stripped
+for you) and one of `twitter`, `tiktok`, `kick`, or `github`.
+
+Useful before a claim or a lookup, when you know the person but not the address.
+
+---
+
+## 9. Prepare token metadata
+
+> **"Reserve a mint and upload metadata for my token."**
+
+Calls `bags_prepare_token_metadata`. It reserves a mint and uploads metadata,
+then says plainly that **nothing was launched**.
+
+Completing a launch needs a Meteora fee-share config whose fee-claimer split must
+be your decision, not a model's. Finish at [bags.fm](https://bags.fm).
+
+---
+
+## 10. Execute a swap (mainnet, two steps) — **spends**
 
 > **"Swap 0.05 SOL for $BOS."**
 
@@ -103,12 +191,13 @@ success message for something that did not happen.
 
 ---
 
-## 6. Claim fees (mainnet, two steps)
+## 11. Claim fees (mainnet, two steps) — **spends gas**
 
 > **"Claim my fees for mint EkJuyY…dBAGS."**
 
-Same pattern: preview with a token, then confirm. Fee claims can involve several
-transactions. If some land and one fails, you get an honest partial report:
+Calls `bags_claim_fees`. Same pattern as example 10: preview with a token, then
+confirm. Fee claims can involve several transactions. If some land and one
+fails, you get an honest partial report:
 
 ```
 ⚠️  Partial claim. 2 of 3 transactions confirmed.
@@ -126,10 +215,8 @@ Remaining transactions were not submitted.
 
 Worth knowing, because a model may confidently offer:
 
-**Launch a token.** `bags_prepare_token_metadata` reserves a mint and uploads
-metadata, and says plainly that nothing was launched. Completing a launch needs
-a Meteora fee-share config whose fee-claimer split must be your decision.
-Finish at [bags.fm](https://bags.fm).
+**Launch a token.** See example 9 — metadata is prepared, the launch is yours to
+finish.
 
 **Trade on devnet.** Bags has no devnet deployment. Write tools on devnet return
 an explanation rather than failing obscurely.
