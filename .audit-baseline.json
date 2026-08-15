@@ -1,8 +1,8 @@
 {
-  "low": 3,
-  "moderate": 11,
-  "high": 18,
+  "low": 2,
+  "moderate": 0,
+  "high": 12,
   "critical": 0,
-  "_note": "Baseline for the CI audit ratchet. These are upstream, transitive through @bagsfm/bags-sdk and @solana/web3.js, and unfixable from here: npm audit fix --force would downgrade the SDK to 1.0.8 (no trade/partner services) and web3.js to 0.0.3. CI fails if any CRITICAL appears, or if any count rises above these numbers. Lower them whenever upstream ships fixes.",
+  "_note": "Runtime-path only. Lowered after npm overrides forced patched axios/form-data/uuid/ws/body-parser/qs/ip-address past the exact pins in @bagsfm/bags-sdk. Remaining are transitive with no patched version available. Policy: fix what ships in the tarball runtime path; everything else rides weekly Dependabot PRs.",
   "_recorded": "2026-08-15"
 }
