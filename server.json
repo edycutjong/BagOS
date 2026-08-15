@@ -3,7 +3,7 @@
   "name": "io.github.edycutjong/bagos",
   "title": "BagOS",
   "description": "MCP server for Bags on Solana: token analytics, trade quotes, and gated write operations.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "websiteUrl": "https://github.com/edycutjong/bagos",
   "repository": {
     "url": "https://github.com/edycutjong/bagos",
@@ -15,7 +15,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "bagos-mcp-server",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
