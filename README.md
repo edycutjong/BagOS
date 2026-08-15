@@ -152,7 +152,8 @@ or the spend recorder each makes the suite fail.
 | Code quality | ✅ | ESLint + `tsc --noEmit`, both clean |
 | Unit testing | ✅ | Jest, 209 tests / 13 suites, **100%** statements · branches · functions · lines, enforced |
 | High-signal tests | ✅ | Mutation-checked cap/confirmation bypass tests · a leak-channel regression test (the API key used to be echoed into tool output) · network-mismatch refusal |
-| Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · `npm audit` in CI · secret scanning + push protection on |
+| Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · secret scanning + push protection on · `npm audit` in CI as a **ratchet** — see below |
+| Dependency debt | ⚠️ | 18 high / 11 moderate advisories, **0 critical**, all transitive through `@bagsfm/bags-sdk` → `@solana/web3.js`. Not fixable here: `npm audit fix --force` downgrades the SDK to 1.0.8 (no `trade`/`partner` services) and web3.js to 0.0.3. CI blocks any critical and any *increase* over [`.audit-baseline.json`](.audit-baseline.json). |
 | CI/CD | ✅ | 4 stages (Quality → Security ∥ Test → Build) with `cancel-in-progress` concurrency; Node 20 + 22 matrix; packaged-artifact and entrypoint checks |
 | On-chain proof | ⚠️ | `npm run proof:devnet` exists and lands a real devnet transaction, but the public faucet was dry on 2026-08-15 — no signature captured yet. See [DEMO.md](DEMO.md) |
 | Community standards | ✅ | Code of Conduct · Contributing · Security policy · issue + PR templates |

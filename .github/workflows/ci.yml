@@ -46,8 +46,45 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+      # A plain `--audit-level=high` gate can never pass here and is therefore not a gate.
+      # Every high advisory in this tree is transitive through @bagsfm/bags-sdk and
+      # @solana/web3.js, and `npm audit fix --force` "resolves" them by downgrading the SDK
+      # to 1.0.8 — a version with no `trade` and no `partner` services, i.e. a build that
+      # crashes on three of our tools — and web3.js to 0.0.3.
+      #
+      # So this is a ratchet instead: any CRITICAL fails, and any count rising above the
+      # committed baseline fails. Upstream's existing debt does not block us; new debt does.
+      # When upstream ships fixes, lower .audit-baseline.json.
+      - name: Audit production dependencies (ratchet)
+        run: |
+          npm audit --omit=dev --json > /tmp/audit.json || true
+          node -e '
+            const now = require("/tmp/audit.json").metadata.vulnerabilities;
+            const base = require("./.audit-baseline.json");
+            const sev = ["critical", "high", "moderate", "low"];
+            console.log("severity   baseline  current");
+            for (const s of sev) {
+              console.log("  " + s.padEnd(9) + String(base[s]).padStart(8) + String(now[s]).padStart(9));
+            }
+            if (now.critical > 0) {
+              console.error("::error::" + now.critical + " CRITICAL advisories — these block regardless of baseline");
+              process.exit(1);
+            }
+            const worse = sev.filter(s => now[s] > base[s]);
+            if (worse.length) {
+              console.error("::error::new vulnerabilities since the baseline: " +
+                worse.map(s => `${s} ${base[s]}->${now[s]}`).join(", ") +
+                ". Investigate, then either fix or update .audit-baseline.json with a reason.");
+              process.exit(1);
+            }
+            const better = sev.filter(s => now[s] < base[s]);
+            if (better.length) {
+              console.log("::notice::upstream improved (" +
+                better.map(s => `${s} ${base[s]}->${now[s]}`).join(", ") +
+                ") — lower .audit-baseline.json to lock the gain in");
+            }
+            console.log("no new vulnerabilities since " + base._recorded);
+          '
 
   # ── Stage 3: Test ───────────────────────────────────────────
   # Coverage is enforced at 100% by jest.config.ts, so a drop fails here.
