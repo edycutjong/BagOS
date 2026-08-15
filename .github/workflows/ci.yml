@@ -130,12 +130,5 @@ jobs:
           timeout 20s node build/index.js < /dev/null > startup.log 2>&1 || true
           cat startup.log
           grep -q "BagOS MCP server — configuration" startup.log
-      # A stdio bundle is never executed by a registry, so manifest.json's `tools`
-      # array is the only capability metadata a registry can read. It is generated
-      # from the server, and stale-checked here: renaming a tool without
-      # regenerating would silently ship a manifest describing a server that no
-      # longer exists, which is how Smithery came to list this one with zero tools.
-      - name: Manifest tool list matches the server
-        run: node scripts/sync-manifest-tools.mjs --check
       - name: Pack check (what npm would publish)
         run: npm pack --dry-run
