@@ -59,8 +59,18 @@ if (!tools.length) {
 }
 
 // Sorted by name so the diff is stable across runs and reviewable.
+//
+// inputSchema is included, not trimmed away: Smithery rejects the upload with
+// "expected object, received undefined" once per tool without it, and the
+// parameter descriptions it carries are themselves part of what a registry
+// scores. The MCPB spec's example shows only name and description, so this is
+// deliberately more than the minimum.
 const declared = tools
-  .map((t) => ({ name: t.name, description: t.description }))
+  .map((t) => ({
+    name: t.name,
+    description: t.description,
+    inputSchema: t.inputSchema ?? { type: 'object', properties: {} },
+  }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
 const missing = declared.filter((t) => !t.description);
