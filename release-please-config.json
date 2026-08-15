@@ -7,10 +7,11 @@
       "package-name": "bagos-mcp-server",
       "changelog-path": "CHANGELOG.md",
 
-      "//": "The version lives in three places and publish.yml hard-fails on drift, because the MCP registry rejects a server.json whose version is not a real published npm version. release-please keeps all three in lockstep by config rather than by anyone remembering.",
+      "//": "The version lives in four places and publish.yml hard-fails on drift, because the MCP registry rejects a server.json whose version is not a real published npm version. manifest.json is the MCPB bundle Smithery distributes; a stale version there ships a bundle claiming to be a release it is not. release-please keeps all four in lockstep by config rather than by anyone remembering.",
       "extra-files": [
         { "type": "json", "path": "server.json", "jsonpath": "$.version" },
-        { "type": "json", "path": "server.json", "jsonpath": "$.packages[0].version" }
+        { "type": "json", "path": "server.json", "jsonpath": "$.packages[0].version" },
+        { "type": "json", "path": "manifest.json", "jsonpath": "$.version" }
       ],
 
       "//changelog": "Angular convention. Types absent from this list are still parsed for version bumping but stay out of the changelog — nobody reads a changelog entry for a lint fix.",

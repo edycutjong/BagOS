@@ -34,3 +34,8 @@ docs/assets/*
 !docs/assets/icon-512.png
 !docs/assets/icon-1024.png
 build/
+
+# MCPB bundle build output (artefact; manifest.json is the source)
+dist-mcpb/
+.mcpb-stage/
+*.mcpb

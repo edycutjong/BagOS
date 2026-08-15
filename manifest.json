@@ -1,0 +1,105 @@
+{
+  "manifest_version": "0.2",
+  "name": "bagos",
+  "display_name": "BagOS",
+  "version": "2.1.0",
+  "description": "Every AI-initiated Solana spend: gated, capped, confirmed on chain.",
+  "long_description": "MCP server for Bags on Solana. Read tools cover token analytics, creator-fee rosters, claim audit trails and trade quotes. The two write tools execute swaps and claim creator fees, but the first call to either signs nothing: it returns a preview and a single-use confirmation token fingerprinted to the exact arguments, so a token issued for a 0.01 SOL swap cannot authorize a 10 SOL one. Every write passes a token gate, a hard SOL spend cap per transaction and per session, and a simulation, before it is signed and submitted. Writes are off unless a keypair is configured and are mainnet-only; the server defaults to devnet so an unconfigured install cannot spend real money.",
+  "author": {
+    "name": "Edy Cu Tjong",
+    "url": "https://github.com/edycutjong"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edycutjong/BagOS"
+  },
+  "homepage": "https://bagos.edycu.dev",
+  "documentation": "https://github.com/edycutjong/BagOS#readme",
+  "support": "https://github.com/edycutjong/BagOS/issues",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "solana",
+    "bags",
+    "defi",
+    "trading",
+    "token-analytics",
+    "web3"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/build/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/build/index.js"
+      ],
+      "env": {
+        "BAGS_API_KEY": "${user_config.bags_api_key}",
+        "BAGS_NETWORK": "${user_config.bags_network}",
+        "BAGS_KEYPAIR_PATH": "${user_config.bags_keypair_path}",
+        "BAGS_MAX_SOL_PER_TX": "${user_config.bags_max_sol_per_tx}",
+        "BAGS_MAX_SOL_PER_SESSION": "${user_config.bags_max_sol_per_session}",
+        "BOS_TOKEN_MINT": "${user_config.bos_token_mint}",
+        "BOS_REQUIRED_BALANCE": "${user_config.bos_required_balance}"
+      }
+    }
+  },
+  "user_config": {
+    "bags_api_key": {
+      "type": "string",
+      "title": "Bags API key",
+      "description": "Required for every tool. Create one at https://dev.bags.fm under API Keys.",
+      "required": true,
+      "sensitive": true
+    },
+    "bags_network": {
+      "type": "string",
+      "title": "Solana cluster",
+      "description": "devnet or mainnet. Bags has no devnet deployment, so trading and fee claims require mainnet — but devnet is the default so an unconfigured install cannot spend real money.",
+      "required": false,
+      "default": "devnet"
+    },
+    "bags_keypair_path": {
+      "type": "file",
+      "title": "Solana keypair file",
+      "description": "Only needed for trading and fee claims. Leave empty to run read-only. Create one with: solana-keygen new -o ~/.config/bags/keypair.json",
+      "required": false
+    },
+    "bags_max_sol_per_tx": {
+      "type": "number",
+      "title": "Max SOL per transaction",
+      "description": "Hard cap on what any single transaction may spend. A write exceeding this is refused before signing.",
+      "required": false,
+      "default": 0.1,
+      "min": 0
+    },
+    "bags_max_sol_per_session": {
+      "type": "number",
+      "title": "Max SOL per session",
+      "description": "Hard cap on total SOL spent across one server session. Resets when the server restarts.",
+      "required": false,
+      "default": 1,
+      "min": 0
+    },
+    "bos_token_mint": {
+      "type": "string",
+      "title": "Gate token mint",
+      "description": "Mint address of the token that gates the write tools. Without it, write tools fail their gate check.",
+      "required": false
+    },
+    "bos_required_balance": {
+      "type": "number",
+      "title": "Gate token balance required",
+      "description": "Minimum balance of the gate token needed to call a write tool.",
+      "required": false,
+      "default": 10000,
+      "min": 0
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=22"
+    }
+  }
+}
