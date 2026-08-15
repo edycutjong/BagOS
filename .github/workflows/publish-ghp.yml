@@ -1,0 +1,115 @@
+name: Mirror to GitHub Packages
+
+# Publishes the current release to GitHub Packages as @edycutjong/bagos-mcp-server.
+#
+# This is a MIRROR and nothing depends on it. Public npm is the real target, for
+# two reasons recorded in CHANGELOG 2.0.0: GitHub Packages requires auth to
+# install even when public, so `npx` fails there for a stranger; and the official
+# MCP registry accepts only registry.npmjs.org.
+#
+# It exists so the repository's Packages tab shows the current release rather
+# than the abandoned 1.x one — a stale entry there points people at the version
+# whose write tools reported success without signing. A current mirror carrying
+# a README that redirects to npm is strictly better than that.
+#
+# Runs AFTER npm. If the real publish fails, this must not go out and imply a
+# release that does not exist.
+
+on:
+  workflow_run:
+    workflows: ["Publish to npm"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write        # GITHUB_TOKEN is enough; no secret to manage
+
+concurrency:
+  group: publish-ghp
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Publish the mirror
+    runs-on: ubuntu-latest
+    # Only when the npm publish actually succeeded. workflow_run fires on
+    # failure too, and a mirror of a release that never shipped is worse than
+    # no mirror.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@edycutjong'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Recast the manifest for GitHub Packages
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const p = JSON.parse(fs.readFileSync("package.json", "utf8"));
+
+            // GitHub Packages only accepts packages scoped to the repository
+            // owner. The unscoped name belongs to npm and must not change
+            // there — server.json packages[0].identifier and the mcpName inside
+            // the published tarball are both cross-checked against it by the
+            // MCP registry.
+            p.name = "@edycutjong/bagos-mcp-server";
+            p.publishConfig = { registry: "https://npm.pkg.github.com" };
+
+            // mcpName identifies the npm package to the MCP registry. Leaving it
+            // on a mirror that the registry never reads is harmless, but dropping
+            // it removes any chance of a tool resolving the wrong artifact.
+            delete p.mcpName;
+
+            fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");
+            console.log("name -> " + p.name + "  version " + p.version);
+          '
+          # The mirror ships its own README, which says "install from npm".
+          cp .github/README-github-packages.md README.md
+
+      - name: Skip if this version is already mirrored
+        id: gate
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          V=$(node -p "require('./package.json').version")
+          if npm view "@edycutjong/bagos-mcp-server@$V" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "::notice::@edycutjong/bagos-mcp-server@$V is already mirrored — nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        if: steps.gate.outputs.skip == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm publish --access public
+
+      - name: Verify
+        if: steps.gate.outputs.skip == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          V=$(node -p "require('./package.json').version")
+          for i in $(seq 1 12); do
+            LIVE=$(npm view "@edycutjong/bagos-mcp-server@$V" version --registry=https://npm.pkg.github.com 2>/dev/null || echo "")
+            [ "$LIVE" = "$V" ] && { echo "mirror serves $V"; exit 0; }
+            echo "waiting for $V on GitHub Packages ($i/12)"; sleep 10
+          done
+          echo "::error::GitHub Packages did not serve $V within 2 minutes"; exit 1
