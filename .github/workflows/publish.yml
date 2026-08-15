@@ -54,6 +54,18 @@ jobs:
           [ -n "$MCP_NAME" ]                      || { echo "::error::package.json is missing mcpName; the MCP registry uses it to verify package ownership"; fail=1; }
           exit $fail
 
+      # Fail before spending a CI run on a version npm will reject. npm's own error is
+      # E403 and reads like an auth problem, which sends you looking in the wrong place.
+      - name: Fail if this version is already published
+        run: |
+          V=$(node -p "require('./package.json').version")
+          N=$(node -p "require('./package.json').name")
+          if npm view "$N@$V" version >/dev/null 2>&1; then
+            echo "::error::$N@$V is already on npm. Versions are immutable — bump package.json and server.json."
+            exit 1
+          fi
+          echo "$N@$V is not yet published — proceeding."
+
       - name: Lint, typecheck, test
         run: npm run ci
 
@@ -62,5 +74,16 @@ jobs:
 
       - name: Publish
         run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Only reached if publish succeeded. An automation token authenticates without a
+      # one-time password, which is why this belongs in CI — `npm deprecate` from a laptop
+      # prompts for an OTP and cannot be scripted.
+      - name: Deprecate the defective 1.0.0
+        run: |
+          npm deprecate bagos-mcp-server@1.0.0 \
+            "Defective: write tools reported success without signing. Upgrade to 2.0.0." \
+            || echo "::warning::deprecate failed (already deprecated, or token lacks write) — not failing the release"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

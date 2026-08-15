@@ -1,0 +1,53 @@
+name: Deprecate an npm version
+
+# Why this exists as a workflow rather than a shell command:
+# `npm deprecate` from a laptop prompts for a 2FA one-time password and cannot be
+# scripted. The NPM_TOKEN automation token authenticates without one, so CI is the
+# only place this runs unattended.
+#
+# Publishing a new version already deprecates 1.0.0 as its final step (see publish.yml).
+# This workflow covers the case where there is nothing to publish — notably right now,
+# with 2.0.0 already live and 1.0.0 still undeprecated.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to deprecate (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+      message:
+        description: "Deprecation message shown on install"
+        required: true
+        default: "Defective: write tools reported success without signing. Upgrade to 2.0.0."
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+
+      # Deprecating a version that was never published silently succeeds and looks like
+      # it worked, so check first rather than trusting the exit code.
+      - name: Confirm the version exists
+        run: |
+          npm view "bagos-mcp-server@${{ inputs.version }}" version \
+            || { echo "::error::bagos-mcp-server@${{ inputs.version }} is not published"; exit 1; }
+
+      - name: Deprecate
+        run: npm deprecate "bagos-mcp-server@${{ inputs.version }}" "${{ inputs.message }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify it took
+        run: |
+          sleep 10
+          D=$(npm view "bagos-mcp-server@${{ inputs.version }}" deprecated 2>/dev/null || true)
+          [ -n "$D" ] || { echo "::error::deprecation did not register"; exit 1; }
+          echo "deprecated: $D"
