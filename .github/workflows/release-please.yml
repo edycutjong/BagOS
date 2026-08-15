@@ -1,0 +1,93 @@
+name: Release
+
+# Automatic semantic versioning from Angular-convention commit messages.
+#
+# How it works: every push to main, release-please reads the commits since the last tag
+# and maintains a single open PR titled "chore(main): release X.Y.Z". That PR carries the
+# version bump (package.json + both version fields in server.json) and the generated
+# CHANGELOG entry. Nothing publishes while it sits there.
+#
+# Merging that PR is the release. release-please then tags, creates the GitHub Release,
+# and this workflow calls publish.yml — which runs the full CI suite and the tarball audit
+# before anything reaches npm.
+#
+# Why call publish.yml rather than let it fire on `release: published`: GitHub deliberately
+# does not trigger workflows from events raised by GITHUB_TOKEN, to stop workflows looping.
+# The usual workaround is a personal access token; calling the workflow directly avoids
+# holding a PAT in this repo at all.
+#
+# Version bumps follow Angular convention:
+#   fix:      -> patch     (2.0.0 -> 2.0.1)
+#   feat:     -> minor     (2.0.0 -> 2.1.0)
+#   feat!: / BREAKING CHANGE: in the footer -> major (2.0.0 -> 3.0.0)
+#   docs/style/refactor/perf/test/build/ci/chore -> no release on their own
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write        # create tags, releases, and the release PR's commits
+  pull-requests: write   # open and update the release PR
+
+# Never run two of these at once — concurrent runs fight over the same release PR.
+# Do not cancel in progress: a half-created release is worse than a queued one.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Only reached when the release PR was just merged. Reuses the publish pipeline
+  # verbatim — same consistency check, same CI gate, same tarball audit, same provenance.
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
+
+  registry:
+    needs: [release-please, publish]
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      # The registry rejects a server.json whose version is not yet on npm, and npm's CDN
+      # takes a moment to serve a fresh publish. Wait for it rather than racing.
+      - name: Wait for npm to serve the new version
+        run: |
+          V="${{ needs.release-please.outputs.version }}"
+          for i in $(seq 1 30); do
+            npm view "bagos-mcp-server@$V" version >/dev/null 2>&1 && { echo "npm is serving $V"; exit 0; }
+            echo "waiting for bagos-mcp-server@$V on npm ($i/30)"; sleep 10
+          done
+          echo "::error::npm did not serve $V within 5 minutes"; exit 1
+      - name: Install mcp-publisher
+        run: |
+          set -euo pipefail
+          curl -sSL -o /tmp/mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz"
+          test -s /tmp/mcp-publisher.tar.gz
+          tar xzf /tmp/mcp-publisher.tar.gz -C /tmp mcp-publisher
+          chmod +x /tmp/mcp-publisher
+      - name: Publish to the MCP registry
+        run: |
+          /tmp/mcp-publisher validate
+          /tmp/mcp-publisher login github-oidc
+          /tmp/mcp-publisher publish

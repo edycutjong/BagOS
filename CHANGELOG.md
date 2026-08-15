@@ -3,7 +3,7 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] — unreleased
+## [2.0.0] — 2026-08-15
 
 ### Fixed — the write tools never wrote
 
@@ -129,8 +129,8 @@ appears in the response; treat a change there as a security change.
   `registry.npmjs.org`, and GitHub Packages requires auth to install even when
   public, so the repo's own publish target was unreachable by `npx`.
   Separately, an unscoped `bagos-mcp-server@1.0.0` was published to npmjs on
-  2026-04-21 and is still what `npx bagos-mcp-server` installs today — the
-  defective version described above. Publishing 2.0.0 replaces it.
+  2026-04-21 — the defective version described above. 2.0.0 superseded it on
+  2026-08-15 and is what `npx bagos-mcp-server` now installs.
 - `bags_execute_trade` drops the `side` parameter, which was declared but never
   read. `inputMint`/`outputMint` fully determine the direction.
 - `.env` is now loaded from the working directory, not from a path relative to

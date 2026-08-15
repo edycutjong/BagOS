@@ -104,6 +104,9 @@
     /* ── Base ───────────────────────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
+    /* Anchored jumps must clear the sticky header (taller on phones, where the nav wraps) */
+    section[id] { scroll-margin-top: 4.5rem; }
+    @media (max-width: 40rem) { section[id] { scroll-margin-top: 8rem; } }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -120,6 +123,12 @@
     }
     a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
     a:hover { text-decoration-thickness: 2px; }
+
+    /* Inline marks (GitHub / npm / Solana) — inherit currentColor, sit on the
+       text baseline, scale with font-size. Supporting marks, not decoration. */
+    .icn { width: 1em; height: 1em; vertical-align: -.125em; fill: currentColor; }
+    .icn-sol { color: #9945FF; }  /* Solana brand purple — ≥3:1 on every bg used */
+    .nb { white-space: nowrap; }
     :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 2px; }
     .wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
 
@@ -169,6 +178,10 @@
     }
     .hero .install-line .p { color: var(--code-green); user-select: none; }
     .cta { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+    /* The hero moment: the confirmation preview, front and centre */
+    .hero figure.term { max-width: 44rem; margin: 2.5rem auto 0; text-align: left; }
+    .hero figure.term figcaption { text-align: center; margin: .75rem 0 0; }
+    .hero h1 .icn-sol { width: .78em; height: .78em; vertical-align: -.06em; }
     .btn {
       display: inline-block; padding: .65rem 1.3rem; border-radius: .55rem;
       font-weight: 600; text-decoration: none; border: 1px solid var(--line);
@@ -198,32 +211,69 @@
     section .lede { max-width: 44rem; color: var(--ink-muted); font-size: 1.08rem; }
     section p + p { margin-top: .9rem; }
 
-    /* Pipeline */
+    /* Pipeline — a real diagram: three labelled phases. Everything inside the
+       amber box is still held (nothing signed); the green box is on chain. */
     .pipeline {
-      display: flex; flex-wrap: wrap; align-items: center; gap: .45rem;
-      margin: 2rem 0 1.5rem; padding: 1.15rem 1.25rem;
-      background: var(--bg-raise); border: 1px solid var(--line); border-radius: .8rem;
-      box-shadow: var(--shadow);
+      display: flex; flex-wrap: wrap; align-items: stretch; gap: .55rem;
+      margin: 2.25rem 0 1.5rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: .92rem;
     }
+    .pipeline .phase {
+      position: relative; display: flex; flex-wrap: wrap; align-items: center;
+      gap: .45rem; padding: 1.05rem .8rem .75rem; margin-top: .55rem;
+      border: 1.5px dashed var(--line); border-radius: .7rem;
+    }
+    .pipeline .phase.held  { border-color: color-mix(in srgb, var(--amber) 60%, transparent); }
+    .pipeline .phase.landed{ border-color: color-mix(in srgb, var(--green) 60%, transparent); border-style: solid; }
+    .pipeline .phase-label {
+      position: absolute; top: -.65em; left: .7rem; padding: 0 .45em;
+      background: var(--bg); color: var(--ink-muted);
+      font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .pipeline .phase.held  .phase-label { color: var(--amber); }
+    .pipeline .phase.landed .phase-label { color: var(--green); }
     .pipeline .stage {
       padding: .3rem .7rem; border-radius: .45rem; white-space: nowrap;
-      border: 1px solid var(--line); background: var(--bg-inset); color: var(--ink);
+      border: 1px solid var(--line); background: var(--bg-raise); color: var(--ink);
+      box-shadow: var(--shadow);
     }
     .pipeline .stage.gate { background: var(--amber-soft); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); color: var(--amber); font-weight: 600; }
     .pipeline .stage.chain { background: var(--green-soft); border-color: color-mix(in srgb, var(--green) 45%, var(--line)); color: var(--green); font-weight: 600; }
     .pipeline .arrow { color: var(--ink-muted); user-select: none; }
+    .pipeline .seg { display: inline-flex; align-items: center; gap: .45rem; }
+    .pipeline > .arrow { align-self: center; margin-top: .55rem; }
+    .pipeline .arrow .v { display: none; }
+    /* Phones: phases stack, so the arrows between them turn vertical on their own row */
+    @media (max-width: 40rem) {
+      .pipeline > .arrow { flex-basis: 100%; text-align: center; margin: -.15rem 0; }
+      .pipeline > .arrow .h { display: none; }
+      .pipeline > .arrow .v { display: inline; }
+    }
+    .pipeline-legend { font-size: .9rem; color: var(--ink-muted); max-width: 44rem; }
 
     /* Terminal block */
     figure.term { margin: 2rem 0 0; }
     figure.term figcaption { font-size: .9rem; color: var(--ink-muted); margin-bottom: .6rem; }
     .term pre {
       background: var(--code-bg); color: var(--code-ink);
+      border: 1px solid #26344e;  /* keeps the block's edge visible on the dark scheme */
       border-radius: .8rem; padding: 1.25rem 1.4rem;
       overflow-x: auto; line-height: 1.55; font-size: .92rem;
       box-shadow: var(--shadow);
     }
+    /* Terminal window chrome (hero) */
+    .term .bar {
+      display: flex; align-items: center; gap: .45rem;
+      background: #1c2942; border-radius: .8rem .8rem 0 0;
+      padding: .5rem .95rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .78rem; color: #94a3b8; box-shadow: var(--shadow);
+    }
+    .term .bar .dots { display: inline-flex; gap: .32rem; margin-right: .35rem; }
+    .term .bar .dots i { width: .55rem; height: .55rem; border-radius: 50%; background: #3d4f70; }
+    .term .bar + pre { border-radius: 0 0 .8rem .8rem; }
     .term pre .warn { color: var(--code-amber); font-weight: 700; }
     .term pre .net { color: var(--code-red); font-weight: 700; }
     .term pre .tok { color: var(--code-green); font-weight: 700; }
@@ -239,6 +289,7 @@
     .card p { font-size: .95rem; color: var(--ink-muted); }
     .card .big { font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
     .card code { font-size: .85em; background: var(--bg-inset); border: 1px solid var(--line); border-radius: .3rem; padding: .05rem .35rem; }
+    .prov { margin-top: 1.25rem; font-size: .95rem; color: var(--ink-muted); max-width: 46rem; }
 
     /* Table */
     .tablewrap { overflow-x: auto; margin-top: 2rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--bg-raise); box-shadow: var(--shadow); }
@@ -293,7 +344,7 @@
           <li><a href="#ships">What ships</a></li>
           <li><a href="#install">Install</a></li>
           <li><a href="/deck/">Deck</a></li>
-          <li><a href="https://github.com/edycutjong/BagOS" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/edycutjong/BagOS" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> GitHub</a></li>
         </ul>
       </nav>
     </div>
@@ -305,16 +356,35 @@
     <section class="hero" aria-labelledby="hero-h">
       <div class="wrap">
         <img class="mark" src="/icon.svg" alt="" width="96" height="96">
-        <h1 id="hero-h">Every AI-initiated Solana spend:<br>
+        <h1 id="hero-h">Every AI-initiated <span class="nb"><svg class="icn icn-sol" viewBox="0 0 24 24" role="img" aria-label="Solana"><path d="m23.8764 18.0313-3.962 4.1393a.9201.9201 0 0 1-.306.2106.9407.9407 0 0 1-.367.0742H.4599a.4689.4689 0 0 1-.2522-.0733.4513.4513 0 0 1-.1696-.1962.4375.4375 0 0 1-.0314-.2545.4438.4438 0 0 1 .117-.2298l3.9649-4.1393a.92.92 0 0 1 .3052-.2102.9407.9407 0 0 1 .3658-.0746H23.54a.4692.4692 0 0 1 .2523.0734.4531.4531 0 0 1 .1697.196.438.438 0 0 1 .0313.2547.4442.4442 0 0 1-.1169.2297zm-3.962-8.3355a.9202.9202 0 0 0-.306-.2106.941.941 0 0 0-.367-.0742H.4599a.4687.4687 0 0 0-.2522.0734.4513.4513 0 0 0-.1696.1961.4376.4376 0 0 0-.0314.2546.444.444 0 0 0 .117.2297l3.9649 4.1394a.9204.9204 0 0 0 .3052.2102c.1154.049.24.0744.3658.0746H23.54a.469.469 0 0 0 .2523-.0734.453.453 0 0 0 .1697-.1961.4382.4382 0 0 0 .0313-.2546.4444.4444 0 0 0-.1169-.2297zM.46 6.7225h18.7815a.9411.9411 0 0 0 .367-.0742.9202.9202 0 0 0 .306-.2106l3.962-4.1394a.4442.4442 0 0 0 .117-.2297.4378.4378 0 0 0-.0314-.2546.453.453 0 0 0-.1697-.196.469.469 0 0 0-.2523-.0734H4.7596a.941.941 0 0 0-.3658.0745.9203.9203 0 0 0-.3052.2102L.1246 5.9687a.4438.4438 0 0 0-.1169.2295.4375.4375 0 0 0 .0312.2544.4512.4512 0 0 0 .1692.196.4689.4689 0 0 0 .2518.0739z"/></svg>&nbsp;Solana spend:</span><br>
           <span class="held">gated</span>, <span class="held">capped</span>, <span class="landed">confirmed on&nbsp;chain</span>.</h1>
         <p class="sub">BagOS is an MCP server that lets an AI assistant read Bags/Solana token data
           and — only with explicit confirmation — execute swaps and claim creator fees.
-          The first call to a write tool <strong>signs nothing</strong>.</p>
+          The first call to a write tool <strong>signs nothing</strong>. It answers with this:</p>
+
+        <figure class="term">
+          <div class="bar" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span>bags_execute_trade — first call</div>
+          <pre><code><span class="warn">⚠️  CONFIRMATION REQUIRED — nothing has been signed or sent.</span>
+
+Action:  Swap 0.05 of So1111…1112
+         for       EkJuyY…dBAGS
+         expect    4823917722 <span class="dim">(min 4679199990)</span>
+         slippage  3%
+         network   <span class="net">🔴 MAINNET — real funds</span>
+
+Spend:   0.05 SOL
+Caps:    0.1 SOL/tx · 0/1 SOL used this session
+
+To execute, call bags_execute_trade again with the identical arguments plus:
+  confirm: <span class="tok">"kR3nT9xQm2vP"</span></code></pre>
+          <figcaption>What the assistant — and you, reading over its shoulder — sees before any money moves.</figcaption>
+        </figure>
+
         <p><code class="install-line"><span class="p">$</span> npx bagos-mcp-server</code></p>
         <div class="cta">
-          <a class="btn primary" href="#mechanism">See the gate</a>
+          <a class="btn primary" href="#mechanism">How the gate works</a>
           <a class="btn" href="/deck/">View the deck</a>
-          <a class="btn" href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener">npm&nbsp;·&nbsp;v2.0.0</a>
+          <a class="btn" href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm&nbsp;·&nbsp;v2.0.0</a>
         </div>
       </div>
     </section>
@@ -325,7 +395,7 @@
           <li><strong>14</strong> MCP tools</li>
           <li><strong>212</strong> tests · <strong>100%</strong> coverage</li>
           <li><strong>0.1&nbsp;SOL</strong>/tx · <strong>1.0&nbsp;SOL</strong>/session caps</li>
-          <li><strong>v2.0.0</strong> on npm, SLSA provenance</li>
+          <li><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> <strong>v2.0.0</strong> on npm, SLSA provenance</li>
           <li><strong>Active</strong> in the MCP registry</li>
         </ul>
       </div>
@@ -352,35 +422,31 @@
         <p class="lede">Every write goes through this, in order. No stage can be skipped by
           the model — only by you, explicitly, in configuration.</p>
 
-        <div class="pipeline" role="img" aria-label="Pipeline: token gate, then spend caps, then confirmation, then simulate, then sign, then send, then confirm">
-          <span class="stage gate">token gate</span><span class="arrow" aria-hidden="true">→</span>
-          <span class="stage gate">spend caps</span><span class="arrow" aria-hidden="true">→</span>
-          <span class="stage gate">confirmation</span><span class="arrow" aria-hidden="true">→</span>
-          <span class="stage">simulate</span><span class="arrow" aria-hidden="true">→</span>
-          <span class="stage">sign</span><span class="arrow" aria-hidden="true">→</span>
-          <span class="stage">send</span><span class="arrow" aria-hidden="true">→</span>
-          <span class="stage chain">confirm</span>
+        <div class="pipeline" role="img" aria-label="Pipeline diagram in three phases. Held, nothing signed: token gate, then spend caps, then confirmation. Execute: simulate, then sign, then send. Landed on chain: confirm.">
+          <div class="phase held">
+            <span class="phase-label">held · nothing signed</span>
+            <span class="seg"><span class="stage gate">token gate</span><span class="arrow" aria-hidden="true">→</span></span>
+            <span class="seg"><span class="stage gate">spend caps</span><span class="arrow" aria-hidden="true">→</span></span>
+            <span class="stage gate">confirmation</span>
+          </div>
+          <span class="arrow" aria-hidden="true"><span class="h">→</span><span class="v">↓</span></span>
+          <div class="phase">
+            <span class="phase-label">execute</span>
+            <span class="seg"><span class="stage">simulate</span><span class="arrow" aria-hidden="true">→</span></span>
+            <span class="seg"><span class="stage">sign</span><span class="arrow" aria-hidden="true">→</span></span>
+            <span class="stage">send</span>
+          </div>
+          <span class="arrow" aria-hidden="true"><span class="h">→</span><span class="v">↓</span></span>
+          <div class="phase landed">
+            <span class="phase-label">landed</span>
+            <span class="stage chain">confirm</span>
+          </div>
         </div>
 
-        <p>The first call to a write tool <strong>signs nothing</strong>. It returns a preview and a
-          single-use confirmation token:</p>
-
-        <figure class="term">
-          <pre><code><span class="warn">⚠️  CONFIRMATION REQUIRED — nothing has been signed or sent.</span>
-
-Action:  Swap 0.05 of So1111…1112
-         for       EkJuyY…dBAGS
-         expect    4823917722 <span class="dim">(min 4679199990)</span>
-         slippage  3%
-         network   <span class="net">🔴 MAINNET — real funds</span>
-
-Spend:   0.05 SOL
-Caps:    0.1 SOL/tx · 0/1 SOL used this session
-
-To execute, call bags_execute_trade again with the identical arguments plus:
-  confirm: <span class="tok">"kR3nT9xQm2vP"</span></code></pre>
-          <figcaption>What the assistant — and you, reading over its shoulder — actually sees before any money moves.</figcaption>
-        </figure>
+        <p class="pipeline-legend">The request lives in the amber box until you hand back the
+          code — the preview at the top of this page is what stage three returns. The green box
+          is the only place "success" is allowed to come from: a confirmed signature, re-fetched
+          from the chain.</p>
 
         <div class="cards">
           <div class="card">
@@ -440,13 +506,18 @@ To execute, call bags_execute_trade again with the identical arguments plus:
           </div>
           <div class="card">
             <p class="big">v2.0.0</p>
-            <p>Live on npm as <code>bagos-mcp-server</code> with SLSA provenance.</p>
+            <p><a href="https://github.com/edycutjong/BagOS/releases/tag/v2.0.0" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> "the write tools actually write"</a> — released August&nbsp;15,&nbsp;2026, live on npm as <code>bagos-mcp-server</code>.</p>
           </div>
           <div class="card">
             <p class="big">Registry-listed</p>
             <p>Active in the official MCP registry as <code>io.github.edycutjong/bagos</code>.</p>
           </div>
         </div>
+
+        <p class="prov"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg>
+          The npm tarball is published from CI with SLSA provenance — cryptographically attested
+          to this repository and the exact commit that built it. Not a claim:
+          <a href="https://registry.npmjs.org/-/npm/v1/attestations/bagos-mcp-server@2.0.0" rel="noopener">verify the attestation</a>.</p>
 
         <div class="tablewrap" tabindex="0">
           <table>
@@ -486,7 +557,9 @@ To execute, call bags_execute_trade again with the identical arguments plus:
             and reported success. Nothing was ever signed or submitted. v2.0.0 fixes it — a write
             now returns success only after the confirmed signature is re-fetched from the chain.
             The full account is in the
-            <a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener">changelog</a>.</p>
+            <a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> changelog</a>;
+            the release is named after the fix:
+            <a href="https://github.com/edycutjong/BagOS/releases/tag/v2.0.0" rel="noopener">v2.0.0 — "the write tools actually write"</a>.</p>
         </div>
       </div>
     </section>
@@ -501,6 +574,8 @@ To execute, call bags_execute_trade again with the identical arguments plus:
           read-only tools. Writes stay off until you configure them.</p>
 
         <h3>Run it</h3>
+        <p class="note"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg>
+          Installs <code>bagos-mcp-server@2.0.0</code> from npm — published from CI with SLSA provenance.</p>
         <div class="term"><pre><code>npx bagos-mcp-server</code></pre></div>
 
         <h3>Claude Desktop</h3>
@@ -524,7 +599,7 @@ To execute, call bags_execute_trade again with the identical arguments plus:
         <p style="margin-top:1.5rem">Restart the client, then ask it: <em>"check the bagos heartbeat"</em>.
           The server prints a configuration report on startup; if something is missing it tells you
           which variable and why. To enable writes — mainnet, keypair, gating token, caps — follow
-          the <a href="https://github.com/edycutjong/BagOS#-write-tools--spend-controls" rel="noopener">write-tools guide in the README</a>.</p>
+          the <a href="https://github.com/edycutjong/BagOS#-write-tools--spend-controls" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> write-tools guide in the README</a>.</p>
       </div>
     </section>
   </main>
@@ -535,8 +610,10 @@ To execute, call bags_execute_trade again with the identical arguments plus:
         <div>
           <h2>Project</h2>
           <ul>
-            <li><a href="https://github.com/edycutjong/BagOS" rel="noopener">GitHub — edycutjong/BagOS</a></li>
-            <li><a href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener">npm — bagos-mcp-server</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> GitHub — edycutjong/BagOS</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/releases/tag/v2.0.0" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> Release v2.0.0 — "the write tools actually write"</a></li>
+            <li><a href="https://www.npmjs.com/package/bagos-mcp-server" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> npm — bagos-mcp-server</a></li>
+            <li><a href="https://registry.npmjs.org/-/npm/v1/attestations/bagos-mcp-server@2.0.0" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0zM5.13 5.323l13.837.019-.009 13.836h-3.464l.01-10.382h-3.456L12.04 19.17H5.113z"/></svg> SLSA attestation — bagos-mcp-server@2.0.0</a></li>
             <li><a href="https://registry.modelcontextprotocol.io" rel="noopener">MCP registry — io.github.edycutjong/bagos</a></li>
           </ul>
         </div>
@@ -544,9 +621,9 @@ To execute, call bags_execute_trade again with the identical arguments plus:
           <h2>Read</h2>
           <ul>
             <li><a href="/deck/">Pitch deck</a></li>
-            <li><a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener">Changelog</a></li>
-            <li><a href="https://github.com/edycutjong/BagOS/blob/main/.github/SECURITY.md" rel="noopener">Security policy</a></li>
-            <li><a href="https://github.com/edycutjong/BagOS/blob/main/LICENSE" rel="noopener">MIT license</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/blob/main/CHANGELOG.md" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> Changelog</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/blob/main/.github/SECURITY.md" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> Security policy</a></li>
+            <li><a href="https://github.com/edycutjong/BagOS/blob/main/LICENSE" rel="noopener"><svg class="icn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> MIT license</a></li>
           </ul>
         </div>
       </div>

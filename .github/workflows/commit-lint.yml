@@ -1,0 +1,57 @@
+name: Commit convention
+
+# release-please derives every version from commit messages. A commit that does not
+# follow Angular convention is not an error anywhere — it is silently ignored, and the
+# release it should have triggered simply never happens. That failure mode is invisible,
+# so it gets a gate.
+#
+# Dependency-free on purpose: commitlint would mean adding devDependencies to a package
+# whose tarball is audited on every publish.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint:
+    name: Angular commit convention
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check every commit in this PR
+        run: |
+          set -euo pipefail
+          # Angular types, plus the `!` breaking marker and an optional scope.
+          RE='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_.-]+\))?!?: .{1,}'
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          fail=0
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            # release-please's own release commits are generated, and merge commits are
+            # not authored by a human — neither should block a PR.
+            case "$line" in
+              "Merge "*|"Revert "*) continue ;;
+            esac
+            if ! printf '%s' "$line" | grep -qE "$RE"; then
+              echo "::error::not Angular convention: $line"
+              fail=1
+            else
+              echo "  ok  $line"
+            fi
+          done < <(git log --format=%s "$BASE..$HEAD")
+          if [ "$fail" = "1" ]; then
+            echo ""
+            echo "Expected: <type>[(scope)][!]: <description>"
+            echo "Types: feat fix docs style refactor perf test build ci chore revert"
+            echo "  feat:  -> minor   fix: -> patch   feat!: or BREAKING CHANGE: -> major"
+            exit 1
+          fi
+          echo "all commit messages follow Angular convention"

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "separate-pull-requests": false,
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "bagos-mcp-server",
+      "changelog-path": "CHANGELOG.md",
+
+      "//": "The version lives in three places and publish.yml hard-fails on drift, because the MCP registry rejects a server.json whose version is not a real published npm version. release-please keeps all three in lockstep by config rather than by anyone remembering.",
+      "extra-files": [
+        { "type": "json", "path": "server.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "server.json", "jsonpath": "$.packages[0].version" }
+      ],
+
+      "//changelog": "Angular convention. Types absent from this list are still parsed for version bumping but stay out of the changelog — nobody reads a changelog entry for a lint fix.",
+      "changelog-sections": [
+        { "type": "feat",     "section": "Features" },
+        { "type": "fix",      "section": "Bug Fixes" },
+        { "type": "perf",     "section": "Performance" },
+        { "type": "revert",   "section": "Reverts" },
+        { "type": "docs",     "section": "Documentation" },
+        { "type": "refactor", "section": "Refactoring" },
+        { "type": "build",    "section": "Build System" },
+        { "type": "ci",       "section": "CI/CD" },
+        { "type": "test",     "section": "Tests",  "hidden": true },
+        { "type": "style",    "section": "Styling", "hidden": true },
+        { "type": "chore",    "section": "Chores",  "hidden": true }
+      ],
+
+      "//bump": "Pre-1.0 semantics are irrelevant here (we are at 2.x), but be explicit anyway.",
+      "bump-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": false,
+      "draft": false,
+      "prerelease": false,
+      "include-v-in-tag": true,
+      "include-component-in-tag": false
+    }
+  }
+}
