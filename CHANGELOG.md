@@ -3,6 +3,14 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.1](https://github.com/edycutjong/BagOS/compare/v2.4.0...v2.4.1) (2026-08-15)
+
+
+### Bug Fixes
+
+* **ci:** self-heal the release label handoff instead of only detecting it ([474ae0c](https://github.com/edycutjong/BagOS/commit/474ae0c5bd3ac9a7ca9c89e6d4d1e84ad39b9328))
+* **readme:** the Smithery badge rendered as a broken image ([b2b4126](https://github.com/edycutjong/BagOS/commit/b2b41262511011dbe4d7cbb0b3c4c7550fc8d14d))
+
 ## [2.4.0](https://github.com/edycutjong/BagOS/compare/v2.3.0...v2.4.0) (2026-08-15)
 
 
