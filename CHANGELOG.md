@@ -3,6 +3,46 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.3.0](https://github.com/edycutjong/BagOS/compare/v2.2.0...v2.3.0) (2026-08-15)
+
+
+### Features
+
+* **assets:** the OG card's call to action names a destination ([dd293e3](https://github.com/edycutjong/BagOS/commit/dd293e327edd8ab82e89a9ba3651a1a5be7e666c))
+* **site:** badge every registry that serves this server, and mac the terminal ([cd965e1](https://github.com/edycutjong/BagOS/commit/cd965e1b6274059c1eb771b00daeb0f3dcec0b08))
+* **site:** drift the grid on scroll, and match the header wordmark to the card ([4036c51](https://github.com/edycutjong/BagOS/commit/4036c5161587d44d3f76b920e401485bcc9c82fe))
+* **site:** play the gate on scroll, and fit the social metadata to its budgets ([1c383a9](https://github.com/edycutjong/BagOS/commit/1c383a931f92d6da1f5675ce4112f73446dde1b7))
+* **site:** rebuild the page on its own design system ([e48cb8a](https://github.com/edycutjong/BagOS/commit/e48cb8a5ae2ea77114e194a5f5c3b7c525ee1549))
+* **site:** run the grid behind the whole page, not just the hero ([7d6bda9](https://github.com/edycutjong/BagOS/commit/7d6bda946b008dcc0b19b0a1610cac7ed9b33c0f))
+* **site:** styled nav, a light theme, and an ambient pass of light ([6d5f56b](https://github.com/edycutjong/BagOS/commit/6d5f56b21c118c5d1826ab8ebcf08f82d5c95775))
+* **site:** substitute an explicit __V__ marker for the release version ([e077433](https://github.com/edycutjong/BagOS/commit/e077433e74c4171faf2e2c53c655a79a6d596dc5))
+
+
+### Bug Fixes
+
+* **assets:** centre the held packet in its ring, and the ticks above their nodes ([d4249f0](https://github.com/edycutjong/BagOS/commit/d4249f05f218662aeb3745b8af8af32510ee43b7))
+* **assets:** render the OG card at 1200x630 and declare that size ([4909bf7](https://github.com/edycutjong/BagOS/commit/4909bf78016a962844a14ab0f7cb24a4bf21a0b1))
+* **ci:** publish to the edy-cu Smithery namespace ([3b4cdc6](https://github.com/edycutjong/BagOS/commit/3b4cdc6398c2fb88c67d1c3e12439578eccea400))
+* **ci:** select the registry's latest version, and bundle under Smithery's limit ([ef2e65e](https://github.com/edycutjong/BagOS/commit/ef2e65eb1918761c292eba84b0150ec450d3983a))
+* **server:** list tools without credentials, so clients can discover them ([41967ad](https://github.com/edycutjong/BagOS/commit/41967adf21ac36c291c90f4b6acf830d1ba72dd5))
+* **site:** actually load Space Grotesk, self-hosted ([3e61aa4](https://github.com/edycutjong/BagOS/commit/3e61aa4f6cf5f11014f9d6abb977b176ae6a392d))
+* **site:** stop hard-coding the release version, and size the deck's OG image ([1f30e14](https://github.com/edycutjong/BagOS/commit/1f30e14865dbe1f78868e78d7a6fc38d18ec4673))
+* **site:** the headline underline struck through the line below it ([618864c](https://github.com/edycutjong/BagOS/commit/618864c94f5ba9b0bd2d818dfbf0de9cc27875ee))
+* **site:** the toolset split was wrong on the page and the deck ([ea2a260](https://github.com/edycutjong/BagOS/commit/ea2a2605e8594636f0b5151706ef7c00af67904a))
+* **smithery:** publish to the edycutjong namespace ([a88b8bf](https://github.com/edycutjong/BagOS/commit/a88b8bf23d3c9f6dd8cfc1a20c2a82cf69e5be40))
+
+
+### Documentation
+
+* cover all 14 tools, and drop the media-dir nothing referenced ([1171c58](https://github.com/edycutjong/BagOS/commit/1171c582a6b27ba70492d0dbcf83f8c3ece57d2f))
+* redraw the architecture diagram from the source, and show it ([c4ebacf](https://github.com/edycutjong/BagOS/commit/c4ebacfa6eff799b605f02335b2c8122b40761f5))
+
+
+### CI/CD
+
+* log the Smithery token's identity and namespaces before publishing ([7e6ce6c](https://github.com/edycutjong/BagOS/commit/7e6ce6c77cb7a99f5aed34ba873e8900ca17a676))
+* mirror releases to GitHub Packages with a redirecting README ([dfc67eb](https://github.com/edycutjong/BagOS/commit/dfc67ebaaebbc7fa7fc56a8b81d9926471d204e2))
+
 ## [2.2.0](https://github.com/edycutjong/BagOS/compare/v2.1.0...v2.2.0) (2026-08-15)
 
 
