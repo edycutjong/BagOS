@@ -5,9 +5,10 @@ Every number on this page came out of a real run against the live Bags mainnet A
 not be run, it says so instead of showing a plausible number.
 
 > **Read the flags.** BagOS ships a `USE_MOCK_DATA` escape hatch, default **off**, which
-> stamps `⚠️ [MOCK DATA ENABLED]` on every response when it is on. Everything below was
-> captured with `USE_MOCK_DATA=false` set explicitly, so there is no question which path
-> produced it.
+> affects only the `bags_get_claimable_fees` tool: when on, that tool stamps
+> `⚠️ [MOCK DATA ENABLED]` on its own response. Every other tool ignores the flag.
+> Everything below was captured with `USE_MOCK_DATA=false` set explicitly, so there is no
+> question which path produced it.
 
 ---
 
