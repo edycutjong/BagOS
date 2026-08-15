@@ -15,9 +15,20 @@
   <br/>
 
   [![Live Site](https://img.shields.io/badge/🌐_bagos.edycu-.dev-0ea5e9?style=for-the-badge)](https://bagos.edycu.dev)
+  [![Pitch Deck](https://img.shields.io/badge/🎤_Pitch-Deck-f59e0b?style=for-the-badge)](https://bagos.edycu.dev/deck/)
   [![Run Receipts](https://img.shields.io/badge/📊_Run-Receipts-06b6d4?style=for-the-badge)](DEMO.md)
   [![Security Policy](https://img.shields.io/badge/🔐_Security-Policy-ef4444?style=for-the-badge)](.github/SECURITY.md)
   [![Changelog](https://img.shields.io/badge/📋_Change-log-8b5cf6?style=for-the-badge)](CHANGELOG.md)
+
+  <br/>
+
+  <!-- Install surfaces: every registry that actually serves this server. Each was
+       verified live before being listed — a badge for a listing that does not
+       resolve is a claim a judge can disprove in one click. -->
+  [![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20Registry&color=000000&style=for-the-badge)](https://registry.modelcontextprotocol.io/?q=bagos)
+  [![Smithery](https://img.shields.io/badge/Smithery-edy--cu%2Fbagos-A855F7?style=for-the-badge)](https://smithery.ai/server/edy-cu/bagos)
+  [![npm](https://img.shields.io/npm/v/bagos-mcp-server?style=for-the-badge&color=CB3837&logo=npm&logoColor=white&label=npm)](https://www.npmjs.com/package/bagos-mcp-server)
+  [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/edycutjong/BagOS/pkgs/npm/bagos-mcp-server)
 
   <br/>
 
@@ -29,8 +40,6 @@
   [![CI/CD](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml)
   [![Publish](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml)
   [![CodeQL](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml)
-  [![npm](https://img.shields.io/npm/v/bagos-mcp-server?color=CB3837&logo=npm)](https://www.npmjs.com/package/bagos-mcp-server)
-  [![MCP registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20registry&color=000000)](https://registry.modelcontextprotocol.io/?q=bagos)
   [![Release](https://img.shields.io/github/v/release/edycutjong/BagOS?color=8b5cf6&logo=github&label=release)](https://github.com/edycutjong/BagOS/releases/latest)
 
 </div>

@@ -183,6 +183,10 @@
     }
     .termbar .dots { display: inline-flex; gap: .32em; margin-right: .35em; }
     .termbar .dots i { width: .55em; height: .55em; border-radius: 50%; background: #3d4f70; }
+    /* macOS traffic lights — same convention as the landing page's terminal. */
+    .termbar .dots i:nth-of-type(1) { background: #FF5F57; }
+    .termbar .dots i:nth-of-type(2) { background: #FEBC2E; }
+    .termbar .dots i:nth-of-type(3) { background: #28C840; }
     .termbar + pre.term { border-radius: 0 0 .7rem .7rem; margin-top: 0; }
     pre.term .warn { color: var(--code-amber); font-weight: 700; }
     pre.term .net { color: var(--code-red); font-weight: 700; }

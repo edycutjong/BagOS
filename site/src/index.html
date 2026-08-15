@@ -466,6 +466,12 @@
     }
     .term .bar .dots { display: inline-flex; gap: .32rem; margin-right: .35rem; }
     .term .bar .dots i { width: .55rem; height: .55rem; border-radius: 50%; background: #3d4f70; }
+    /* macOS traffic lights. The window chrome is the one part of this page that is
+       pure convention, so it should read as the thing it imitates — three identical
+       slate discs read as a placeholder, not a terminal. */
+    .term .bar .dots i:nth-of-type(1) { background: #FF5F57; }
+    .term .bar .dots i:nth-of-type(2) { background: #FEBC2E; }
+    .term .bar .dots i:nth-of-type(3) { background: #28C840; }
     .term .bar + pre { border-radius: 0 0 .8rem .8rem; }
     .term pre .warn { color: var(--code-amber); font-weight: 700; }
     .term pre .net { color: var(--code-red); font-weight: 700; }
