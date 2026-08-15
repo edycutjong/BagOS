@@ -15,9 +15,14 @@ on:
       # link and provenance URL point at the previous version indefinitely.
       - 'package.json'
   workflow_dispatch:
-  # A published release means the version changed; the site must follow it.
-  release:
-    types: [published]
+# Deliberately NOT triggered on `release: published`, though it used to be. The
+# intent was right — a release changes the version and the site must follow it —
+# but release-please bumps package.json in the same merge, so the `push` trigger
+# above already deploys that exact sha. The release event then fired seconds
+# later for the SAME commit and GitHub Pages rejected the duplicate deployment,
+# failing on every single release. The site was always live and current; the red
+# X was pure noise, and noise on a release workflow is how a real failure gets
+# ignored. The package.json path filter is what keeps the version in step.
 
 permissions:
   contents: read

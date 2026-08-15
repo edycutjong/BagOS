@@ -12,6 +12,7 @@ on:
   pull_request:
     branches: [main]
 
+
 permissions:
   contents: read
   pull-requests: read
@@ -19,6 +20,13 @@ permissions:
 jobs:
   lint:
     name: Angular commit convention
+    # Skip release-please's own PRs. It writes its title and body to the very
+    # convention this job checks, and its bot PRs land as `action_required` — so
+    # the job never actually ran on them, it just sat pending on every release PR
+    # forever. Filtering has to happen here on head_ref, not in `on:`: the
+    # pull_request `branches:` filter matches the BASE branch, which is main for
+    # these PRs like any other.
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

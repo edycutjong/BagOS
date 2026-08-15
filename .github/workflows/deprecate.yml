@@ -47,7 +47,14 @@ jobs:
 
       - name: Verify it took
         run: |
-          sleep 10
-          D=$(npm view "bagos-mcp-server@${{ inputs.version }}" deprecated 2>/dev/null || true)
-          [ -n "$D" ] || { echo "::error::deprecation did not register"; exit 1; }
-          echo "deprecated: $D"
+          # Poll rather than sleep once. A flat 10s lost the race with npm's
+          # registry propagation and reported a failure for a deprecation that
+          # had in fact applied — 1.0.0 is deprecated on npm while this step's
+          # last run is red. A check that cries wolf is worse than no check.
+          for i in $(seq 1 12); do
+            D=$(npm view "bagos-mcp-server@${{ inputs.version }}" deprecated 2>/dev/null || true)
+            if [ -n "$D" ]; then echo "deprecated: $D"; exit 0; fi
+            echo "not visible yet ($i/12), waiting…"; sleep 10
+          done
+          echo "::error::deprecation did not register within 120s"
+          exit 1
