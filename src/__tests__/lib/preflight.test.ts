@@ -32,6 +32,7 @@ const READ_VARS = [
   "HELIUS_RPC_URL",
   "BAGS_KEYPAIR_PATH",
   "BOS_TOKEN_MINT",
+  "BOS_REQUIRED_BALANCE",
   "BAGS_MAX_SOL_PER_TX",
   "BAGS_MAX_SOL_PER_SESSION",
   "BAGS_ALLOW_UNCONFIRMED",
@@ -380,5 +381,32 @@ describe("reportPreflight", () => {
     reportPreflight();
     const printed = errSpy.mock.calls.map((c) => String(c[0])).join("\n");
     expect(printed).not.toContain("Server not started");
+  });
+});
+
+describe("preflight — BOS_REQUIRED_BALANCE", () => {
+  it("is fatal when unparseable, so a typo is caught at startup not at first write", () => {
+    process.env["BAGS_API_KEY"] = "k";
+    process.env["BOS_REQUIRED_BALANCE"] = "abc";
+    const { ok, lines } = preflight();
+    expect(line(lines, "BOS_REQUIRED_BALANCE")).toContain("[FAIL]");
+    expect(ok).toBe(false);
+  });
+
+  it("warns rather than fails when set to 0, because 0 is a real choice", () => {
+    process.env["BAGS_API_KEY"] = "k";
+    process.env["BOS_REQUIRED_BALANCE"] = "0";
+    const { ok, lines } = preflight();
+    expect(line(lines, "BOS_REQUIRED_BALANCE")).toContain("[WARN]");
+    expect(line(lines, "BOS_REQUIRED_BALANCE")).toContain("token gate disabled");
+    expect(ok).toBe(true);
+  });
+
+  it("reports the value when set to a normal number", () => {
+    process.env["BAGS_API_KEY"] = "k";
+    process.env["BOS_REQUIRED_BALANCE"] = "500";
+    const { lines } = preflight();
+    expect(line(lines, "BOS_REQUIRED_BALANCE")).toContain("[ok]");
+    expect(line(lines, "BOS_REQUIRED_BALANCE")).toContain("500");
   });
 });

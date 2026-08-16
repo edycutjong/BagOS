@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'crypto';
 import { isMainnet } from './network.js';
+import { numFromEnv } from './env.js';
 
 /**
  * Spend guards for write tools.
@@ -18,15 +19,6 @@ const DEFAULT_MAX_PER_SESSION = 1.0;
 
 let sessionSpendSol = 0;
 
-function numFromEnv(key: string, fallback: number): number {
-  const raw = process.env[key];
-  if (raw === undefined || raw === '') return fallback;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`${key} must be a non-negative number (got "${raw}").`);
-  }
-  return parsed;
-}
 
 export function maxSolPerTx(): number {
   return numFromEnv('BAGS_MAX_SOL_PER_TX', DEFAULT_MAX_PER_TX);

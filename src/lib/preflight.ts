@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getNetwork, redactedRpcUrl } from './network.js';
 import { maxSolPerTx, maxSolPerSession, confirmationRequired } from './guards.js';
+import { requiredBalance } from './token-gate.js';
 
 /**
  * Startup configuration check.
@@ -78,6 +79,23 @@ export function preflight(): PreflightReport {
     lines.push('  [ok]   BOS_TOKEN_MINT             set');
   } else {
     lines.push('  [WARN] BOS_TOKEN_MINT             unset — write tools will fail their gate check');
+  }
+
+  // Evaluate the gate threshold at startup rather than at first write. An
+  // unparseable BOS_REQUIRED_BALANCE used to be swallowed into the default, so
+  // a typo produced a gate the operator never chose and never saw. Fatal for
+  // the same reason the spend caps are: a limit nobody can parse is a limit
+  // nobody is enforcing.
+  try {
+    const req = requiredBalance();
+    lines.push(
+      req === 0
+        ? '  [WARN] BOS_REQUIRED_BALANCE        0 — token gate disabled, any balance passes'
+        : `  [ok]   BOS_REQUIRED_BALANCE       ${req}`
+    );
+  } catch (err) {
+    lines.push(`  [FAIL] BOS_REQUIRED_BALANCE       ${(err as Error).message}`);
+    fatal = true;
   }
 
   // --- spend guards ---
