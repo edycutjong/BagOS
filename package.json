@@ -50,6 +50,7 @@
     "github:meta": "bash scripts/github-meta.sh",
     "github:release": "bash scripts/github-release.sh",
     "proof:devnet": "tsx scripts/devnet-proof.ts",
+    "proof:mainnet": "tsx scripts/mainnet-proof.ts",
     "bundle:mcpb": "bash scripts/build-mcpb.sh"
   },
   "repository": {

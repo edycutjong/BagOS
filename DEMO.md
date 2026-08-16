@@ -159,3 +159,50 @@ npm run proof:devnet                        # prints the address, saves the keyp
 solana airdrop 0.1 <address> --url devnet   # or https://faucet.solana.com, network = Devnet
 npm run proof:devnet                        # same address, now funded
 ```
+
+---
+
+## Receipt 5 — mainnet swap through the real write path — ⚠️ TODO, not yet run
+
+> **Status: not run.** No human has executed this yet, so there is no signature
+> below. It stays marked TODO until one exists. An empty receipt is honest; an
+> invented one is not, and this file's whole claim is that its numbers came out
+> of real runs.
+
+Receipt 4 proves the execution layer lands transactions, but it bypasses the Bags
+SDK, the token gate, the caps and the confirmation token — it transfers SOL to
+itself on devnet. `scripts/mainnet-proof.ts` exercises the **full**
+`bags_execute_trade` path in the order the tool uses it:
+
+```
+quote → token gate → spend caps → confirmation token → createSwapTransaction
+      → simulate → sign → send → confirm → re-fetch from chain
+```
+
+**This spends real money.** It refuses to run unless both variables are set —
+there is no default that reaches mainnet — and it enforces a hard **0.01 SOL**
+ceiling of its own, independent of `BAGS_MAX_SOL_PER_TX`, so that running it is
+never a financial decision.
+
+```bash
+# Both are required. Neither has a default.
+export I_UNDERSTAND_THIS_SPENDS_REAL_SOL=yes
+export BAGS_NETWORK=mainnet
+
+# Your funded mainnet keypair and a Bags API key.
+export BAGS_KEYPAIR_PATH=~/.config/bags/keypair.json
+export BAGS_API_KEY=...
+
+# The token to swap into, and the gate token you hold.
+export PROOF_OUTPUT_MINT=EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS
+export BOS_TOKEN_MINT=EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS
+
+npm run proof:mainnet          # swaps 0.01 SOL; PROOF_SOL_AMOUNT can only lower it
+```
+
+On success it prints the signature, the explorer link, the slot, and the result
+of re-fetching the signature from the chain. Paste that block here, replacing
+this notice.
+
+**Do not** substitute a devnet transaction, a hand-written hash, or output from a
+run that errored. If it has not been run, this section says so.
