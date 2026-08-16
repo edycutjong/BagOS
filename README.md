@@ -1,54 +1,65 @@
 <div align="center">
   <img src="docs/icon-animated.svg" alt="BagOS Icon" width="144">
   <h1>BagOS 🚦</h1>
-  <p><em>Every AI-initiated Solana spend: gated, capped, confirmed on chain.</em></p>
-  <img src="docs/readme-hero-animated.svg"
-       alt="BagOS — gates every AI-initiated Solana spend: the amber-held swap turns green only when its confirmed signature lands on chain"
-       width="100%">
+  <p><em>An MCP server that lets an AI assistant trade on Solana — and signs nothing until you say so.</em></p>
 
-  <p>
-    The first call to a write tool <strong>signs nothing</strong> — it answers with a preview and a
-    single-use token. Hard cap <strong>0.1 SOL/tx</strong>, 337 tests at 100% coverage, and a live-run
-    receipt you can reproduce with <code>npm run demo</code>.
-  </p>
-
-  <br/>
-
-  [![Live Site](https://img.shields.io/badge/🌐_bagos.edycu-.dev-0ea5e9?style=for-the-badge)](https://bagos.edycu.dev)
-  [![Pitch Deck](https://img.shields.io/badge/🎤_Pitch-Deck-f59e0b?style=for-the-badge)](https://bagos.edycu.dev/deck/)
-  [![Run Receipts](https://img.shields.io/badge/📊_Run-Receipts-06b6d4?style=for-the-badge)](DEMO.md)
-  [![Security Policy](https://img.shields.io/badge/🔐_Security-Policy-ef4444?style=for-the-badge)](.github/SECURITY.md)
-  [![Changelog](https://img.shields.io/badge/📋_Change-log-8b5cf6?style=for-the-badge)](CHANGELOG.md)
-
-  <br/>
-
-  <!-- Install surfaces: every registry that actually serves this server. Each was
-       verified live before being listed — a badge for a listing that does not
-       resolve is a claim a judge can disprove in one click. -->
-  [![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20Registry&color=000000&style=for-the-badge)](https://registry.modelcontextprotocol.io/?q=bagos)
-  <!-- Smithery's own badge endpoint (smithery.ai/badge/<ns>) returns HTTP 500 with a
-       zero-byte body for every server, not just this one — verified against
-       upstash/context7-mcp and smithery-ai/github. It renders as a broken image, so
-       this is a shields badge matching the rest of the row. Swap back if they fix it. -->
-  [![Smithery](https://img.shields.io/badge/Smithery-edycutjong%2Fbagos-A855F7?style=for-the-badge)](https://smithery.ai/servers/edycutjong/bagos)
   [![npm](https://img.shields.io/npm/v/bagos-mcp-server?style=for-the-badge&color=CB3837&logo=npm&logoColor=white&label=npm)](https://www.npmjs.com/package/bagos-mcp-server)
-  [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/edycutjong/BagOS/pkgs/npm/bagos-mcp-server)
-
-  <br/>
-
-  ![MCP](https://img.shields.io/badge/MCP-stdio_+_HTTP-000000?style=flat)
-  ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
-  ![Solana](https://img.shields.io/badge/Solana-9945FF?style=flat&logo=solana&logoColor=white)
-  ![Jest](https://img.shields.io/badge/Jest-100%25_coverage-C21325?style=flat&logo=jest&logoColor=white)
-  [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
   [![CI/CD](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/ci.yml)
-  [![Publish](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml)
-  [![CodeQL](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml)
-  [![Release](https://img.shields.io/github/v/release/edycutjong/BagOS?color=8b5cf6&logo=github&label=release)](https://github.com/edycutjong/BagOS/releases/latest)
-
+  [![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20Registry&color=000000&style=for-the-badge)](https://registry.modelcontextprotocol.io/?q=bagos)
+  [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 </div>
 
----
+## 🚀 Install
+
+```bash
+npx bagos-mcp-server
+```
+
+**Claude Desktop** — `~/Library/Application Support/Claude/claude_desktop_config.json`
+(macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json
+{
+  "mcpServers": {
+    "bagos": {
+      "command": "npx",
+      "args": ["-y", "bagos-mcp-server"],
+      "env": {
+        "BAGS_API_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+**Claude Code**:
+
+```bash
+claude mcp add bagos --env BAGS_API_KEY=your-key-here -- npx -y bagos-mcp-server
+```
+
+Restart the client, then ask it: *"check the bagos heartbeat"*. The server prints a
+configuration report to stderr on startup; if something is missing it tells you which
+variable and why. A key alone gives you the 11 read tools — writes stay off until you
+configure them ([Getting Started](#-getting-started)).
+
+## 🔒 Why this is safe to hand an assistant
+
+- **Nothing signs on the first call.** A write tool answers with a preview and a
+  single-use token fingerprinted to those exact arguments; nothing reaches the chain
+  until you call again with it.
+- **Hard SOL caps.** 0.1 per transaction and 1 per session by default, refused before
+  the Bags SDK is called.
+- **Devnet by default.** Writes are mainnet-only, so an unconfigured install cannot
+  spend real money.
+
+Full threat model, disclosure policy and the limits of each control:
+**[.github/SECURITY.md](.github/SECURITY.md)**.
+
+<details>
+<summary><strong>⚠️ If you used 1.x — v2.0.0 corrected a serious defect</strong></summary>
+
+<br>
 
 > **v2.0.0 corrects a serious defect.** In 1.x the write tools built
 > transactions, discarded them, and reported success — nothing was ever signed
@@ -60,6 +71,37 @@
 > [npm provenance](https://www.npmjs.com/package/bagos-mcp-server#provenance) —
 > the tarball is cryptographically attested to this repository and the commit that built it.
 > 1.x is deprecated on npm. If you are still on it, upgrade.
+
+</details>
+
+<div align="center">
+  <img src="docs/readme-hero-animated.svg"
+       alt="BagOS — gates every AI-initiated Solana spend: the amber-held swap turns green only when its confirmed signature lands on chain"
+       width="100%">
+</div>
+
+---
+
+## 📦 Where it's listed
+
+  [![npm](https://img.shields.io/npm/v/bagos-mcp-server?style=for-the-badge&color=CB3837&logo=npm&logoColor=white&label=npm)](https://www.npmjs.com/package/bagos-mcp-server)
+  [![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dbagos%26version%3Dlatest&query=%24.servers%5B0%5D.server.version&prefix=v&label=MCP%20Registry&color=000000&style=for-the-badge)](https://registry.modelcontextprotocol.io/?q=bagos)
+  [![Smithery](https://img.shields.io/badge/Smithery-edycutjong%2Fbagos-A855F7?style=for-the-badge)](https://smithery.ai/servers/edycutjong/bagos)
+  [![GitHub Packages](https://img.shields.io/badge/GitHub-Packages-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/edycutjong/BagOS/pkgs/npm/bagos-mcp-server)
+
+  [![Live Site](https://img.shields.io/badge/🌐_bagos.edycu-.dev-0ea5e9?style=for-the-badge)](https://bagos.edycu.dev)
+  [![Pitch Deck](https://img.shields.io/badge/🎤_Pitch-Deck-f59e0b?style=for-the-badge)](https://bagos.edycu.dev/deck/)
+  [![Run Receipts](https://img.shields.io/badge/📊_Run-Receipts-06b6d4?style=for-the-badge)](DEMO.md)
+  [![Security Policy](https://img.shields.io/badge/🔐_Security-Policy-ef4444?style=for-the-badge)](.github/SECURITY.md)
+  [![Changelog](https://img.shields.io/badge/📋_Change-log-8b5cf6?style=for-the-badge)](CHANGELOG.md)
+
+  ![MCP](https://img.shields.io/badge/MCP-stdio_+_HTTP-000000?style=flat)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+  ![Solana](https://img.shields.io/badge/Solana-9945FF?style=flat&logo=solana&logoColor=white)
+  ![Jest](https://img.shields.io/badge/Jest-100%25_coverage-C21325?style=flat&logo=jest&logoColor=white)
+  [![Publish](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/publish.yml)
+  [![CodeQL](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml/badge.svg)](https://github.com/edycutjong/BagOS/actions/workflows/codeql.yml)
+  [![Release](https://img.shields.io/github/v/release/edycutjong/BagOS?color=8b5cf6&logo=github&label=release)](https://github.com/edycutjong/BagOS/releases/latest)
 
 ---
 
@@ -197,40 +239,9 @@ enables the read-only tools. For trading and fee claims you also need a Solana
 keypair file and the gating token — see
 [Write Tools & Spend Controls](#-write-tools--spend-controls).
 
-### Installation
+### Enabling writes
 
-```bash
-npx bagos-mcp-server
-```
-
-**Claude Desktop** — `~/Library/Application Support/Claude/claude_desktop_config.json`
-(macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "bagos": {
-      "command": "npx",
-      "args": ["-y", "bagos-mcp-server"],
-      "env": {
-        "BAGS_API_KEY": "your-key-here"
-      }
-    }
-  }
-}
-```
-
-**Claude Code**:
-
-```bash
-claude mcp add bagos --env BAGS_API_KEY=your-key-here -- npx -y bagos-mcp-server
-```
-
-Restart the client, then ask it: *"check the bagos heartbeat"*. The server
-prints a configuration report to stderr on startup; if something is missing it
-tells you which variable and why.
-
-To enable writes:
+Writes stay off until all of these are set:
 
 ```json
 {
@@ -260,7 +271,7 @@ To enable writes:
 | `SOLANA_RPC_URL` | no | public cluster RPC | Must agree with `BAGS_NETWORK` or the server refuses to start |
 | `BAGS_KEYPAIR_PATH` | writes only | `~/.config/bags/keypair.json` | JSON byte-array keypair file |
 | `BOS_TOKEN_MINT` | writes only | — | Gating token mint |
-| `BOS_REQUIRED_BALANCE` | no | `10000` | Minimum gating-token balance |
+| `BOS_REQUIRED_BALANCE` | no | `10000` | Minimum gating-token balance. `0` disables the gate (any balance passes); a non-numeric value is refused at startup rather than silently defaulting. |
 | `BAGS_MAX_SOL_PER_TX` | no | `0.1` | Per-transaction spend cap |
 | `BAGS_MAX_SOL_PER_SESSION` | no | `1.0` | Per-process spend cap |
 | `BAGS_ALLOW_UNCONFIRMED` | no | `false` | Skip the confirmation step |
