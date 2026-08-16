@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.5.0](https://github.com/edycutjong/BagOS/compare/v2.4.1...v2.5.0) (2026-08-16)
+
+
+### Features
+
+* **assets:** a dev.to cover at the size dev.to actually uses ([479d72e](https://github.com/edycutjong/BagOS/commit/479d72e851c398c5ece3fefb6dbcd807e8511927))
+
+
+### Bug Fixes
+
+* **ci:** cut the release when release-please declines to ([7c46cd5](https://github.com/edycutjong/BagOS/commit/7c46cd557fb37951edca88ae0a1bc5017dca044a))
+* **proof:** close the keypair TOCTOU race, and document what is knowingly broken ([ccfe362](https://github.com/edycutjong/BagOS/commit/ccfe362e25bf7d9c54dcaf5ac933c4ca0481b155))
+
 ## [2.4.1](https://github.com/edycutjong/BagOS/compare/v2.4.0...v2.4.1) (2026-08-15)
 
 
