@@ -7,25 +7,51 @@ Last verified: 2026-08-16.
 
 ---
 
-## 1. release-please does not cut the release; it has to be tagged by hand
+## 1. release-please does not cut the release — the workflow does it instead
 
-**Symptom.** A release PR merges cleanly, the version files land on `main`, and no
-GitHub Release appears. The workflow is **green**. Every later run then logs:
+**Status: mitigated, root cause still open.** Releases complete unattended; the
+underlying bug is unexplained. Both statements matter, so both are below.
+
+**Symptom.** A release PR merges cleanly, the version files land on `main`, and
+release-please creates no GitHub Release. The workflow is **green**. Every later
+run then logs:
 
 ```
 ⚠ No latest release pull request found.
-❯ commits: 159
 ❯ Found pull request #14: 'chore: release main'
 ⚠ There are untagged, merged release PRs outstanding - aborting
 ```
 
-and exits **0**. Nothing is released, and nothing looks broken.
+and exits **0**. Nothing is released and nothing looks broken.
 
-**Blast radius.** This jammed silently from 2026-05 to 2026-08: 23 commits sat
-unreleased for three weeks with a green checkmark on every run. npm, the MCP
-registry, GitHub Packages and Smithery all served a stale version the whole time.
+**Blast radius before mitigation.** It jammed silently from 2026-05 to 2026-08:
+23 commits sat unreleased for three weeks with a green checkmark on every run.
+npm, the MCP registry, GitHub Packages and Smithery all served a stale version
+the whole time.
 
-**Root cause: not established.** `gh release create` returns:
+### Mitigation — the pipeline recovers on its own
+
+`.github/workflows/release-please.yml` runs an `Unjam the release label handoff`
+step with `if: always()`. It:
+
+- **cuts the release itself** when release-please declines to — the manifest
+  version, on the merge commit of the PR that bumped it, with that version's
+  changelog section as the notes;
+- relabels the PR `autorelease: tagged`, which is what unjams the next run;
+- sets `unjam_created`, which the `publish` and `registry` jobs accept alongside
+  release-please's own `release_created`. Without that they gate on
+  `release_created` alone — false in exactly the case the fallback exists for.
+  That gap shipped once: v2.5.0 was tagged while npm and the registry stayed on
+  2.4.1, every surface advertising a version that was never published.
+
+Verified end to end on **v2.5.1** (2026-08-16): merging the release PR produced
+the tag, the Release, the npm publish and the registry submission with no manual
+step. release-please itself still declines — the run logs `release-please did not
+cut v2.5.1 for PR #16 — creating it here`.
+
+### Root cause: not established
+
+`gh release create` returns:
 
 ```
 HTTP 403: Resource not accessible by integration
@@ -33,14 +59,14 @@ POST /repos/edycutjong/BagOS/releases
 ```
 
 …while the job's own startup log prints `Contents: write`. The token has the
-permission the API says it needs, and the API refuses anyway.
+permission the API documents, and the API refuses anyway.
 
-**Ruled out** (each checked, not assumed):
+**Ruled out** (each checked, not assumed) — do not spend time re-testing these:
 
 | Hypothesis | Result |
 |---|---|
 | Missing `issues: write` for the label handoff | Added. Same failure. |
-| Repo default workflow permissions set to `read` | Was `read`, set to `write`. Same failure. |
+| Repo default workflow permissions set to `read` | Was `read`, set to `write`. Same failure; log shows `Contents: write`. |
 | Job-level `permissions:` override on the release-please job | None exists. |
 | Repository rulesets | None configured. |
 | Tag protection rules | None configured. |
@@ -48,22 +74,19 @@ permission the API says it needs, and the API refuses anyway.
 | Tag already exists (would be 422 anyway) | It did not. |
 | Squash vs merge commit | v2.1.0 and v2.2.0 released fine from squash merges. |
 
-Worth noting the machinery **did** work: #10 → v2.1.0 and #11 → v2.2.0 both
-released automatically. It broke after #11's `autorelease: pending` label was
-never flipped to `tagged`, and one missed label write jams every later run
-permanently.
+One confounder was self-inflicted and is recorded so the log is readable: setting
+the default workflow permission also flipped *"Allow GitHub Actions to create and
+approve pull requests"* off, which broke PR creation for a while and muddied the
+signal. Restored.
 
-**Current mitigation.** `.github/workflows/release-please.yml` has an
-`Unjam the release label handoff` step that runs with `if: always()`. It:
+The machinery **did** work once: #10 → v2.1.0 and #11 → v2.2.0 released
+automatically. It broke after #11's `autorelease: pending` label was never
+flipped, and one missed label write jams every later run permanently.
 
-- relabels any merged release PR left `pending` whose version **is** tagged —
-  this is the write release-please should have made, and it is what unjams the
-  next run;
-- attempts to create the release itself when the version is **not** tagged
-  (currently 403s, see above);
-- **fails the run** rather than exiting 0, so the jam is never silent again.
+### Manual recovery
 
-**Manual recovery** when a release PR merges and no release appears:
+No longer routine — the fallback handles it. If the fallback is ever prevented
+from running, this is the equivalent by hand:
 
 ```bash
 V=$(jq -r '.["."]' .release-please-manifest.json)
@@ -73,16 +96,21 @@ awk -v v="## [$V]" 'index($0,v)==1 {f=1;print;next} f && /^## \[/ {exit} f {prin
 git tag -a "v$V" "$SHA" -m "v$V" && git push origin "v$V"
 gh release create "v$V" --verify-tag --title "v$V" --notes-file /tmp/notes.md
 gh pr edit <PR> --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'
+gh workflow run publish.yml && gh workflow run registry.yml
 ```
 
-Creating the release fires `publish`, `registry`, `smithery` and `publish-ghp`
-normally — only the tag/release step needs a human.
+**A PAT is not the answer here.** The standard workaround is a token with
+`contents: write` passed to the action via `token:`. Deliberately not done: this
+repo's argument is about not holding credentials it does not need, and with the
+fallback in place it would save nothing — releases already complete unattended.
 
-**If you want it actually fixed:** the standard workaround is a PAT with
-`contents: write` stored as a secret and passed to the action via `token:`. That
-was deliberately **not** done — this repo's whole argument is about not holding
-credentials it does not need, and a long-lived org-scoped token to save one
-command per release is a bad trade. Revisit if release frequency increases.
+---
+
+### 2026-08-16 — version drift check: none
+
+`npm view bagos-mcp-server version`, `package.json`, `server.json` and
+`.release-please-manifest.json` all report **2.5.1**, and the tag `v2.5.1`
+exists. No drift; the pipeline is not jammed.
 
 ---
 
