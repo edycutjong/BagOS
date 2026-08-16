@@ -1,0 +1,53 @@
+# gitleaks configuration.
+#
+# The default ruleset is kept in full — this file only adds an allowlist, and
+# only for values that are public by construction.
+#
+# Why this exists: a Solana address IS a public key, and a transaction signature
+# is a public identifier. Both are base58 and both have high entropy, so
+# gitleaks' `generic-api-key` rule scores them like secrets. It flagged
+# `export BOS_TOKEN_MINT=EkJuyY…dBAGS` in DEMO.md at entropy 4.88 — a mint
+# address that is queryable on mainnet by anyone, owned by the SPL Token
+# program, and already present in eleven files here.
+#
+# Every entry below is allowlisted BY EXACT VALUE rather than by pattern, path,
+# or rule. That is deliberate and worth the maintenance:
+#
+#   - A pattern like `[1-9A-HJ-NP-Za-km-z]{32,88}` would cover every future
+#     address, and would also silently swallow any real secret that happens to
+#     be base58 in that length range.
+#   - A path allowlist (`DEMO.md`, `docs/`) would stop scanning files that can
+#     absolutely leak — DEMO.md pastes real command lines.
+#   - Disabling `generic-api-key` would turn off the rule most likely to catch
+#     an actual BAGS_API_KEY.
+#
+# So a new public address that trips the scanner is meant to be added here
+# deliberately, after checking it. That check is the point. If you are adding an
+# entry, confirm it on an explorer first and say what it is.
+#
+# What a REAL secret looks like in this project, and must never be allowlisted:
+#   BAGS_API_KEY          `bags_prod_…`, see .github/SECURITY.md
+#   Solana keypair file   JSON array of 64 bytes, path in BAGS_KEYPAIR_PATH
+# Neither is base58, so neither is affected by anything below.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public Solana identifiers — verified on chain, not secrets"
+regexes = [
+  # Wrapped SOL mint. The best-known address on Solana.
+  '''So11111111111111111111111111111111111111112''',
+  # $BOS — the token that gates the write tools. SPL Token program owns it.
+  '''EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS''',
+  # "Asteroid The Space Shiba Inu" mint, quoted in DEMO.md Receipt 1.
+  '''4UeLCRqARmfb6e6KQijtiktqqXUxbfk6jZng7DhuBAGS''',
+  # Wallet public key used in the README preview example.
+  '''975whRaNDNT5szLYEvE8GHYDtEmA4HVvp5qk6RoiCxo7''',
+  # Throwaway devnet payer for scripts/devnet-proof.ts. Public key only; the
+  # secret key lives in .proof/ and is gitignored.
+  '''3nFqw88x51A2sPZvxg7RjkbmsFUmaPM3EakL71MDYhCw''',
+  # Devnet transaction signature published as DEMO.md Receipt 4 — the whole
+  # point of that receipt is that anyone can look it up.
+  '''2kvu25xWAjqCB3wuNzwMRcN2RMqqfYN6TeJjnA888YtCqNJi9EU9CHSxynkq5QdM499e6yKbXYAwXUbzDKY9U5Dm''',
+]
