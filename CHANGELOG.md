@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.5.1](https://github.com/edycutjong/BagOS/compare/v2.5.0...v2.5.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* **ci:** publish when the fallback cuts the release, not only release-please ([d590474](https://github.com/edycutjong/BagOS/commit/d5904747a0bcab787dd70d55827ab96e0918d0c9))
+
 ## [2.5.0](https://github.com/edycutjong/BagOS/compare/v2.4.1...v2.5.0) (2026-08-16)
 
 
