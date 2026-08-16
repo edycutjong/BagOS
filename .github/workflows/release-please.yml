@@ -64,6 +64,10 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
+      # A release cut by the fallback below must still publish. Without this the
+      # downstream jobs gate on release_created alone, which is false exactly
+      # when the fallback was needed — the release exists and nothing ships.
+      unjam_created: ${{ steps.unjam.outputs.created }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -94,6 +98,7 @@ jobs:
       #
       # Runs even when the action failed, so a jam cannot hide behind a red step.
       - name: Unjam the release label handoff
+        id: unjam
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -142,6 +147,8 @@ jobs:
               gh release create "v${version}" --repo "$GITHUB_REPOSITORY" \
                 --target "$sha" --title "v${version}" --notes-file /tmp/notes.md
               echo "Created v${version} at ${sha}."
+              echo "created=true" >> "$GITHUB_OUTPUT"
+              echo "tag=v${version}" >> "$GITHUB_OUTPUT"
               gh pr edit "$n" --repo "$GITHUB_REPOSITORY" \
                 --add-label 'autorelease: tagged' --remove-label 'autorelease: pending'
             fi
@@ -151,13 +158,13 @@ jobs:
   # verbatim — same consistency check, same CI gate, same tarball audit, same provenance.
   publish:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.release_created == 'true' || needs.release-please.outputs.unjam_created == 'true'
     uses: ./.github/workflows/publish.yml
     secrets: inherit
 
   registry:
     needs: [release-please, publish]
-    if: needs.release-please.outputs.release_created == 'true'
+    if: needs.release-please.outputs.release_created == 'true' || needs.release-please.outputs.unjam_created == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
