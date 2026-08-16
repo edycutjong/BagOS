@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "bagos",
   "display_name": "BagOS",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "description": "Every AI-initiated Solana spend: gated, capped, confirmed on chain.",
   "long_description": "MCP server for Bags on Solana. Read tools cover token analytics, creator-fee rosters, claim audit trails and trade quotes. The two write tools execute swaps and claim creator fees, but the first call to either signs nothing: it returns a preview and a single-use confirmation token fingerprinted to the exact arguments, so a token issued for a 0.01 SOL swap cannot authorize a 10 SOL one. Every write passes a token gate, a hard SOL spend cap per transaction and per session, and a simulation, before it is signed and submitted. Writes are off unless a keypair is configured and are mainnet-only; the server defaults to devnet so an unconfigured install cannot spend real money.",
   "author": {

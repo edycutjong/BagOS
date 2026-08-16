@@ -3,6 +3,29 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.6.0](https://github.com/edycutjong/BagOS/compare/v2.5.1...v2.6.0) (2026-08-16)
+
+
+### Features
+
+* **proof:** a mainnet proof script, prepared but never run ([74a5aa7](https://github.com/edycutjong/BagOS/commit/74a5aa7c028721e63f6e037a6fe46d83ae0870e6))
+
+
+### Bug Fixes
+
+* **token-gate:** respect BOS_REQUIRED_BALANCE=0 and reject unparseable values ([d6d94b1](https://github.com/edycutjong/BagOS/commit/d6d94b16712ff574996dc4a119b7b78dc3f6b17b))
+
+
+### Documentation
+
+* **readme:** lead with install, not with an audit trail ([3167347](https://github.com/edycutjong/BagOS/commit/3167347d3c6fc4037dfd0f9a8d725cb11e9dba44))
+* the release pipeline now recovers on its own ([de5beab](https://github.com/edycutjong/BagOS/commit/de5beab8bfa88a31866991f23c1405811e372bd1))
+
+
+### CI/CD
+
+* **gitleaks:** allowlist public Solana identifiers, by exact value ([3555362](https://github.com/edycutjong/BagOS/commit/3555362bd67976ca7f72401ec4ba3c3190182eec))
+
 ## [2.5.1](https://github.com/edycutjong/BagOS/compare/v2.5.0...v2.5.1) (2026-08-16)
 
 
