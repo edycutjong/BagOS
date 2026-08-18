@@ -193,9 +193,13 @@ export BAGS_NETWORK=mainnet
 export BAGS_KEYPAIR_PATH=~/.config/bags/keypair.json
 export BAGS_API_KEY=...
 
-# The token to swap into, and the gate token you hold.
+# The gate token you must HOLD: $BOS, the token this project launched on Bags.
+export BOS_TOKEN_MINT=Feqmy64uNvK198MAWFC5ujRnzif6kM9wKonTX2t3BAGS
+
+# The token to swap INTO. Deliberately not $BOS: the gate wants a token you hold,
+# the swap wants a token with liquidity, and $BOS has almost none. This one is a
+# third-party Bags-launched token with a real pool, used only as a swap target.
 export PROOF_OUTPUT_MINT=EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS
-export BOS_TOKEN_MINT=EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS
 
 npm run proof:mainnet          # swaps 0.01 SOL; PROOF_SOL_AMOUNT can only lower it
 ```

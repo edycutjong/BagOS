@@ -38,7 +38,12 @@ description = "Public Solana identifiers — verified on chain, not secrets"
 regexes = [
   # Wrapped SOL mint. The best-known address on Solana.
   '''So11111111111111111111111111111111111111112''',
-  # $BOS — the token that gates the write tools. SPL Token program owns it.
+  # $BOS — the token that gates the write tools. Launched on Bags by this
+  # project; mint and freeze authority both disabled.
+  '''Feqmy64uNvK198MAWFC5ujRnzif6kM9wKonTX2t3BAGS''',
+  # "Pepe By Matt Furie" mint. A third-party Bags-launched token, used only as a
+  # swap TARGET (it has pool liquidity; $BOS does not). It is not $BOS — an
+  # earlier comment here said it was.
   '''EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS''',
   # "Asteroid The Space Shiba Inu" mint, quoted in DEMO.md Receipt 1.
   '''4UeLCRqARmfb6e6KQijtiktqqXUxbfk6jZng7DhuBAGS''',

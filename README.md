@@ -38,10 +38,14 @@ npx bagos-mcp-server
 claude mcp add bagos --env BAGS_API_KEY=your-key-here -- npx -y bagos-mcp-server
 ```
 
-Restart the client, then ask it: *"check the bagos heartbeat"*. The server prints a
+Restart the client, then ask it: *"show me the top Bags creators"*. The server prints a
 configuration report to stderr on startup; if something is missing it tells you which
-variable and why. A key alone gives you the 11 read tools — writes stay off until you
-configure them ([Getting Started](#-getting-started)).
+variable and why.
+
+An API key alone gives you 8 of the 11 read tools. Three of them — `bags_heartbeat`,
+`bags_get_claimable_fees` and `bags_authenticate` — report on *your* wallet, so they also
+need `BAGS_KEYPAIR_PATH` and will error without it. Writes stay off until you configure
+them ([Getting Started](#-getting-started)).
 
 ## 🔒 Why this is safe to hand an assistant
 
@@ -115,6 +119,11 @@ Nothing in the protocol makes the model pause, and nothing bounds what a single
 misunderstood instruction can spend.
 
 ### The Solution
+
+[Bags](https://bags.fm) is a Solana token launchpad whose defining feature is
+**creator fee sharing**: a token's trading fees are split on-chain between the people who
+launched and promote it, claimable at any time. That makes "who earns from this token,
+how much is claimable, and claim it" a real workflow — and the one BagOS automates.
 
 BagOS lets an AI assistant read Bags/Solana token data and — with explicit
 confirmation — execute swaps and claim creator fees from your wallet. Writes are off
@@ -204,18 +213,41 @@ plainly that the trade is uncapped.
 
 ---
 
+## ⛓️ Live Deployment
+
+A real transaction, landed through the production write path and re-fetched from the
+chain rather than trusted from a return value:
+
+| | |
+|---|---|
+| **Signature** | [`2kvu25xW…U5Dm`](https://explorer.solana.com/tx/2kvu25xWAjqCB3wuNzwMRcN2RMqqfYN6TeJjnA888YtCqNJi9EU9CHSxynkq5QdM499e6yKbXYAwXUbzDKY9U5Dm?cluster=devnet) |
+| **Cluster** | devnet |
+| **Slot** | 484219564 |
+| **Status** | `err: null` |
+| **Captured** | 2026-08-16 |
+
+Reproduce it yourself with `npm run proof:devnet` — it funds a throwaway keypair from the
+faucet, pushes a transfer through the same simulate → sign → send → confirm path the write
+tools use, then re-fetches the signature from the chain. A function returning `success` is
+a claim; a signature you can open on an explorer is evidence. Full method in
+[DEMO.md](DEMO.md).
+
+---
+
 ## 📊 Engineering Rigor
 
-337 tests. The bypass tests around the spend caps and the confirmation step are
-load-bearing; treat a change there as a security change. They are mutation-
-checked: removing the cap guard, the confirmation check, the decimals lookup,
-or the spend recorder each makes the suite fail.
+345 tests. The bypass tests around the spend caps and the confirmation step are
+load-bearing; treat a change there as a security change. They were checked by hand
+against deliberate mutations: deleting the cap guard, the confirmation check, the
+decimals lookup, or the spend recorder each makes the suite fail. That was a manual
+exercise, not an automated mutation-testing stage — there is no mutation config in
+this repo to re-run.
 
 | Layer | Status | Details |
 |---|---|---|
 | **Real default path** | ✅ | No kill-switch flag in any documented command. `USE_MOCK_DATA` defaults **off**; when on, it affects only the `bags_get_claimable_fees` tool, stamping `⚠️ [MOCK DATA ENABLED]` on that tool's own response. The other 13 tools ignore it. Live-run receipts in [DEMO.md](DEMO.md) |
 | Code quality | ✅ | ESLint + `tsc --noEmit`, both clean |
-| Unit testing | ✅ | Jest, 337 tests / 17 suites, **100%** statements · branches · functions · lines, enforced |
+| Unit testing | ✅ | Jest, 345 tests / 17 suites, **100%** statements · branches · functions · lines, enforced |
 | High-signal tests | ✅ | Mutation-checked cap/confirmation bypass tests · a leak-channel regression test (the API key used to be echoed into tool output) · network-mismatch refusal |
 | Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · secret scanning + push protection on · `npm audit` in CI as a **ratchet** — see below |
 | Dependency debt | ⚠️ | **6 advisories, 0 critical** — down from 90. Everything patchable was cleared with version-scoped `overrides` (see [`package.json`](package.json)). The 6 that remain are **one** root cause, `bigint-buffer` [GHSA-3gc7-fjrx-p6mg](https://github.com/advisories/GHSA-3gc7-fjrx-p6mg), counted once at each level of the chain it travels up to `@bagsfm/bags-sdk`. No patched `bigint-buffer` exists — 1.1.5 is the installed version, the latest version, and vulnerable. CI blocks any critical and any increase over [`.audit-baseline.json`](.audit-baseline.json). **Note:** npm honours `overrides` only in a root project, so these protect this repo and CI, not consumers of the published package. |
@@ -225,8 +257,10 @@ or the spend recorder each makes the suite fail.
 | Community standards | ✅ | Code of Conduct · Contributing · Security policy · issue + PR templates |
 
 E2E browser tests and Lighthouse budgets are deliberately absent: this is a stdio/HTTP MCP
-server with no web UI, so both would measure nothing. The equivalent end-to-end coverage is
-`npm run demo`, which drives all read tools over real MCP JSON-RPC against the live API.
+server with no web UI, so both would measure nothing. The nearest end-to-end coverage is
+`npm run demo`, which drives five read tools — `bags_heartbeat`, `bags_get_creators`,
+`bags_get_trade_quote`, `bags_get_partner_stats` and `bags_authenticate` — over real MCP
+JSON-RPC against the live API. The remaining read tools are covered by unit tests only.
 
 ---
 
@@ -253,7 +287,7 @@ Writes stay off until all of these are set:
         "BAGS_API_KEY": "your-key-here",
         "BAGS_NETWORK": "mainnet",
         "BAGS_KEYPAIR_PATH": "~/.config/bags/keypair.json",
-        "BOS_TOKEN_MINT": "EkJuyYyD3to61CHVPJn6wHb7xANxvqApnVJ4o2SdBAGS",
+        "BOS_TOKEN_MINT": "Feqmy64uNvK198MAWFC5ujRnzif6kM9wKonTX2t3BAGS",
         "BAGS_MAX_SOL_PER_TX": "0.1",
         "BAGS_MAX_SOL_PER_SESSION": "1.0"
       }
@@ -261,6 +295,13 @@ Writes stay off until all of these are set:
   }
 }
 ```
+
+> ⚠️ **`BOS_TOKEN_MINT` currently does two jobs.** It is the token the gate requires you
+> to **hold** ($BOS, above), *and* it is the default **output** mint for a swap that does
+> not name one (`ExecuteTrade.ts`). Those want opposite properties — a gate wants a token
+> you hold, a swap target wants a token with liquidity, and $BOS has almost none. Always
+> pass `outputMint` explicitly on `bags_execute_trade` rather than relying on the default.
+> Splitting these into two variables is tracked as a known issue.
 
 ### Configuration
 
@@ -276,6 +317,10 @@ Writes stay off until all of these are set:
 | `BAGS_MAX_SOL_PER_SESSION` | no | `1.0` | Per-process spend cap |
 | `BAGS_ALLOW_UNCONFIRMED` | no | `false` | Skip the confirmation step |
 | `BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS` | no | `false` | Permit swaps whose input is not SOL. The caps are SOL-denominated and **cannot limit these**. |
+| `HELIUS_RPC_URL` | no | — | Alias for `SOLANA_RPC_URL`, read only if that is unset |
+| `USE_MOCK_DATA` | no | `false` | `true` makes `bags_get_claimable_fees` return **fabricated** balances, stamped as such. No other tool is affected. |
+| `BAGS_API_URL` | no | `https://public-api-v2.bags.fm/api/v1` | Override the Bags API base URL used by `bags_authenticate` |
+| `PORT` | no | `3050` | HTTP listener port. Only read when started with `--http`. |
 
 ---
 
@@ -327,6 +372,18 @@ The same rule now covers the **Bags API key**: `bags_authenticate` writes it to
 to print the key in full, which published a live credential into the assistant's
 context and every transcript downstream of it. If you ran `bags_authenticate` on
 a version before this change, rotate that key at [dev.bags.fm](https://dev.bags.fm).
+
+### Known limits of these controls
+
+Two are worth stating here rather than leaving in SECURITY.md:
+
+- **HTTP mode has no authentication.** Started with `--http`, the server listens on
+  `0.0.0.0` with permissive CORS and no auth, so any caller that can reach the port can
+  invoke the write tools — sharing one spend counter. **Do not run HTTP mode on a funded
+  wallet.** stdio is the default and the only transport this project recommends; it is
+  also why the Smithery listing is stdio-only rather than hosted.
+- **The session cap is not concurrency-safe.** Two writes racing can both pass the check
+  before either records its spend. The per-transaction cap still binds on each.
 
 Report vulnerabilities via
 [GitHub security advisories](https://github.com/edycutjong/BagOS/security/advisories/new).
