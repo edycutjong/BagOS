@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [2.6.1](https://github.com/edycutjong/BagOS/compare/v2.6.0...v2.6.1) (2026-08-18)
+
+
+### Documentation
+
+* correct the gate mint and the claims an audit disproved ([#18](https://github.com/edycutjong/BagOS/issues/18)) ([a01a3fa](https://github.com/edycutjong/BagOS/commit/a01a3fab2bc3f731cd1a7e2568e96c80e712a5dc))
+
 ## [2.6.0](https://github.com/edycutjong/BagOS/compare/v2.5.1...v2.6.0) (2026-08-16)
 
 
