@@ -69,7 +69,7 @@ jobs:
       # when the fallback was needed — the release exists and nothing ships.
       unjam_created: ${{ steps.unjam.outputs.created }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
           config-file: release-please-config.json
