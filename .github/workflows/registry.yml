@@ -114,7 +114,21 @@ jobs:
 
       - name: Publish
         if: steps.already.outputs.skip == 'false'
-        run: /tmp/mcp-publisher publish
+        run: |
+          set -uo pipefail
+          # The registry server does its OWN npm lookup when it validates the package,
+          # and that can still 404 for a minute after `npm view` above already sees the
+          # version (npm CDN propagation between what the client sees and what a third
+          # party sees). Retry on that race instead of failing the release and needing a
+          # manual re-run.
+          for i in $(seq 1 6); do
+            if /tmp/mcp-publisher publish; then
+              echo "published to the registry"; exit 0
+            fi
+            echo "registry publish attempt $i/6 failed (likely npm propagation) — retrying in 20s"
+            sleep 20
+          done
+          echo "::error::mcp-publisher publish failed after 6 attempts"; exit 1
 
       # Assert the VERSION, not just the name. The previous check grepped for the server
       # name, which stays present across every release — so it passed while the registry

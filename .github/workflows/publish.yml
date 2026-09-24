@@ -137,13 +137,19 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Only reached if publish succeeded. An automation token authenticates without a
-      # one-time password, which is why this belongs in CI — `npm deprecate` from a laptop
-      # prompts for an OTP and cannot be scripted.
-      - name: Deprecate the defective 1.0.0
+      # Re-assert the security deprecation for the whole vulnerable range on every
+      # release. An automation token authenticates without a one-time password, which is
+      # why this belongs in CI — `npm deprecate` from a laptop prompts for an OTP.
+      #
+      # This REPLACED a hardcoded "deprecate 1.0.0 -> upgrade to 2.0.0" step that reset
+      # 1.0.0's message on every release, silently undoing the security advisory. The
+      # wallet drain (GHSA-g679-3wq7-mh3m) was fixed in 3.0.0, so the range is scoped to
+      # `< 3.0.0`; 3.x is never deprecated. `npm deprecate` on a range is idempotent, so
+      # running it every release just keeps the correct notice applied.
+      - name: Re-assert the security deprecation for < 3.0.0
         run: |
-          npm deprecate bagos-mcp-server@1.0.0 \
-            "Defective: write tools reported success without signing. Upgrade to 2.0.0." \
-            || echo "::warning::deprecate failed (already deprecated, or token lacks write) — not failing the release"
+          npm deprecate "bagos-mcp-server@<3.0.0" \
+            "Critical: wallet drain via untrusted working-directory .env + unverified auth challenge (GHSA-g679-3wq7-mh3m). Upgrade to 3.0.0." \
+            || echo "::warning::deprecate failed (token lacks write, or nothing to do) — not failing the release"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
