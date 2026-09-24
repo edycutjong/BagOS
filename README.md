@@ -319,7 +319,9 @@ Writes stay off until all of these are set:
 | `BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS` | no | `false` | Permit swaps whose input is not SOL. The caps are SOL-denominated and **cannot limit these**. |
 | `HELIUS_RPC_URL` | no | — | Alias for `SOLANA_RPC_URL`, read only if that is unset |
 | `USE_MOCK_DATA` | no | `false` | `true` makes `bags_get_claimable_fees` return **fabricated** balances, stamped as such. No other tool is affected. |
-| `BAGS_API_URL` | no | `https://public-api-v2.bags.fm/api/v1` | Override the Bags API base URL used by `bags_authenticate` |
+| `BAGS_API_URL` | no | `https://public-api-v2.bags.fm/api/v1` | Override the Bags API base URL used by `bags_authenticate`. Must be `https` on `bags.fm` or a subdomain, because the tool signs what this endpoint sends. |
+| `BAGS_ALLOW_CUSTOM_API_URL` | no | `false` | `true` lifts the `bags.fm` restriction on `BAGS_API_URL`. Only for a server you control. |
+| `BAGS_ENV_FILE` | no | — | Absolute path of an env file to load. A `.env` in the working directory is **never** loaded on its own, because an MCP client's working directory is whatever project you have open. |
 | `PORT` | no | `3050` | HTTP listener port. Only read when started with `--http`. |
 
 ---
@@ -382,8 +384,9 @@ Two are worth stating here rather than leaving in SECURITY.md:
   invoke the write tools — sharing one spend counter. **Do not run HTTP mode on a funded
   wallet.** stdio is the default and the only transport this project recommends; it is
   also why the Smithery listing is stdio-only rather than hosted.
-- **The session cap is not concurrency-safe.** Two writes racing can both pass the check
-  before either records its spend. The per-transaction cap still binds on each.
+- **The session cap counts a trade whose outcome is unknown.** If confirmation times out
+  after sending, the spend is counted (it may still land) and the error carries the
+  signature. Restart the server to reset the counter once you have checked it on an explorer.
 
 Report vulnerabilities via
 [GitHub security advisories](https://github.com/edycutjong/BagOS/security/advisories/new).

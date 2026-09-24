@@ -18,6 +18,12 @@ const DEFAULT_MAX_PER_TX = 0.1;
 const DEFAULT_MAX_PER_SESSION = 1.0;
 
 let sessionSpendSol = 0;
+/**
+ * SOL committed to trades that passed the caps but have not settled yet.
+ * Counted against the session cap exactly like confirmed spend, so two writes
+ * racing through their awaits cannot both fit under a cap only one fits under.
+ */
+let reservedSol = 0;
 
 
 export function maxSolPerTx(): number {
@@ -32,9 +38,15 @@ export function sessionSpend(): number {
   return sessionSpendSol;
 }
 
+/** SOL reserved by in-flight writes, not yet confirmed or released. */
+export function reservedSpend(): number {
+  return reservedSol;
+}
+
 /** Test seam. */
 export function resetGuards(): void {
   sessionSpendSol = 0;
+  reservedSol = 0;
   pending.clear();
 }
 
@@ -61,9 +73,11 @@ export function assertWithinCaps(amountSol: number): void {
     );
   }
   const perSession = maxSolPerSession();
-  if (sessionSpendSol + amountSol > perSession) {
+  const committed = sessionSpendSol + reservedSol;
+  if (committed + amountSol > perSession) {
+    const inFlight = reservedSol > 0 ? ` (${reservedSol} SOL of it in flight)` : '';
     throw new SpendCapError(
-      `Session cap exceeded: ${sessionSpendSol} SOL already spent, ` +
+      `Session cap exceeded: ${committed} SOL already committed${inFlight}, ` +
         `${amountSol} SOL requested, cap is ${perSession} SOL. ` +
         `Raise BAGS_MAX_SOL_PER_SESSION or restart the server.`
     );
@@ -73,6 +87,53 @@ export function assertWithinCaps(amountSol: number): void {
 /** Record a spend only after the transaction is confirmed on chain. */
 export function recordSpend(amountSol: number): void {
   sessionSpendSol += amountSol;
+}
+
+/**
+ * A slice of the session cap held by one in-flight write. Settle it exactly
+ * once: `commit()` when the spend landed (or may have), `release()` when it
+ * provably did not. Settling twice is a no-op, so a finally-block cannot
+ * double-count.
+ */
+export interface SpendReservation {
+  readonly amountSol: number;
+  commit(): void;
+  release(): void;
+}
+
+function unreserve(amountSol: number): void {
+  reservedSol -= amountSol;
+  // Float subtraction can leave dust like 1e-17; never let it read as spend.
+  if (reservedSol < 1e-12) reservedSol = 0;
+}
+
+/**
+ * Check the caps and claim the amount in the same synchronous step.
+ *
+ * This replaces the old check-then-record pattern, where `assertWithinCaps`
+ * ran before several awaits and `recordSpend` ran after confirmation. Any
+ * concurrent write could pass the check in that gap, so the session cap only
+ * held for sequential use. Node runs this function to completion without
+ * yielding, so the check and the claim cannot interleave with another call.
+ */
+export function reserveSpend(amountSol: number): SpendReservation {
+  assertWithinCaps(amountSol);
+  reservedSol += amountSol;
+  let settled = false;
+  return {
+    amountSol,
+    commit() {
+      if (settled) return;
+      settled = true;
+      unreserve(amountSol);
+      sessionSpendSol += amountSol;
+    },
+    release() {
+      if (settled) return;
+      settled = true;
+      unreserve(amountSol);
+    },
+  };
 }
 
 export class UncappableSpendError extends Error {
@@ -204,7 +265,8 @@ export function previewText(opts: {
       ? `Spend:   ${opts.amountSol} SOL`
       : `Spend:   NOT SOL-DENOMINATED — spend caps do not apply to this trade`,
     capped
-      ? `Caps:    ${maxSolPerTx()} SOL/tx · ${sessionSpend()}/${maxSolPerSession()} SOL used this session`
+      ? `Caps:    ${maxSolPerTx()} SOL/tx · ${sessionSpend()}/${maxSolPerSession()} SOL used this session` +
+        (reservedSol > 0 ? ` (+${reservedSol} SOL in flight)` : '')
       : `Caps:    ⚠️  UNCAPPED. Verify the amount above yourself.`,
   ];
   if (isMainnet()) {

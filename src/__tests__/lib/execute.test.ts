@@ -23,7 +23,9 @@ jest.unstable_mockModule("../../lib/network.js", () => ({
   networkBanner: () => "🧪 devnet — test funds",
 }));
 
-const { Executor, SimulationError, ConfirmationFailedError } = await import("../../lib/execute.js");
+const { Executor, SimulationError, ConfirmationFailedError, ConfirmationUnknownError } = await import("../../lib/execute.js");
+const { SendTransactionError } = await import("@solana/web3.js");
+const bs58 = (await import("bs58")).default;
 
 const keypair = { publicKey: { toBase58: () => "Wallet111" } } as any;
 
@@ -135,6 +137,103 @@ describe("Executor.signSendConfirm", () => {
     mockConnection.confirmTransaction.mockResolvedValue({ value: { err: "x" }, context: { slot: 8 } });
     await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toMatchObject({
       signature: "SIG123",
+    });
+  });
+
+  it("throws ConfirmationUnknownError, with the signature, when confirmation itself throws", async () => {
+    mockConnection.confirmTransaction.mockRejectedValue(new Error("block height exceeded"));
+    const attempt = Executor.signSendConfirm(versionedTx(), keypair);
+    await expect(attempt).rejects.toBeInstanceOf(ConfirmationUnknownError);
+    await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toMatchObject({
+      signature: "SIG123",
+      message: expect.stringContaining("may still land"),
+    });
+  });
+
+  it("reports a non-Error confirmation failure too", async () => {
+    mockConnection.confirmTransaction.mockRejectedValue("rpc down");
+    await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toThrow("rpc down");
+  });
+
+  describe("when the send call itself throws", () => {
+    const sigBytes = new Uint8Array(64).fill(9);
+
+    it("reports an unknown outcome, with the locally known signature", async () => {
+      mockConnection.sendRawTransaction.mockRejectedValue(new Error("socket hang up"));
+      const tx = { ...versionedTx(), signatures: [sigBytes] };
+      await expect(Executor.signSendConfirm(tx, keypair)).rejects.toMatchObject({
+        name: "ConfirmationUnknownError",
+        signature: bs58.encode(sigBytes),
+        message: expect.stringContaining("may still land"),
+      });
+    });
+
+    it("reads a legacy transaction's signature too", async () => {
+      mockConnection.sendRawTransaction.mockRejectedValue("timeout");
+      const tx = { ...legacyTx(), signature: sigBytes };
+      await expect(Executor.signSendConfirm(tx, keypair)).rejects.toMatchObject({
+        signature: bs58.encode(sigBytes),
+        message: expect.stringContaining("timeout"),
+      });
+    });
+
+    it("says so when no signature can be read", async () => {
+      mockConnection.sendRawTransaction.mockRejectedValue(new Error("reset"));
+      await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toMatchObject({
+        signature: "unknown",
+        message: expect.stringContaining("recent transactions"),
+      });
+    });
+
+    const rpcError = (transactionMessage: string) =>
+      new SendTransactionError({ action: "simulate", signature: "", transactionMessage, logs: [] });
+
+    it.each([
+      "Transaction simulation failed: Blockhash not found",
+      "Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1",
+      "Transaction signature verification failure",
+      "invalid transaction: Transaction failed to sanitize accounts offsets correctly",
+    ])("treats a pre-forward rejection as definite: %s", async (msg) => {
+      const rejection = rpcError(msg);
+      mockConnection.sendRawTransaction.mockRejectedValue(rejection);
+      await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toBe(rejection);
+    });
+
+    it("never treats 'already been processed' as a failure: the transaction landed", async () => {
+      mockConnection.sendRawTransaction.mockRejectedValue(
+        rpcError("Transaction simulation failed: This transaction has already been processed")
+      );
+      await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toBeInstanceOf(
+        ConfirmationUnknownError
+      );
+    });
+
+    /* These can arrive after the node already forwarded the bytes. */
+    it.each([
+      ["-32603 internal error", rpcError("Internal error")],
+      ["node is behind", rpcError("Node is behind by 42 slots")],
+      ["proxy 502", new Error("502 Bad Gateway: upstream connect error")],
+      ["429 after retries", new Error("429 Too Many Requests: {}")],
+    ])("treats %s as an unknown outcome", async (_label, err) => {
+      mockConnection.sendRawTransaction.mockRejectedValue(err);
+      await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.toBeInstanceOf(
+        ConfirmationUnknownError
+      );
+    });
+
+    it("passes an RPC rejection through unchanged, since nothing was forwarded", async () => {
+      const rejection = new SendTransactionError({
+        action: "send",
+        signature: "",
+        transactionMessage: "Transaction simulation failed",
+        logs: [],
+      });
+      mockConnection.sendRawTransaction.mockRejectedValue(rejection);
+      const attempt = Executor.signSendConfirm(versionedTx(), keypair);
+      await expect(attempt).rejects.toBe(rejection);
+      await expect(Executor.signSendConfirm(versionedTx(), keypair)).rejects.not.toBeInstanceOf(
+        ConfirmationUnknownError
+      );
     });
   });
 

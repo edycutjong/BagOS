@@ -7,6 +7,7 @@ import { IMcpTool } from "../types/IMcpTool.js";
 import fs from "fs";
 import * as path from "path";
 import { redact, toolError } from "../lib/mcp-utils.js";
+import { assertBagsChallenge, resolveAuthBaseUrl } from "../lib/challenge.js";
 
 /**
  * Upstream error bodies are not ours and are not trusted. This endpoint is the one
@@ -31,19 +32,19 @@ export const AuthenticateTool: IMcpTool = {
   registerTool: (server: McpServer) => {
     server.tool(
       "bags_authenticate",
-      "Authenticate with Bags API utilizing the V2 signature challenge flow. Automatically loads local wallet.",
-      {
-        privateKeyPath: z.string().optional().describe("Optional path to the wallet keypair. Defaults to ~/.config/bags/keypair.json or BAGS_KEYPAIR_PATH env var."),
-      },
-      async (args) => {
+      "Authenticate with Bags API utilizing the V2 signature challenge flow. Uses the wallet at BAGS_KEYPAIR_PATH (default ~/.config/bags/keypair.json).",
+      // No keypair-path argument. The key a tool signs with is the operator's
+      // decision, set in the client config, never the model's.
+      {},
+      async () => {
         try {
-          const keyPath = args.privateKeyPath || process.env.BAGS_KEYPAIR_PATH || "~/.config/bags/keypair.json";
+          const keyPath = process.env.BAGS_KEYPAIR_PATH || "~/.config/bags/keypair.json";
           const keypair = Wallet.loadKeypair(keyPath);
           const walletAddress = keypair.publicKey.toBase58();
 
           // Standard API client to hit auth endpoints manually because Bags SDK init requires the API key
           // and we might be fetching the API key here
-          const baseUrl = process.env.BAGS_API_URL || "https://public-api-v2.bags.fm/api/v1";
+          const baseUrl = resolveAuthBaseUrl();
 
           // Step 1: Init auth challenge
           const initRes = await fetch(`${baseUrl}/agent/v2/auth/init`, {
@@ -65,6 +66,7 @@ export const AuthenticateTool: IMcpTool = {
 
           // Step 2: Sign message
           const messageBytes = bs58.decode(initData.message);
+          assertBagsChallenge(messageBytes, initData.nonce);
           const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
           const signatureBase58 = bs58.encode(signatureBytes);
 
@@ -136,7 +138,7 @@ export const AuthenticateTool: IMcpTool = {
             content: [
               {
                 type: "text",
-                text: `✅ Successfully authenticated with Bags API.\nWallet: ${walletAddress}\nKey ID: ${callbackData.keyId}\nAPI Key: ${keyHint} — not printed in full${savePathMessage}\n\nRead the key from the credentials file above and set it as BAGS_API_KEY in your .env.`
+                text: `✅ Successfully authenticated with Bags API.\nWallet: ${walletAddress}\nKey ID: ${callbackData.keyId}\nAPI Key: ${keyHint} — not printed in full${savePathMessage}\n\nRead the key from the credentials file above and set it as BAGS_API_KEY in your MCP client config (or in the file named by BAGS_ENV_FILE).`
               }
             ]
           };

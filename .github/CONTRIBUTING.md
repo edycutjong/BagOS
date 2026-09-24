@@ -8,6 +8,8 @@ Thanks for your interest in improving BagOS.
 git checkout -b feat/your-feature
 npm ci
 cp .env.example .env      # then fill in BAGS_API_KEY
+                          # npm run dev loads it via BAGS_ENV_FILE=$PWD/.env (must be absolute); the server
+                          # never reads a .env from the working directory on its own
 npm run dev               # stdio server with watch
 npm run inspector         # MCP Inspector against the built server
 ```

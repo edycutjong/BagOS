@@ -65,8 +65,13 @@ meet `BOS_REQUIRED_BALANCE`.
 | `BAGS_MAX_SOL_PER_SESSION` | `1.0` | One server process |
 
 Caps are checked *before* the SDK is called, so an over-cap request never
-reaches the network. The session counter increments only after a transaction is
-**confirmed** — a failed transaction does not consume your budget.
+reaches the network. The amount is **reserved against the session cap in the
+same step it is checked**, so two concurrent writes cannot both pass a cap only
+one of them fits under. The reservation is kept if the transaction confirms, and
+also if its outcome is unknown (see *fails closed* under Known limitations),
+because it may still land. It is released — and the budget returned — only when
+the spend provably did not happen: a failed build, a failed simulation, a send
+the node refused before forwarding, or an on-chain failure.
 
 **Confirmation.** On by default. The first call to a write tool returns a
 preview and a single-use token; nothing is signed. The token is a SHA-256
@@ -110,18 +115,36 @@ v2.0.0-pre this silently displayed "Spend: 0 SOL" and passed every cap.
 **The confirmation token binds arguments, not the quoted price.** Confirming
 re-runs the quote, so the `expect`/`min` figures you approved are not what
 executes if the price moved inside the five-minute window. Your slippage
-setting still bounds the loss; the preview numbers are indicative, not a
-guarantee. The same applies to fee claims, where the transaction set is
+setting bounds execution against the **re-fetched** quote, not against the
+preview you approved: the total move from the previewed price is the market
+drift over that window *plus* slippage on the new quote, so slippage alone does
+not bound it. Treat the preview numbers as indicative, not a guarantee, and keep
+the window short. The same applies to fee claims, where the transaction set is
 re-fetched at confirmation.
 
-**The session cap is not concurrency-safe.** `assertWithinCaps` reads the
-counter and `recordSpend` increments it only after confirmation. Parallel tool
-calls can each pass the check before any of them records, exceeding the session
-cap. Assume the session cap holds for sequential use only.
+**The session cap fails closed on an unknown outcome.** Each write reserves
+its amount against the cap in the same synchronous step as the cap check, so
+concurrent calls cannot both fit under a cap only one of them fits under. If
+the transaction was sent but confirmation threw (timeout, expired block
+height) or the send call failed with anything other than a pre-forward
+rejection (preflight simulation failure, signature verification failure,
+undecodable transaction), including timeouts, proxy 5xx/429 and RPC internal
+errors, the tool reports `ConfirmationUnknownError` with the signature and
+**counts the spend**, because it may still land. A spend that never left
+(build failure, failed simulation, refused send, failed on chain) is released.
+Check the signature on an explorer before retrying; restart the server to reset
+the counter if it did not land.
 
-**A submitted transaction can be reported as failed.** If confirmation times
-out, the transaction may still land. The tool reports an error and does not
-count the spend. Always check the signature on an explorer before retrying.
+**Configuration comes from the operator only.** The server does not read a
+`.env` from its working directory: MCP clients start stdio servers in the open
+project's folder, so that file may belong to a repository you cloned. Name an
+env file explicitly with `BAGS_ENV_FILE`. `bags_authenticate` takes no keypair
+path from the model, only talks to `https://*.bags.fm` unless
+`BAGS_ALLOW_CUSTOM_API_URL=true`, and signs only Bags' own
+wallet-verification text (as published in `bagsfm/bags-skill` `auth.md`)
+carrying the nonce from the same init response. Anything else is refused: a
+Solana transaction message, any binary payload, another service's sign-in
+text. A signature over a transaction message is a signed transaction.
 
 **HTTP mode is unauthenticated.** `--http` / `npm run start:http` serves `/mcp`
 on `0.0.0.0` with permissive CORS and no auth — anyone who can reach the port

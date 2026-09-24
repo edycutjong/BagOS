@@ -7,6 +7,8 @@ import {
   assertSpendIsCappable,
   UncappableSpendError,
   recordSpend,
+  reserveSpend,
+  reservedSpend,
   SpendCapError,
   confirmationRequired,
   fingerprint,
@@ -91,6 +93,77 @@ describe("assertWithinCaps", () => {
   it("does not mutate the session total", () => {
     assertWithinCaps(0.05);
     expect(sessionSpend()).toBe(0);
+  });
+});
+
+describe("reserveSpend", () => {
+  beforeEach(() => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+  });
+
+  it("claims the amount at check time, so a second in-flight write cannot also fit", () => {
+    reserveSpend(0.6);
+    expect(reservedSpend()).toBe(0.6);
+    // The old code only read confirmed spend here and would have allowed this.
+    expect(() => reserveSpend(0.6)).toThrow('Session cap exceeded');
+    expect(() => reserveSpend(0.6)).toThrow('in flight');
+  });
+
+  it("does not reserve anything when the caps refuse", () => {
+    expect(() => reserveSpend(1.5)).toThrow(SpendCapError);
+    expect(reservedSpend()).toBe(0);
+  });
+
+  it("moves the amount into confirmed spend on commit", () => {
+    reserveSpend(0.6).commit();
+    expect(reservedSpend()).toBe(0);
+    expect(sessionSpend()).toBe(0.6);
+  });
+
+  it("returns the amount to the cap on release", () => {
+    reserveSpend(0.6).release();
+    expect(reservedSpend()).toBe(0);
+    expect(sessionSpend()).toBe(0);
+    expect(() => reserveSpend(1)).not.toThrow();
+  });
+
+  it("settles exactly once, whatever is called after", () => {
+    const r = reserveSpend(0.4);
+    r.commit();
+    r.commit();
+    r.release();
+    expect(sessionSpend()).toBe(0.4);
+    expect(reservedSpend()).toBe(0);
+  });
+
+  it("keeps other in-flight reservations when one settles", () => {
+    const a = reserveSpend(0.3);
+    reserveSpend(0.2);
+    a.release();
+    expect(reservedSpend()).toBeCloseTo(0.2);
+    expect(() => reserveSpend(0.9)).toThrow('Session cap exceeded');
+  });
+
+  it("leaves no float dust behind after many settles", () => {
+    for (let i = 0; i < 10; i++) reserveSpend(0.1).release();
+    expect(reservedSpend()).toBe(0);
+  });
+
+  it("is cleared by resetGuards", () => {
+    reserveSpend(0.5);
+    resetGuards();
+    expect(reservedSpend()).toBe(0);
+  });
+});
+
+describe("previewText with reserved spend", () => {
+  it("shows in-flight spend next to the session total", () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+    reserveSpend(0.3);
+    const text = previewText({ action: "Swap", amountSol: 0.1, details: [], token: "t", toolName: "x" });
+    expect(text).toContain("(+0.3 SOL in flight)");
   });
 });
 

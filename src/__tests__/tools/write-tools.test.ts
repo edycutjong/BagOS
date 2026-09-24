@@ -17,11 +17,11 @@ jest.spyOn(Wallet, "loadKeypair").mockReturnValue({
 import { TokenGate } from "../../lib/token-gate.js";
 const mockCheckTokenGate = jest.spyOn(TokenGate, "checkTokenGate");
 
-import { Executor } from "../../lib/execute.js";
+import { Executor, ConfirmationUnknownError } from "../../lib/execute.js";
 const mockExecute = jest.spyOn(Executor, "executeTransaction");
 const mockExecuteAll = jest.spyOn(Executor, "executeAll");
 
-import { resetGuards } from "../../lib/guards.js";
+import { resetGuards, sessionSpend, reservedSpend } from "../../lib/guards.js";
 
 import { Mint } from "../../lib/mint.js";
 // Decimals are a network lookup; these tests are about the guards, not the RPC.
@@ -192,6 +192,68 @@ describe("ExecuteTrade", () => {
     mockExecute.mockResolvedValue(okResult);
     const retry = await handler({ inputMint: SOL_MINT, amount: 0.9 });
     expect(retry.content[0].text).toContain("CONFIRMATION REQUIRED");
+  });
+
+  /* Regression: the session cap used to hold for sequential use only. The
+     check ran before several awaits and the spend was recorded after
+     confirmation, so two confirmed trades racing through that gap could both
+     pass a cap only one of them fits under. */
+  it("holds the session cap when two confirmed trades run concurrently", async () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+    const handler = call();
+
+    const a = { inputMint: SOL_MINT, amount: 0.6 };
+    const b = { inputMint: SOL_MINT, amount: 0.59 };
+    const tokenA = tokenFrom(await handler(a));
+    const tokenB = tokenFrom(await handler(b));
+
+    // Hold the first execution open so the second runs inside the gap.
+    let finish!: (v: typeof okResult) => void;
+    mockExecute.mockImplementationOnce(() => new Promise((res) => { finish = res; }));
+
+    const first = handler({ ...a, confirm: tokenA });
+    await new Promise((r) => setImmediate(r));
+    const second = await handler({ ...b, confirm: tokenB });
+    finish(okResult);
+    const firstResult = await first;
+
+    expect(firstResult.content[0].text).toContain("confirmed on chain");
+    expect(second.isError).toBe(true);
+    expect(second.content[0].text).toContain("Session cap exceeded");
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(sessionSpend()).toBe(0.6);
+    expect(reservedSpend()).toBe(0);
+  });
+
+  it("counts a trade whose outcome is unknown, because it may have landed", async () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+    mockExecute.mockRejectedValue(
+      new ConfirmationUnknownError("sent but outcome unknown", "5xSig")
+    );
+    const handler = call();
+
+    const preview = await handler({ inputMint: SOL_MINT, amount: 0.9 });
+    const result = await handler({ inputMint: SOL_MINT, amount: 0.9, confirm: tokenFrom(preview) });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).not.toContain("confirmed on chain");
+    expect(sessionSpend()).toBe(0.9);
+
+    // A blind retry must not be able to spend the same budget again.
+    const retry = await handler({ inputMint: SOL_MINT, amount: 0.9 });
+    expect(retry.content[0].text).toContain("Session cap exceeded");
+  });
+
+  it("releases the reservation when building the transaction fails", async () => {
+    process.env['BAGS_MAX_SOL_PER_TX'] = '1';
+    process.env['BAGS_MAX_SOL_PER_SESSION'] = '1';
+    const handler = call();
+    const preview = await handler({ inputMint: SOL_MINT, amount: 0.9 });
+    mockBagsClient.trade.createSwapTransaction.mockRejectedValueOnce(new Error("quote stale"));
+    await handler({ inputMint: SOL_MINT, amount: 0.9, confirm: tokenFrom(preview) });
+    expect(sessionSpend()).toBe(0);
+    expect(reservedSpend()).toBe(0);
   });
 
   /* The original fund-loss hole was tool WIRING, not the guard itself.

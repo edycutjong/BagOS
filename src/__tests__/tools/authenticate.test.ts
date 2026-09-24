@@ -15,10 +15,156 @@ const mockFetch = jest.fn();
 global.fetch = mockFetch as any;
 
 import { AuthenticateTool } from "../../tools/AuthenticateTool";
+import { isTransactionMessage, bagsChallengeText } from "../../lib/challenge.js";
+
+/** What Bags actually sends: its wallet-verification text, base58-encoded. */
+const challenge = (nonce: string) => bs58.encode(new TextEncoder().encode(bagsChallengeText(nonce)));
+import bs58 from "bs58";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  TransactionMessage,
+} from "@solana/web3.js";
+
+const ATTACKER = new PublicKey("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin");
+const BLOCKHASH = "EETubP5AKHgjPAhzPAFcb8BAY1hMH639CZ6YjUzgU6Nq";
+
+/** A legacy transfer of 5 SOL from the tool's wallet to an attacker. */
+function legacyTransferMessage(): Uint8Array {
+  const tx = new Transaction({
+    feePayer: new PublicKey(SYSTEM_PROGRAM),
+    recentBlockhash: BLOCKHASH,
+  }).add(
+    SystemProgram.transfer({
+      fromPubkey: Keypair.generate().publicKey,
+      toPubkey: ATTACKER,
+      lamports: 5_000_000_000,
+    })
+  );
+  return tx.serializeMessage();
+}
+
+/** The same transfer as a v0 message. */
+function v0TransferMessage(): Uint8Array {
+  const payer = Keypair.generate().publicKey;
+  return new TransactionMessage({
+    payerKey: payer,
+    recentBlockhash: BLOCKHASH,
+    instructions: [
+      SystemProgram.transfer({ fromPubkey: payer, toPubkey: ATTACKER, lamports: 5_000_000_000 }),
+    ],
+  }).compileToV0Message().serialize();
+}
 
 describe("AuthenticateTool", () => {
   beforeEach(() => {
     mockFetch.mockReset();
+  });
+
+  /* A2A-R01-01: the challenge bytes come from BAGS_API_URL. If they are a
+     transaction message, an ed25519 signature over them IS a signed
+     transaction, and the callback hands it to whoever runs that endpoint. */
+  describe("refuses a challenge that is a transaction", () => {
+    it.each([
+      ["legacy", legacyTransferMessage],
+      ["v0", v0TransferMessage],
+    ])("refuses a %s transfer message and never calls back", async (_kind, build) => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ message: bs58.encode(build()), nonce: "n" }),
+      });
+      const { server, getHandler } = createMockServer();
+      AuthenticateTool.registerTool(server);
+
+      const result = await getHandler("bags_authenticate")({});
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Refusing to sign");
+      expect(mockFetch).toHaveBeenCalledTimes(1); // init only: no signature left the process
+    });
+
+    it("classifies text challenges as not a transaction", () => {
+      const text = new TextEncoder().encode("Sign in to Bags. Nonce: 8f14e45fceea167a");
+      expect(isTransactionMessage(text)).toBe(false);
+      expect(isTransactionMessage(bs58.decode("3Wd1Fn"))).toBe(false);
+      expect(isTransactionMessage(new Uint8Array())).toBe(false);
+    });
+  });
+
+  it("refuses a non-Bags BAGS_API_URL before any request is made", async () => {
+    process.env["BAGS_API_URL"] = "https://attacker.example";
+    try {
+      const { server, getHandler } = createMockServer();
+      AuthenticateTool.registerTool(server);
+      const result = await getHandler("bags_authenticate")({});
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("must be an https URL on bags.fm");
+      expect(mockFetch).not.toHaveBeenCalled();
+    } finally {
+      delete process.env["BAGS_API_URL"];
+    }
+  });
+
+  it("refuses a binary challenge that is not a known transaction format", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ message: bs58.encode(Keypair.generate().publicKey.toBytes()), nonce: "n" }),
+    });
+    const { server, getHandler } = createMockServer();
+    AuthenticateTool.registerTool(server);
+    const result = await getHandler("bags_authenticate")({});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("not a plain-text sign-in message");
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  describe("signs only the Bags challenge for this nonce", () => {
+    async function run(message: string, nonce: unknown) {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message, nonce }) });
+      const { server, getHandler } = createMockServer();
+      AuthenticateTool.registerTool(server);
+      return getHandler("bags_authenticate")({});
+    }
+    const enc = (t: string) => bs58.encode(new TextEncoder().encode(t));
+
+    it("refuses another service's sign-in text", async () => {
+      const result = await run(enc("Sign in to OtherDex\n\nnonce: abc"), "abc");
+      expect(result.content[0].text).toContain("does not match the Bags wallet-verification text");
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses the Bags text carrying a different nonce", async () => {
+      const result = await run(challenge("other-nonce"), "this-nonce");
+      expect(result.content[0].text).toContain("does not match");
+    });
+
+    it("refuses a nonce that could smuggle extra lines", async () => {
+      const result = await run(enc(bagsChallengeText("a\nb")), "a\nb");
+      expect(result.content[0].text).toContain("not a plain identifier");
+    });
+
+    it("refuses CRLF line endings rather than guessing", async () => {
+      const result = await run(enc(bagsChallengeText("n1").replace(/\n/g, "\r\n")), "n1");
+      expect(result.isError).toBe(true);
+    });
+
+    it("tolerates exactly one trailing newline", async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ message: enc(bagsChallengeText("n2") + "\n"), nonce: "n2" }) });
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ apiKey: "k", keyId: "id" }) });
+      const { server, getHandler } = createMockServer();
+      AuthenticateTool.registerTool(server);
+      const result = await getHandler("bags_authenticate")({});
+      expect(result.isError).toBeUndefined();
+    });
+  });
+
+  it("takes no keypair path from the caller", () => {
+    const { server } = createMockServer();
+    AuthenticateTool.registerTool(server);
+    const schema = (server.tool as any).mock.calls[0][2];
+    expect(Object.keys(schema)).toEqual([]);
   });
 
   it("registers the tool", () => {
@@ -37,7 +183,7 @@ describe("AuthenticateTool", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        message: "3Wd1Fn", // base58-encoded payload
+        message: challenge("test-nonce-123"),
         nonce: "test-nonce-123",
       }),
     });
@@ -70,7 +216,7 @@ describe("AuthenticateTool", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        message: "3Wd1Fn", // base58-encoded payload
+        message: challenge("test-nonce-123"),
         nonce: "test-nonce-123",
       }),
     });
@@ -98,7 +244,7 @@ describe("AuthenticateTool", () => {
   it("falls back to (hidden) on an apiKey too short to hint", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
+      json: async () => ({ message: challenge("test-nonce-123"), nonce: "test-nonce-123" }),
     });
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -126,7 +272,7 @@ describe("AuthenticateTool", () => {
   ])("rejects %s instead of writing it to disk", async (_label, body) => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
+      json: async () => ({ message: challenge("test-nonce-123"), nonce: "test-nonce-123" }),
     });
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => body });
 
@@ -157,7 +303,7 @@ describe("AuthenticateTool", () => {
   it("returns error when callback fails", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "nonce" }),
+      json: async () => ({ message: challenge("nonce"), nonce: "nonce" }),
     });
 
     mockFetch.mockResolvedValueOnce({
@@ -205,7 +351,7 @@ describe("AuthenticateTool", () => {
   it("bounds the length of an upstream error body", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce-123" }),
+      json: async () => ({ message: challenge("test-nonce-123"), nonce: "test-nonce-123" }),
     });
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -239,7 +385,7 @@ describe("AuthenticateTool", () => {
   it("handles fs.writeFileSync error gracefully", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+      json: async () => ({ message: challenge("test-nonce"), nonce: "test-nonce" }),
     });
 
     mockFetch.mockResolvedValueOnce({
@@ -269,7 +415,7 @@ describe("AuthenticateTool", () => {
   it("handles fs.writeFileSync success", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+      json: async () => ({ message: challenge("test-nonce"), nonce: "test-nonce" }),
     });
 
     mockFetch.mockResolvedValueOnce({
@@ -294,7 +440,7 @@ describe("AuthenticateTool", () => {
   it("handles fs.existsSync false", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+      json: async () => ({ message: challenge("test-nonce"), nonce: "test-nonce" }),
     });
 
     mockFetch.mockResolvedValueOnce({
@@ -319,7 +465,7 @@ describe("AuthenticateTool", () => {
   it("handles HOME environment variable fallback", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: "3Wd1Fn", nonce: "test-nonce" }),
+      json: async () => ({ message: challenge("test-nonce"), nonce: "test-nonce" }),
     });
 
     mockFetch.mockResolvedValueOnce({

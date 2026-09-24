@@ -1,8 +1,10 @@
 import {
+  SendTransactionError,
   Keypair,
   Transaction,
   VersionedTransaction,
 } from '@solana/web3.js';
+import bs58 from 'bs58';
 import { getConnection, explorerUrl } from './network.js';
 // explorerUrl is still used for the successful-result link.
 
@@ -40,6 +42,61 @@ export class ConfirmationFailedError extends Error {
     super(message);
     this.name = 'ConfirmationFailedError';
   }
+}
+
+/**
+ * The transaction was sent, but we never learned whether it landed: the
+ * confirmation call itself threw (timeout, expired block height, RPC error).
+ * It may still confirm. Callers must treat the spend as possibly made.
+ */
+export class ConfirmationUnknownError extends Error {
+  constructor(message: string, readonly signature: string) {
+    super(message);
+    this.name = 'ConfirmationUnknownError';
+  }
+}
+
+/**
+ * The fee payer's signature, read off the signed transaction before it is
+ * sent. It is the transaction id, so it is known locally the moment signing
+ * finishes; losing it because the send call threw is what left an operator
+ * unable to check whether a "failed" trade had in fact landed.
+ */
+function localSignature(tx: Transaction | VersionedTransaction): string | null {
+  const raw = isVersioned(tx) ? tx.signatures?.[0] : tx.signature;
+  return raw ? bs58.encode(raw) : null;
+}
+
+/**
+ * RPC answers to sendTransaction that prove the transaction was never
+ * forwarded to a leader: preflight simulation failed (which includes
+ * "Blockhash not found"), signature verification failed, or the bytes did
+ * not decode. web3.js folds every JSON-RPC error into SendTransactionError
+ * and drops the numeric code, so the message is all there is to go on.
+ *
+ * Anything else, including -32603 internal errors, "node is behind", and an
+ * HTTP 5xx or 429 from a proxy in front of the node, can arrive after the
+ * node already forwarded the bytes. Those are unknown, not failures.
+ * Unknown costs budget; misclassifying a landed trade as failed costs funds.
+ */
+const DEFINITE_SEND_REJECTIONS = [
+  /^Transaction simulation failed/i,
+  /^Transaction signature verification failure/i,
+  /^invalid transaction/i,
+];
+
+/**
+ * Preflight reports a duplicate as a simulation failure, but it means the
+ * transaction already LANDED. It happens when the same signed bytes are sent
+ * twice, which web3.js's own retry on 429 can do. Never refund that.
+ */
+const LANDED_DESPITE_ERROR = /already been processed/i;
+
+export function isDefiniteSendRejection(error: unknown): boolean {
+  if (!(error instanceof SendTransactionError)) return false;
+  const message = error.transactionError.message;
+  if (LANDED_DESPITE_ERROR.test(message)) return false;
+  return DEFINITE_SEND_REJECTIONS.some((re) => re.test(message));
 }
 
 function isVersioned(
@@ -92,19 +149,49 @@ export const Executor = {
       tx.sign(keypair);
     }
 
-    const signature = await connection.sendRawTransaction(tx.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed',
-    });
+    const signedId = localSignature(tx);
+    let signature: string;
+    try {
+      signature = await connection.sendRawTransaction(tx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
+    } catch (error) {
+      // Only a pre-forward rejection is a definite failure. Everything else
+      // (timeouts, dropped connections, 5xx/429, internal errors) may have
+      // happened after the node accepted the bytes: the outcome is unknown.
+      if (isDefiniteSendRejection(error)) throw error;
+      const reason = error instanceof Error ? error.message : String(error);
+      const id = signedId ?? 'unknown';
+      throw new ConfirmationUnknownError(
+        `Sending transaction ${id} failed mid-flight (${reason}). It may still land. ` +
+          (signedId
+            ? `Check it on an explorer before retrying: ${explorerUrl(signedId)}`
+            : `Check the wallet's recent transactions before retrying.`),
+        id
+      );
+    }
 
-    const confirmation = await connection.confirmTransaction(
-      {
-        signature,
-        blockhash: context.blockhash,
-        lastValidBlockHeight: context.lastValidBlockHeight,
-      },
-      'confirmed'
-    );
+    let confirmation: Awaited<ReturnType<typeof connection.confirmTransaction>>;
+    try {
+      confirmation = await connection.confirmTransaction(
+        {
+          signature,
+          blockhash: context.blockhash,
+          lastValidBlockHeight: context.lastValidBlockHeight,
+        },
+        'confirmed'
+      );
+    } catch (error) {
+      // Past this point the bytes are on the wire. An exception here says
+      // nothing about whether they landed, so say that, with the signature.
+      const reason = error instanceof Error ? error.message : String(error);
+      throw new ConfirmationUnknownError(
+        `Transaction ${signature} was sent but its outcome is unknown (${reason}). ` +
+          `It may still land. Check it on an explorer before retrying: ${explorerUrl(signature)}`,
+        signature
+      );
+    }
 
     if (confirmation.value.err) {
       throw new ConfirmationFailedError(

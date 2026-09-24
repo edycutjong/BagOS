@@ -5,13 +5,13 @@ import { PublicKey } from '@solana/web3.js';
 import { Wallet } from "../lib/wallet.js";
 import { TokenGate } from "../lib/token-gate.js";
 import { IMcpTool } from "../types/IMcpTool.js";
-import { Executor } from "../lib/execute.js";
+import { Executor, ConfirmationUnknownError } from "../lib/execute.js";
 import { networkBanner, assertBagsWritesSupported } from "../lib/network.js";
 import { Mint } from "../lib/mint.js";
 import {
   assertWithinCaps,
   assertSpendIsCappable,
-  recordSpend,
+  reserveSpend,
   confirmationRequired,
   issueToken,
   consumeToken,
@@ -105,13 +105,30 @@ export const ExecuteTradeTool: IMcpTool = {
             consumeToken(confirm!, TOOL_NAME, action);
           }
 
-          const { transaction } = await client.trade.createSwapTransaction({
-            userPublicKey: new PublicKey(walletAddress),
-            quoteResponse
-          });
+          // Claim the spend against the caps now, in the same synchronous step
+          // as the check. The earlier assertWithinCaps only gave the preview an
+          // early answer; it held nothing, so a concurrent call could pass it too.
+          const reservation = solSpend !== null ? reserveSpend(solSpend) : null;
 
-          const result = await Executor.executeTransaction(transaction, keypair);
-          if (solSpend !== null) recordSpend(solSpend);
+          let result;
+          try {
+            const { transaction } = await client.trade.createSwapTransaction({
+              userPublicKey: new PublicKey(walletAddress),
+              quoteResponse
+            });
+            result = await Executor.executeTransaction(transaction, keypair);
+          } catch (error) {
+            // Fail closed: if the transaction may have landed, it counts.
+            // Everything else (build, simulate, send refused, failed on chain)
+            // provably did not move the swap amount, so give the cap back.
+            if (error instanceof ConfirmationUnknownError) {
+              reservation?.commit();
+            } else {
+              reservation?.release();
+            }
+            throw error;
+          }
+          reservation?.commit();
 
           return {
             content: [{

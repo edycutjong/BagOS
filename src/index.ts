@@ -1,17 +1,14 @@
 #!/usr/bin/env node
-import dotenv from "dotenv";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { loadEnvFile } from "./lib/env-file.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load .env from the working directory. The previous path was relative to the
-// installed package, which for `npx bagos-mcp-server` resolves inside
-// node_modules and is never where a user puts their config. Environment
-// variables set by the MCP client always take precedence — dotenv does not
-// overwrite existing vars.
-dotenv.config();
+// Only an explicitly named env file is loaded (BAGS_ENV_FILE). A .env in the
+// working directory is ignored: see src/lib/env-file.ts for why.
+loadEnvFile();
 
 import * as tools from "./tools/index.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

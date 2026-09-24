@@ -193,11 +193,11 @@ function fakeRes(overrides: Record<string, unknown> = {}) {
 /* ------------------------------------------------------------------ */
 
 describe("module initialisation", () => {
-  it("loads .env from the working directory", () => {
-    // Regression: the path used to be relative to the installed package, which
-    // for `npx bagos-mcp-server` resolves inside node_modules and is never
-    // where a user puts their config.
-    expect(dotenvConfigCallsAtImport).toBe(1);
+  it("does not load a .env from the working directory at import", () => {
+    // Regression (a2a r01, A2A-R01-01): a bare dotenv.config() read .env from
+    // the working directory, which an MCP client sets to whatever project is
+    // open. Loading now requires BAGS_ENV_FILE; see env-file.test.ts.
+    expect(dotenvConfigCallsAtImport).toBe(0);
   });
 });
 
