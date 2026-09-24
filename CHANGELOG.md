@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.1](https://github.com/edycutjong/BagOS/compare/v3.0.0...v3.0.1) (2026-09-24)
+
+
+### Documentation
+
+* **security:** document and re-baseline the accepted transitive SDK audit advisories ([049f77a](https://github.com/edycutjong/BagOS/commit/049f77a63fa27ee4ebb5d29f4878cf064cb1fa4a))
+
+
+### Build System
+
+* **deps-dev:** bump @humanfs/node from 0.16.7 to 0.16.8 ([#24](https://github.com/edycutjong/BagOS/issues/24)) ([a3c6f96](https://github.com/edycutjong/BagOS/commit/a3c6f96181a90d19c9adbe0719bb2523025b999d))
+* **deps:** bump fast-uri from 3.1.5 to 3.1.7 ([#22](https://github.com/edycutjong/BagOS/issues/22)) ([b80bf99](https://github.com/edycutjong/BagOS/commit/b80bf992da812cddc6b9bf950bbb9e52c60c1d49))
+* **deps:** bump hono from 4.13.2 to 4.13.7 ([#25](https://github.com/edycutjong/BagOS/issues/25)) ([c5a78ae](https://github.com/edycutjong/BagOS/commit/c5a78ae39bf0092f18c826fb1a3e6d3a94857c23))
+* **deps:** bump qs from 6.15.3 to 6.16.0 ([#23](https://github.com/edycutjong/BagOS/issues/23)) ([0020646](https://github.com/edycutjong/BagOS/commit/00206463b1857ee1be56c835ba3adeca69cb794d))
+* **deps:** bump the actions group with 2 updates ([#21](https://github.com/edycutjong/BagOS/issues/21)) ([7916f27](https://github.com/edycutjong/BagOS/commit/7916f274ee13f8923fa340ab84186a6610e10c46))
+
 ## [3.0.0](https://github.com/edycutjong/BagOS/compare/v2.6.0...v3.0.0) (2026-09-24)
 
 
