@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.2](https://github.com/edycutjong/BagOS/compare/v3.0.1...v3.0.2) (2026-09-24)
+
+
+### Build System
+
+* **site:** stop the version stamper from rewriting historical vX.Y.Z references ([219675e](https://github.com/edycutjong/BagOS/commit/219675eaf0024368af39336c790b9d735ee3f568))
+
 ## [3.0.1](https://github.com/edycutjong/BagOS/compare/v3.0.0...v3.0.1) (2026-09-24)
 
 
