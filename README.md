@@ -236,7 +236,7 @@ a claim; a signature you can open on an explorer is evidence. Full method in
 
 ## 📊 Engineering Rigor
 
-345 tests. The bypass tests around the spend caps and the confirmation step are
+407 tests. The bypass tests around the spend caps and the confirmation step are
 load-bearing; treat a change there as a security change. They were checked by hand
 against deliberate mutations: deleting the cap guard, the confirmation check, the
 decimals lookup, or the spend recorder each makes the suite fail. That was a manual
@@ -247,7 +247,7 @@ this repo to re-run.
 |---|---|---|
 | **Real default path** | ✅ | No kill-switch flag in any documented command. `USE_MOCK_DATA` defaults **off**; when on, it affects only the `bags_get_claimable_fees` tool, stamping `⚠️ [MOCK DATA ENABLED]` on that tool's own response. The other 13 tools ignore it. Live-run receipts in [DEMO.md](DEMO.md) |
 | Code quality | ✅ | ESLint + `tsc --noEmit`, both clean |
-| Unit testing | ✅ | Jest, 345 tests / 17 suites, **100%** statements · branches · functions · lines, enforced |
+| Unit testing | ✅ | Jest, 407 tests / 19 suites, **100%** statements · branches · functions · lines, enforced |
 | High-signal tests | ✅ | Mutation-checked cap/confirmation bypass tests · a leak-channel regression test (the API key used to be echoed into tool output) · network-mismatch refusal |
 | Security | ✅ | CodeQL SAST · Dependabot SCA · gitleaks over full history (`fetch-depth: 0`) · secret scanning + push protection on · `npm audit` in CI as a **ratchet** — see below |
 | Dependency debt | ⚠️ | **6 advisories, 0 critical** — down from 90. Everything patchable was cleared with version-scoped `overrides` (see [`package.json`](package.json)). The 6 that remain are **one** root cause, `bigint-buffer` [GHSA-3gc7-fjrx-p6mg](https://github.com/advisories/GHSA-3gc7-fjrx-p6mg), counted once at each level of the chain it travels up to `@bagsfm/bags-sdk`. No patched `bigint-buffer` exists — 1.1.5 is the installed version, the latest version, and vulnerable. CI blocks any critical and any increase over [`.audit-baseline.json`](.audit-baseline.json). **Note:** npm honours `overrides` only in a root project, so these protect this repo and CI, not consumers of the published package. |
