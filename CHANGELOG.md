@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.5](https://github.com/edycutjong/BagOS/compare/v3.0.4...v3.0.5) (2026-09-24)
+
+
+### Bug Fixes
+
+* **caps:** check the SOL a signed transaction moves, not just the amount requested ([0f5a5bd](https://github.com/edycutjong/BagOS/commit/0f5a5bd2fcbd80e94bd2c7a66340471ad251bc3e))
+
+
+### Documentation
+
+* a2a r02 — test count is 407, not 345/337 ([51550b7](https://github.com/edycutjong/BagOS/commit/51550b76ba9b02fb2d54567d32350d9aeecb212d))
+
 ## [3.0.4](https://github.com/edycutjong/BagOS/compare/v3.0.3...v3.0.4) (2026-09-24)
 
 
