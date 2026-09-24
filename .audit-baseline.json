@@ -1,8 +1,8 @@
 {
   "low": 0,
-  "moderate": 0,
-  "high": 6,
+  "moderate": 2,
+  "high": 10,
   "critical": 0,
-  "_note": "Runtime-path floor. All remaining advisories are ONE root cause — bigint-buffer GHSA-3gc7-fjrx-p6mg — reported at each level of bigint-buffer -> @solana/buffer-layout-utils -> @solana/spl-token -> @meteora-ag/* -> @bagsfm/bags-sdk. No patched bigint-buffer exists: 1.1.5 is both installed and latest, and the advisory covers all published versions. Everything else was cleared with version-scoped overrides. NOTE: npm honours `overrides` only in the ROOT project, so these protect this repo and CI but NOT consumers of the published package — that needs the SDK to unpin axios/form-data upstream.",
-  "_recorded": "2026-08-15"
+  "_note": "Production-audit floor for accepted UPSTREAM debt. All advisories here are transitive through @bagsfm/bags-sdk -> @meteora-ag/* / @coral-xyz/anchor / @solana/* and cannot be fixed without a breaking downgrade of the SDK stack (npm's own `fixAvailable` for bigint-buffer/spl-token/buffer-layout-utils resolves by pulling @bagsfm/bags-sdk down to 1.0.8 and web3.js to 0.0.3 — a build with no trade/partner services). The bulk is one root cause, bigint-buffer GHSA-3gc7-fjrx-p6mg, reported at every level of that chain; 1.1.5 is both installed and latest and the advisory covers all published versions. The rest (toml, js-yaml, jayson, stream-json) entered the tree the same way after 2026-08-15. npm honours `overrides` only in the ROOT project, so those protect this repo/CI but NOT consumers of the published package — closing these for consumers needs the SDK to unpin its own transitives upstream. critical>0 still fails hard; any rise above these counts still fails. Lower this file when upstream ships fixes.",
+  "_recorded": "2026-09-24"
 }

@@ -156,6 +156,18 @@ running locally as a subprocess of your MCP client.
 **Cluster detection is substring-based.** A testnet endpoint is not recognised
 and is taken on trust under whatever `BAGS_NETWORK` says.
 
+**Known transitive audit advisories.** `npm audit` reports high/moderate
+advisories in this tree — chiefly `bigint-buffer` (GHSA-3gc7-fjrx-p6mg, no
+patched version exists), plus `toml`, `js-yaml`, `jayson` and `stream-json`.
+All arrive transitively through `@bagsfm/bags-sdk` and the Meteora / Solana
+stack, and the only "fix" npm offers is a breaking downgrade of the SDK that
+removes trade and partner functionality. They are tracked and ratcheted in
+`.audit-baseline.json` (CI fails on any new or critical advisory) rather than
+force-fixed. They live in dependencies used to build and sign transactions, not
+in a path that parses untrusted YAML/TOML, so reachability is low. Root-project
+`overrides` protect this repository and its CI but do not reach consumers of the
+published package; that requires the SDK to unpin its own transitives upstream.
+
 ## Reporting a vulnerability
 
 Open a security advisory at
