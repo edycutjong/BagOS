@@ -144,7 +144,7 @@ async function main() {
 
   console.log('6/8 simulate → sign → send → confirm …');
   const started = Date.now();
-  const result = await Executor.executeTransaction(transaction, keypair);
+  const result = await Executor.executeTransaction(transaction, keypair, sol);
   const elapsed = Date.now() - started;
   recordSpend(sol);
 

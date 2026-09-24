@@ -85,6 +85,15 @@ apply** — this weakens one control, not all of them.
 **Simulation.** Every transaction is simulated before signing. A failed
 simulation aborts the write; nothing is submitted.
 
+The simulation also has to show what the transaction costs. BagOS reads the
+wallet's SOL balance, asks the simulation for the balance afterwards, and
+refuses to sign if the wallet would lose more than the amount reserved against
+the caps plus 0.01 SOL for fees and account rent. A fee claim reserves nothing,
+so it may cost fees only. A simulation that does not report the balance is
+refused too. Before this check, the caps bound the amount a tool was *asked*
+to spend, while the transaction that got signed was built by the Bags API and
+never compared with it. An outside review found that gap.
+
 **Confirmation of landing.** The server waits for network confirmation and
 returns the signature and explorer link. If confirmation fails, it reports the
 failure and the signature — it never reports success for a transaction that did
@@ -111,6 +120,14 @@ v2.0.0 surfaced them; each is a deliberate deferral, not an oversight.
 non-SOL-input swap is uncapped. Such swaps are refused unless you set
 `BAGS_ALLOW_UNCAPPED_TOKEN_SWAPS=true`, and the preview then says so. In
 v2.0.0-pre this silently displayed "Spend: 0 SOL" and passed every cap.
+
+**The simulation check reads SOL, not tokens.** It bounds the SOL leaving the
+wallet. It does not read token balances, so if the Bags API returned a swap or
+claim transaction that also moved SPL tokens the wallet holds, the check would
+not see it. Those transactions come from the Bags SDK, whose endpoint is fixed
+to `public-api-v2.bags.fm`, so this is trust in the Bags API itself. The balance
+before the transaction is read just before simulating, so SOL arriving in
+between makes the outflow look smaller by that amount.
 
 **The confirmation token binds arguments, not the quoted price.** Confirming
 re-runs the quote, so the `expect`/`min` figures you approved are not what

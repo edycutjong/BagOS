@@ -1,6 +1,8 @@
 import {
   SendTransactionError,
   Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
   Transaction,
   VersionedTransaction,
 } from '@solana/web3.js';
@@ -35,6 +37,34 @@ export class SimulationError extends Error {
     super(message);
     this.name = 'SimulationError';
   }
+}
+
+/**
+ * SOL a write may cost beyond the amount it declared: the network fee, a
+ * priority fee, a platform fee, and rent for accounts the transaction opens
+ * (an associated token account is about 0.00204 SOL). Fixed rather than a
+ * percentage, so it does not grow with the size of a trade.
+ */
+export const FEE_ALLOWANCE_SOL = 0.01;
+
+/**
+ * The caps are checked against the amount a tool was asked to spend, but the
+ * transaction that gets signed is built by the Bags API. This is thrown when
+ * simulating that transaction shows more SOL leaving the wallet than was
+ * approved plus FEE_ALLOWANCE_SOL, or when the simulation does not report the
+ * wallet's balance and the amount cannot be checked at all.
+ */
+export class OutflowExceededError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OutflowExceededError';
+  }
+}
+
+/** Upper bound on the SOL a simulated transaction may take from `payer`. */
+export interface OutflowBound {
+  payer: PublicKey;
+  maxOutflowSol: number;
 }
 
 export class ConfirmationFailedError extends Error {
@@ -105,19 +135,60 @@ function isVersioned(
   return 'message' in tx && !('instructions' in tx);
 }
 
+/**
+ * Compare the wallet's balance before a simulated transaction with the balance
+ * the simulation reports after it. No reported balance fails closed: a
+ * transaction whose cost cannot be checked is not signed. A null account is
+ * not "unknown" — the simulation left the wallet empty, so the system program
+ * removed it — and counts as the whole balance leaving.
+ */
+function assertOutflowWithin(
+  bound: OutflowBound,
+  beforeLamports: number,
+  accounts: ReadonlyArray<{ lamports: number } | null> | null | undefined
+): void {
+  const after = accounts?.[0];
+  if (after === undefined) {
+    throw new OutflowExceededError(
+      `Refusing to sign: the simulation did not report the wallet's balance, so the SOL ` +
+        `this transaction would move could not be checked. Nothing was signed.`
+    );
+  }
+  const outflow = beforeLamports - (after?.lamports ?? 0);
+  const max = Math.round(bound.maxOutflowSol * LAMPORTS_PER_SOL);
+  if (outflow > max) {
+    throw new OutflowExceededError(
+      `Refusing to sign: simulating this transaction shows ${outflow / LAMPORTS_PER_SOL} SOL ` +
+        `leaving the wallet, more than the ${max / LAMPORTS_PER_SOL} SOL allowed (the approved ` +
+        `amount plus ${FEE_ALLOWANCE_SOL} SOL for fees and rent). Nothing was signed.`
+    );
+  }
+}
+
 export const Executor = {
   /**
    * Simulate before signing. A failed simulation aborts the write — the cheap
    * check that stops a malformed or under-funded transaction being submitted.
+   *
+   * It also reads the wallet's balance, asks the simulation for the wallet's
+   * balance afterwards, and refuses if the difference is more than
+   * `bound.maxOutflowSol`. That is what ties the spend caps to the bytes being
+   * signed rather than to the arguments the tool was called with. The bound is
+   * required, so no transaction reaches signing without that check.
    */
   simulate: async function (
-    tx: Transaction | VersionedTransaction
+    tx: Transaction | VersionedTransaction,
+    bound: OutflowBound
   ): Promise<string[] | null> {
     const connection = getConnection();
+    const before = await connection.getBalance(bound.payer, 'confirmed');
 
     const result = isVersioned(tx)
-      ? await connection.simulateTransaction(tx, { sigVerify: false })
-      : await connection.simulateTransaction(tx);
+      ? await connection.simulateTransaction(tx, {
+          sigVerify: false,
+          accounts: { encoding: 'base64', addresses: [bound.payer.toBase58()] },
+        })
+      : await connection.simulateTransaction(tx, undefined, [bound.payer]);
 
     if (result.value.err) {
       throw new SimulationError(
@@ -125,6 +196,7 @@ export const Executor = {
         result.value.logs ?? null
       );
     }
+    assertOutflowWithin(bound, before, result.value.accounts);
     return result.value.logs ?? null;
   },
 
@@ -240,20 +312,31 @@ export const Executor = {
     };
   },
 
-  /** Prepare, simulate, then sign/send/confirm. The full write path. */
+  /**
+   * Prepare, simulate, then sign/send/confirm. The full write path.
+   *
+   * `declaredSol` is the SOL the caller approved and reserved against the
+   * caps. The simulation must not show the wallet losing more than that plus
+   * FEE_ALLOWANCE_SOL. The default of 0 means the write should cost fees only.
+   */
   executeTransaction: async function (
     tx: Transaction | VersionedTransaction,
-    keypair: Keypair
+    keypair: Keypair,
+    declaredSol: number = 0
   ): Promise<ExecutionResult> {
     const context = await Executor.prepare(tx, keypair);
-    await Executor.simulate(tx);
+    await Executor.simulate(tx, {
+      payer: keypair.publicKey,
+      maxOutflowSol: declaredSol + FEE_ALLOWANCE_SOL,
+    });
     return Executor.signSendConfirm(tx, keypair, context);
   },
 
   /**
    * Execute several transactions in order, stopping at the first failure.
    * Returns what actually landed — partial success is reported honestly rather
-   * than collapsed into a single "done".
+   * than collapsed into a single "done". Used for fee claims, which should
+   * cost only fees, so each transaction gets the fees-only bound.
    */
   executeAll: async function (
     txs: Array<Transaction | VersionedTransaction>,

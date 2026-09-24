@@ -116,7 +116,9 @@ export const ExecuteTradeTool: IMcpTool = {
               userPublicKey: new PublicKey(walletAddress),
               quoteResponse
             });
-            result = await Executor.executeTransaction(transaction, keypair);
+            // The API built these bytes. Simulation checks they move no more
+            // SOL than was reserved above; a token-input swap declares 0.
+            result = await Executor.executeTransaction(transaction, keypair, solSpend ?? 0);
           } catch (error) {
             // Fail closed: if the transaction may have landed, it counts.
             // Everything else (build, simulate, send refused, failed on chain)

@@ -106,6 +106,8 @@ describe("ExecuteTrade", () => {
     });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);
+    // The reserved amount goes to the executor, which checks the signed bytes against it.
+    expect(mockExecute.mock.calls[0]![2]).toBe(0.05);
     expect(confirmed.content[0].text).toContain("confirmed on chain");
     expect(confirmed.content[0].text).toContain(okResult.signature);
     expect(confirmed.content[0].text).toContain(okResult.explorer);
@@ -284,6 +286,8 @@ describe("ExecuteTrade", () => {
     await handler({ ...args, confirm: tokenFrom(await handler(args)) });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);
+    // No SOL was approved, so the signed transaction may cost fees only.
+    expect(mockExecute.mock.calls[0]![2]).toBe(0);
     // A SOL trade at the full per-tx cap must still be allowed afterwards.
     const after = await handler({ inputMint: SOL_MINT, amount: 0.1 });
     expect(after.content[0].text).toContain("CONFIRMATION REQUIRED");

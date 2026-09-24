@@ -8,6 +8,7 @@ import { jest } from "@jest/globals";
 
 const mockConnection = {
   simulateTransaction: jest.fn<any>(),
+  getBalance: jest.fn<any>(),
   getLatestBlockhash: jest.fn<any>(),
   sendRawTransaction: jest.fn<any>(),
   confirmTransaction: jest.fn<any>(),
@@ -23,11 +24,23 @@ jest.unstable_mockModule("../../lib/network.js", () => ({
   networkBanner: () => "🧪 devnet — test funds",
 }));
 
-const { Executor, SimulationError, ConfirmationFailedError, ConfirmationUnknownError } = await import("../../lib/execute.js");
+const {
+  Executor, SimulationError, ConfirmationFailedError, ConfirmationUnknownError,
+  OutflowExceededError, FEE_ALLOWANCE_SOL,
+} = await import("../../lib/execute.js");
 const { SendTransactionError } = await import("@solana/web3.js");
 const bs58 = (await import("bs58")).default;
 
 const keypair = { publicKey: { toBase58: () => "Wallet111" } } as any;
+const START = 1_000_000_000; // the wallet's balance before each simulated transaction, in lamports
+const LAMPORTS = 1_000_000_000;
+
+const feesOnly = { payer: keypair.publicKey, maxOutflowSol: 0.01 };
+
+/** A successful simulation that leaves the wallet `spent` SOL poorer. */
+function simulatedSpend(spent: number) {
+  return { value: { err: null, logs: [], accounts: [{ lamports: START - Math.round(spent * LAMPORTS) }] } };
+}
 
 function versionedTx() {
   return { message: {}, sign: jest.fn(), serialize: jest.fn(() => new Uint8Array([1])) } as any;
@@ -44,7 +57,10 @@ function legacyTx() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockConnection.simulateTransaction.mockResolvedValue({ value: { err: null, logs: ["ok"] } });
+  mockConnection.simulateTransaction.mockResolvedValue({
+    value: { err: null, logs: ["ok"], accounts: [{ lamports: START - 5_000 }] },
+  });
+  mockConnection.getBalance.mockResolvedValue(START);
   mockConnection.getLatestBlockhash.mockResolvedValue({ blockhash: "bh", lastValidBlockHeight: 99 });
   mockConnection.sendRawTransaction.mockResolvedValue("SIG123");
   mockConnection.confirmTransaction.mockResolvedValue({ value: { err: null }, context: { slot: 7 } });
@@ -52,21 +68,21 @@ beforeEach(() => {
 
 describe("Executor.simulate", () => {
   it("returns logs when simulation succeeds", async () => {
-    await expect(Executor.simulate(versionedTx())).resolves.toEqual(["ok"]);
+    await expect(Executor.simulate(versionedTx(), feesOnly)).resolves.toEqual(["ok"]);
   });
 
   it("throws SimulationError when the program errors", async () => {
     mockConnection.simulateTransaction.mockResolvedValue({
       value: { err: { InstructionError: [0, "Custom"] }, logs: ["boom"] },
     });
-    await expect(Executor.simulate(versionedTx())).rejects.toThrow(SimulationError);
+    await expect(Executor.simulate(versionedTx(), feesOnly)).rejects.toThrow(SimulationError);
   });
 
   it("carries the program logs on the error for debugging", async () => {
     mockConnection.simulateTransaction.mockResolvedValue({
       value: { err: "bad", logs: ["line1", "line2"] },
     });
-    await expect(Executor.simulate(versionedTx())).rejects.toMatchObject({
+    await expect(Executor.simulate(versionedTx(), feesOnly)).rejects.toMatchObject({
       logs: ["line1", "line2"],
     });
   });
@@ -76,13 +92,13 @@ describe("Executor.simulate", () => {
   // simulate() normalizes that to exactly null — never undefined — so callers
   // can rely on `logs === null` checks.
   it("normalizes absent logs to null on a successful simulation", async () => {
-    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: null } });
-    await expect(Executor.simulate(versionedTx())).resolves.toBeNull();
+    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: null, accounts: [{ lamports: START }] } });
+    await expect(Executor.simulate(versionedTx(), feesOnly)).resolves.toBeNull();
   });
 
   it("normalizes absent logs to null on a failed simulation", async () => {
     mockConnection.simulateTransaction.mockResolvedValue({ value: { err: "bad" } });
-    const err = await Executor.simulate(versionedTx()).then(
+    const err = await Executor.simulate(versionedTx(), feesOnly).then(
       () => { throw new Error("expected simulate to reject"); },
       (e) => e
     );
@@ -285,7 +301,7 @@ describe("Executor.executeTransaction", () => {
     let feePayerAtSimulation: unknown = "unset";
     mockConnection.simulateTransaction.mockImplementation(async () => {
       feePayerAtSimulation = tx.feePayer;
-      return { value: { err: null, logs: [] } };
+      return simulatedSpend(0.000005);
     });
     await Executor.executeTransaction(tx, keypair);
     expect(feePayerAtSimulation).toBe(keypair.publicKey);
@@ -304,7 +320,87 @@ describe("Executor.executeTransaction", () => {
   });
 });
 
+describe("Executor.simulate with an outflow bound", () => {
+  const bound = (maxOutflowSol: number) => ({ payer: keypair.publicKey, maxOutflowSol });
+
+  it("asks the simulation for the wallet's balance on a versioned transaction", async () => {
+    await Executor.simulate(versionedTx(), bound(0.01));
+    expect(mockConnection.getBalance).toHaveBeenCalledWith(keypair.publicKey, "confirmed");
+    expect(mockConnection.simulateTransaction).toHaveBeenCalledWith(expect.anything(), {
+      sigVerify: false,
+      accounts: { encoding: "base64", addresses: ["Wallet111"] },
+    });
+  });
+
+  it("asks for it on a legacy transaction too", async () => {
+    await Executor.simulate(legacyTx(), bound(0.01));
+    expect(mockConnection.simulateTransaction).toHaveBeenCalledWith(expect.anything(), undefined, [keypair.publicKey]);
+  });
+
+  it("passes a transaction that stays inside the bound", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue(simulatedSpend(0.01));
+    await expect(Executor.simulate(versionedTx(), bound(0.01))).resolves.toEqual([]);
+  });
+
+  it("refuses a transaction that takes more SOL than the bound, and says how much", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue(simulatedSpend(0.5));
+    const err = await Executor.simulate(versionedTx(), bound(0.11)).then(
+      () => { throw new Error("expected a refusal"); },
+      (e: Error) => e
+    );
+    expect(err).toBeInstanceOf(OutflowExceededError);
+    expect(err.message).toContain("0.5 SOL");
+    expect(err.message).toContain("0.11 SOL allowed");
+    expect(err.message).toContain("Nothing was signed");
+  });
+
+  it("fails closed when the simulation reports no balance", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: null, logs: [] } });
+    await expect(Executor.simulate(versionedTx(), bound(1))).rejects.toThrow(/could not be checked/);
+  });
+
+  it("treats a wallet the simulation deleted as the whole balance leaving", async () => {
+    // A system account at zero lamports no longer exists, so the RPC returns null for it.
+    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: null, logs: [], accounts: [null] } });
+    await expect(Executor.simulate(versionedTx(), bound(0.5))).rejects.toThrow(OutflowExceededError);
+  });
+
+  it("reports a failed simulation as a failure, not as an outflow", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue({ value: { err: "bad", logs: [] } });
+    await expect(Executor.simulate(versionedTx(), bound(0.01))).rejects.toThrow(SimulationError);
+  });
+});
+
+describe("Executor.executeTransaction outflow check", () => {
+  it("allows the approved amount plus the fee allowance", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue(simulatedSpend(0.1 + FEE_ALLOWANCE_SOL));
+    await expect(Executor.executeTransaction(versionedTx(), keypair, 0.1)).resolves.toMatchObject({ signature: "SIG123" });
+  });
+
+  it("never signs a transaction that takes more than was approved", async () => {
+    // The caps reserved 0.1 SOL; the transaction the API built would take 0.2.
+    mockConnection.simulateTransaction.mockResolvedValue(simulatedSpend(0.2));
+    const tx = versionedTx();
+    await expect(Executor.executeTransaction(tx, keypair, 0.1)).rejects.toThrow(OutflowExceededError);
+    expect(tx.sign).not.toHaveBeenCalled();
+    expect(mockConnection.sendRawTransaction).not.toHaveBeenCalled();
+  });
+
+  it("allows fees only when no amount is declared", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue(simulatedSpend(0.02));
+    await expect(Executor.executeTransaction(versionedTx(), keypair)).rejects.toThrow(OutflowExceededError);
+  });
+});
+
 describe("Executor.executeAll", () => {
+  it("bounds each transaction to fees only, as a fee claim should cost nothing else", async () => {
+    mockConnection.simulateTransaction.mockResolvedValue(simulatedSpend(0.3));
+    const result = await Executor.executeAll([versionedTx()], keypair);
+    expect(result.failedAt).toBe(0);
+    expect(result.error).toBeInstanceOf(OutflowExceededError);
+    expect(mockConnection.sendRawTransaction).not.toHaveBeenCalled();
+  });
+
   it("executes every transaction in order", async () => {
     const result = await Executor.executeAll([versionedTx(), versionedTx()], keypair);
     expect(result.executed).toHaveLength(2);
