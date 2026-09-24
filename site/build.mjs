@@ -44,9 +44,12 @@ let stamped = 0;
 for (const page of PAGES) {
   const p = join(dist, page);
   const before = readFileSync(p, 'utf8');
-  // Only version-shaped strings, so a semver appearing inside prose is untouched.
+  // Current-version spots use the explicit __V__ marker (substituted below).
+  // The bare-`v\d.\d.\d` shape rule was REMOVED: it also rewrote intentional
+  // historical references — the "v2.0.0 — the write tools actually write"
+  // milestone and its release link — stamping them to whatever version was
+  // current and breaking the history. __V__ is the only thing that should move.
   const after = before
-    .replace(/\bv\d+\.\d+\.\d+\b/g, `v${VERSION}`)
     .replace(/bagos-mcp-server@\d+\.\d+\.\d+/g, `bagos-mcp-server@${VERSION}`)
     // JSON-LD carries a bare semver with no `v`, so the pattern above never
     // matched it and softwareVersion sat at 2.0.0 while npm served 2.2.0 —
@@ -82,8 +85,11 @@ for (const page of PAGES) {
     console.error(`${page}: unsubstituted __V__ marker survived the build`);
     process.exit(1);
   }
+  // Bare vX.Y.Z is deliberately NOT staleness-checked: with the shape stamper
+  // gone, those are intentional historical references (e.g. the v2.0.0 milestone).
+  // Current-version display uses __V__ (residue-checked above) or the two keyed
+  // forms below, which are always the current version and safe to assert.
   const stale = [
-    ...html.matchAll(/\bv(\d+\.\d+\.\d+)\b/g),
     ...html.matchAll(/"softwareVersion":\s*"(\d+\.\d+\.\d+)"/g),
     ...html.matchAll(/bagos-mcp-server@(\d+\.\d+\.\d+)/g),
   ].filter((m) => m[1] !== VERSION);
