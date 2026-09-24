@@ -50,6 +50,12 @@ describe("assertSignableChallenge", () => {
     expect(() => assertSignableChallenge(enc("ok\u007fok"))).toThrow("control characters");
   });
 
+  it("refuses a byte-order mark (invisible, would defeat an exact-bytes check)", () => {
+    // EF BB BF at the start decodes to U+FEFF and is otherwise invisible.
+    expect(() => assertSignableChallenge(enc("\uFEFFSign in to Bags"))).toThrow("control characters");
+    expect(() => assertSignableChallenge(enc("Sign in\uFEFFto Bags"))).toThrow("control characters");
+  });
+
   it("refuses empty and oversized challenges", () => {
     expect(() => assertSignableChallenge(new Uint8Array())).toThrow("empty");
     expect(() => assertSignableChallenge(enc("a".repeat(MAX_CHALLENGE_BYTES + 1)))).toThrow("limit");

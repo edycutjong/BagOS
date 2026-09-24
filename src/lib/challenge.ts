@@ -56,8 +56,11 @@ export class UnsignableChallengeError extends Error {
   }
 }
 
+// U+FEFF is the byte-order mark / zero-width no-break space. It is invisible and
+// decodes cleanly as UTF-8, so a BOM-prefixed challenge would otherwise pass this
+// text check even though it is not the exact bytes we mean to sign. Refuse it.
 // eslint-disable-next-line no-control-regex
-const DISALLOWED_CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/;
+const DISALLOWED_CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uFEFF]/;
 
 export function assertSignableChallenge(bytes: Uint8Array): void {
   if (bytes.length === 0) throw new UnsignableChallengeError("empty");
@@ -67,7 +70,7 @@ export function assertSignableChallenge(bytes: Uint8Array): void {
   if (isTransactionMessage(bytes)) throw new TransactionChallengeError();
   let text: string;
   try {
-    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   } catch {
     throw new UnsignableChallengeError("not valid UTF-8");
   }
@@ -130,7 +133,7 @@ export function assertBagsChallenge(bytes: Uint8Array, nonce: unknown): void {
   if (typeof nonce !== "string" || !NONCE_SHAPE.test(nonce)) {
     throw new UnsignableChallengeError("the nonce is not a plain identifier");
   }
-  const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
   const expected = bagsChallengeText(nonce);
   if (text !== expected && text !== `${expected}\n`) {
     throw new UnsignableChallengeError(
