@@ -191,6 +191,18 @@ jobs:
           chmod +x /tmp/mcp-publisher
       - name: Publish to the MCP registry
         run: |
-          /tmp/mcp-publisher validate
-          /tmp/mcp-publisher login github-oidc
-          /tmp/mcp-publisher publish
+          set -uo pipefail
+          /tmp/mcp-publisher validate || exit 1
+          /tmp/mcp-publisher login github-oidc || exit 1
+          # The registry does its OWN npm lookup, through a cache that can 404 for
+          # minutes after the wait step above already sees the version: v3.0.4 and
+          # v3.0.5 both failed here that way. registry.yml retried this since 9b60798,
+          # but releases publish through THIS job, so the retry never ran on a release.
+          for i in $(seq 1 12); do
+            if /tmp/mcp-publisher publish; then
+              echo "published to the registry"; exit 0
+            fi
+            echo "registry publish attempt $i/12 failed (likely npm propagation), retrying in 30s"
+            sleep 30
+          done
+          echo "::error::mcp-publisher publish failed after 12 attempts"; exit 1
