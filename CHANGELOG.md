@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.4](https://github.com/edycutjong/BagOS/compare/v3.0.3...v3.0.4) (2026-09-24)
+
+
+### Documentation
+
+* **site:** refresh the OG card — "Install Free →" button, domain label, cache-bust ([74b6c8d](https://github.com/edycutjong/BagOS/commit/74b6c8d9ba760ba8048507f106027b03486abac5))
+
+
+### CI/CD
+
+* make releases hands-off — retry the registry publish, stop resetting the security deprecation ([9b60798](https://github.com/edycutjong/BagOS/commit/9b607987f9cfcf76f921b9304d321506c76fc9b1))
+
 ## [3.0.3](https://github.com/edycutjong/BagOS/compare/v3.0.2...v3.0.3) (2026-09-24)
 
 
