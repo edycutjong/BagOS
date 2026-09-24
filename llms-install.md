@@ -1,7 +1,9 @@
 # Installing BagOS — guide for AI agents
 
 BagOS is an MCP server for Bags on Solana, published on npm as `bagos-mcp-server`.
-There is nothing to clone or build. It runs with `npx`.
+There is nothing to clone or build. It runs with `npx`. Do not install it
+globally with `npm install -g`: the MCP config below runs the published package
+directly, and a global copy only goes stale.
 
 ## 1. Check Node.js
 
