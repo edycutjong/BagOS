@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.3](https://github.com/edycutjong/BagOS/compare/v3.0.2...v3.0.3) (2026-09-24)
+
+
+### Bug Fixes
+
+* **auth:** reject a byte-order-mark challenge; pin js-yaml to the patched line ([d842add](https://github.com/edycutjong/BagOS/commit/d842addd6af0051e48b33d7287b4cf9b0ebbf59c))
+
 ## [3.0.2](https://github.com/edycutjong/BagOS/compare/v3.0.1...v3.0.2) (2026-09-24)
 
 
