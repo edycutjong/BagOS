@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.0](https://github.com/edycutjong/BagOS/compare/v2.6.0...v3.0.0) (2026-09-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **auth:** a .env in the working directory is no longer loaded — set BAGS_ENV_FILE to an absolute path, or put the variables in the MCP client config. bags_authenticate no longer accepts a privateKeyPath argument; use BAGS_KEYPAIR_PATH.
+
+### Bug Fixes
+
+* **auth:** harden bags_authenticate and env loading against the r01 wallet drain (GHSA-g679-3wq7-mh3m) ([1c84f89](https://github.com/edycutjong/BagOS/commit/1c84f89b78885276d0f181261eec82c6a3b5840e))
+
+
+### Documentation
+
+* correct the gate mint and the claims an audit disproved ([#18](https://github.com/edycutjong/BagOS/issues/18)) ([a01a3fa](https://github.com/edycutjong/BagOS/commit/a01a3fab2bc3f731cd1a7e2568e96c80e712a5dc))
+
 ## [2.6.0](https://github.com/edycutjong/BagOS/compare/v2.5.1...v2.6.0) (2026-08-16)
 
 
