@@ -113,8 +113,9 @@ not land.
 
 ## Known limitations
 
-These are real gaps, documented rather than hidden. An adversarial review of
-v2.0.0 surfaced them; each is a deliberate deferral, not an oversight.
+These are real gaps, documented rather than hidden. Adversarial reviews of
+v2.0.0 and later releases surfaced them; each is a deliberate deferral, not an
+oversight.
 
 **The caps only bind on SOL.** They cannot value an arbitrary token, so a
 non-SOL-input swap is uncapped. Such swaps are refused unless you set
@@ -128,6 +129,22 @@ not see it. Those transactions come from the Bags SDK, whose endpoint is fixed
 to `public-api-v2.bags.fm`, so this is trust in the Bags API itself. The balance
 before the transaction is read just before simulating, so SOL arriving in
 between makes the outflow look smaller by that amount.
+
+**The caps count the amount you approve, not fees.** A swap reserves its SOL
+amount against the per-transaction and session caps. The simulation check then
+allows that amount plus 0.01 SOL per transaction for fees and account rent, and
+that allowance is not counted against either cap. A fee claim reserves nothing
+and may use the allowance once per transaction in its set. So with the default
+0.1 SOL cap, a single swap may move up to 0.11 SOL, and ten swaps may move up to
+0.1 SOL more than the 1.0 SOL session cap. Real fees are far below the allowance;
+it is a bound, not a charge.
+
+**The simulation check trusts your RPC.** The balance before and after comes
+from the RPC endpoint you configure. An endpoint that lies about the simulated
+balance can make a transaction look cheaper than it is. It only defeats the
+check together with a malicious transaction from the Bags API, but use an RPC
+you trust. It can only be set in your MCP client's config, never from a `.env`
+in the working directory.
 
 **The confirmation token binds arguments, not the quoted price.** Confirming
 re-runs the quote, so the `expect`/`min` figures you approved are not what
