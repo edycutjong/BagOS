@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.6](https://github.com/edycutjong/BagOS/compare/v3.0.5...v3.0.6) (2026-09-24)
+
+
+### Documentation
+
+* add llms-install.md and a 400x400 icon for the Cline MCP Marketplace ([5fd136b](https://github.com/edycutjong/BagOS/commit/5fd136b365a057510ebf4617be351166d4627111))
+* **llms-install:** say not to install globally ([29e501c](https://github.com/edycutjong/BagOS/commit/29e501c2084c62c31f9dc9acb1206342eea94ff6))
+
+
+### CI/CD
+
+* **release:** retry the registry publish in the job releases actually run ([8008810](https://github.com/edycutjong/BagOS/commit/8008810241e88f922b0e4e2d4ebe15f973a797d2))
+
 ## [3.0.5](https://github.com/edycutjong/BagOS/compare/v3.0.4...v3.0.5) (2026-09-24)
 
 
