@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [3.0.7](https://github.com/edycutjong/BagOS/compare/v3.0.6...v3.0.7) (2026-09-25)
+
+
+### Documentation
+
+* **security:** state that the fee allowance sits outside both caps, and that the simulation check trusts the RPC ([47bddc5](https://github.com/edycutjong/BagOS/commit/47bddc588f92183bf139a66503708bda845493df))
+
 ## [3.0.6](https://github.com/edycutjong/BagOS/compare/v3.0.5...v3.0.6) (2026-09-24)
 
 
